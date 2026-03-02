@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/guards/auth.guard';
 import { alreadyAuthGuard } from './core/auth/guards/already-auth.guard';
+import { roleGuard } from './core/auth/guards/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -59,8 +60,19 @@ export const routes: Routes = [
       },
       {
         path: 'pacientes',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
         loadComponent: () =>
           import('./features/pacientes/pacientes').then((m) => m.Pacientes),
+      },
+      {
+        path: 'paciente/alta',
+        canActivate: [roleGuard],
+        data: { roles: ['PACIENTE'] },
+        loadComponent: () =>
+          import('./features/pacientes/pages/paciente-self-alta/paciente-self-alta').then(
+            (m) => m.PacienteSelfAltaPage,
+          ),
       },
       {
         path: 'historia-clinica',

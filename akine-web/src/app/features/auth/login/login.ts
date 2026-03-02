@@ -49,7 +49,10 @@ export class Login {
     const { email, password } = this.form.getRawValue();
 
     this.authService.login({ email: email!, password: password! }).subscribe({
-      next: () => void this.router.navigate(['/app']),
+      next: () => {
+        const target = this.authService.hasRole('PACIENTE') ? '/app/paciente/alta' : '/app';
+        void this.router.navigate([target]);
+      },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
         const apiErr = err.error as Partial<ApiError>;

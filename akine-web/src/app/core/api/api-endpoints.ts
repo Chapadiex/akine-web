@@ -31,6 +31,17 @@ export const API = {
     users: '/api/v1/admin/users',
     userRoles: (id: string) => `/api/v1/admin/users/${id}/roles`,
   },
+  pacientes: {
+    me: '/api/v1/pacientes/me',
+    create: (consultorioId: string) => `/api/v1/pacientes?consultorioId=${consultorioId}`,
+    byId: (id: string, consultorioId: string) => `/api/v1/pacientes/${id}?consultorioId=${consultorioId}`,
+    search: (consultorioId: string, dni?: string, q?: string) => {
+      const params = new URLSearchParams({ consultorioId });
+      if (dni) params.append('dni', dni);
+      if (q) params.append('q', q);
+      return `/api/v1/pacientes/search?${params.toString()}`;
+    },
+  },
   consultorios: {
     list:            '/api/v1/consultorios',
     create:          '/api/v1/consultorios',

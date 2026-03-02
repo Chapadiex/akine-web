@@ -16,6 +16,7 @@ export interface AuthUser {
   lastName: string;
   roles: RoleName[];
   consultorioIds: string[];
+  profesionalId: string | null;
 }
 
 export interface LoginResponse {
