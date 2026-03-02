@@ -13,7 +13,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="search-bar" [formGroup]="form" (ngSubmit)="submit()">
-      <input formControlName="dni" placeholder="Buscar por DNI" />
+      <input formControlName="query" placeholder="Buscar por DNI o apellido/nombre" />
       <button type="submit" [disabled]="form.invalid">Buscar</button>
     </form>
   `,
@@ -35,11 +35,11 @@ export class PacienteSearch {
   private readonly fb = inject(FormBuilder);
 
   readonly form = this.fb.nonNullable.group({
-    dni: ['', [Validators.required, Validators.pattern(/^[0-9]{7,10}$/)]],
+    query: ['', [Validators.required, Validators.maxLength(100)]],
   });
 
   submit(): void {
     if (this.form.invalid) return;
-    this.search.emit(this.form.getRawValue().dni);
+    this.search.emit(this.form.getRawValue().query.trim());
   }
 }
