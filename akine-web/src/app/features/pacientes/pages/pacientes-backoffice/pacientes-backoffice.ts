@@ -1,6 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../../../core/auth/services/auth.service';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { PacienteForm } from '../../components/paciente-form/paciente-form';
@@ -11,20 +10,22 @@ import { PacienteService } from '../../services/paciente.service';
 @Component({
   selector: 'app-pacientes-backoffice',
   standalone: true,
-  imports: [FormsModule, PacienteSearch, PacienteForm],
+  imports: [PacienteSearch, PacienteForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
       <div class="header">
         <h2>Pacientes - Alta rapida</h2>
-        <select [ngModel]="consultorioId()" (ngModelChange)="consultorioId.set($event)">
-          @for (id of consultorioIds(); track id) {
-            <option [ngValue]="id">{{ id }}</option>
-          }
-        </select>
+        <span class="current-consultorio">
+          {{ selectedConsultorioName() || 'Sin consultorio seleccionado' }}
+        </span>
       </div>
 
       <app-paciente-search (search)="buscarPorDni($event)" />
+
+      @if (!consultorioId()) {
+        <div class="empty">No hay consultorio activo seleccionado.</div>
+      }
 
       @if (searchResult()) {
         <div class="result">
@@ -69,10 +70,7 @@ import { PacienteService } from '../../services/paciente.service';
   styles: [`
     .page { display: block; }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; }
-    .header select {
-      min-width: 240px; border: 1px solid var(--border); border-radius: var(--radius);
-      padding: .45rem .6rem; background: var(--white);
-    }
+    .current-consultorio { color: var(--text-muted); font-size: .9rem; }
     .result, .empty, .card {
       margin-top: .9rem; border: 1px solid var(--border); border-radius: var(--radius);
       background: var(--white); padding: .8rem;
@@ -101,13 +99,15 @@ import { PacienteService } from '../../services/paciente.service';
   `],
 })
 export class PacientesBackofficePage {
-  private readonly auth = inject(AuthService);
+  private readonly consultorioCtx = inject(ConsultorioContextService);
   private readonly pacienteSvc = inject(PacienteService);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
 
-  readonly consultorioIds = signal<string[]>(this.auth.currentUser()?.consultorioIds ?? []);
-  readonly consultorioId = signal<string>(this.consultorioIds()[0] ?? '');
+  readonly consultorioId = this.consultorioCtx.selectedConsultorioId;
+  readonly selectedConsultorioName = computed(
+    () => this.consultorioCtx.selectedConsultorio()?.name ?? '',
+  );
   readonly searchedDni = signal<string>('');
   readonly searchResult = signal<PacienteSearchResult | null>(null);
   readonly selectedPaciente = signal<Paciente | null>(null);

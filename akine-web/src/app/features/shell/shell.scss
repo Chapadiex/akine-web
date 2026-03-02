@@ -261,6 +261,27 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   }
 }
 
+.consultorio-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  select {
+    min-width: 220px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.45rem 0.6rem;
+    background: var(--white);
+    color: var(--text);
+  }
+}
+
 .brand-link-mobile {
   text-decoration: none;
   color: inherit;

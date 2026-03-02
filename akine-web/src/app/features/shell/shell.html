@@ -1,12 +1,9 @@
-<!-- Mobile overlay -->
 @if (mobileOpen()) {
   <div class="shell-overlay" (click)="closeMobile()" aria-hidden="true"></div>
 }
 
 <div class="shell" [class.shell--collapsed]="collapsed()">
-  <!-- ─── Sidenav ──────────────────────────────────────────────────────────── -->
-  <aside class="sidenav" [class.sidenav--mobile-open]="mobileOpen()" aria-label="Menú principal">
-    <!-- Brand -->
+  <aside class="sidenav" [class.sidenav--mobile-open]="mobileOpen()" aria-label="Menu principal">
     <div class="sidenav__brand">
       <a routerLink="/home" class="brand-link" (click)="closeMobile()">
         <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden="true">
@@ -23,13 +20,12 @@
         class="collapse-btn"
         type="button"
         (click)="toggle()"
-        [attr.aria-label]="collapsed() ? 'Expandir menú' : 'Colapsar menú'"
+        [attr.aria-label]="collapsed() ? 'Expandir menu' : 'Colapsar menu'"
       >
-        {{ collapsed() ? '›' : '‹' }}
+        {{ collapsed() ? '>' : '<' }}
       </button>
     </div>
 
-    <!-- Navigation -->
     <nav class="sidenav__nav">
       @for (item of visibleNav(); track item.path) {
         <a
@@ -47,7 +43,6 @@
       }
     </nav>
 
-    <!-- User / perfil -->
     <div class="sidenav__footer">
       @if (currentUser(); as user) {
         <a
@@ -69,18 +64,15 @@
     </div>
   </aside>
 
-  <!-- ─── Main area ──────────────────────────────────────────────────────── -->
   <div class="shell-main">
-    <!-- Topbar -->
     <header class="topbar" role="banner">
-      <!-- Mobile hamburger -->
       <button
         class="topbar__hamburger"
         type="button"
         (click)="mobileOpen.set(true)"
-        aria-label="Abrir menú"
+        aria-label="Abrir menu"
       >
-        ☰
+        ?
       </button>
 
       <div class="topbar__brand-mobile">
@@ -88,13 +80,27 @@
       </div>
 
       <div class="topbar__actions">
+        @if (consultorios().length > 0) {
+          <div class="consultorio-switcher">
+            <label for="consultorioSelect">Consultorio</label>
+            <select
+              id="consultorioSelect"
+              [ngModel]="selectedConsultorioId()"
+              (ngModelChange)="onConsultorioChange($event)"
+            >
+              @for (c of consultorios(); track c.id) {
+                <option [ngValue]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
         <button class="btn btn--ghost btn--sm" type="button" (click)="logout()">
-          Cerrar sesión
+          Cerrar sesion
         </button>
       </div>
     </header>
 
-    <!-- Feature content -->
     <main class="shell-content" id="main-content">
       <router-outlet />
     </main>
