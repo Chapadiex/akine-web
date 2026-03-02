@@ -1,0 +1,115 @@
+import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/guards/auth.guard';
+import { alreadyAuthGuard } from './core/auth/guards/already-auth.guard';
+
+export const routes: Routes = [
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+
+  // ─── Público ──────────────────────────────────────────────────────────────
+  {
+    path: 'home',
+    loadComponent: () =>
+      import('./features/landing/landing').then((m) => m.Landing),
+  },
+
+  // ─── Auth (público, bloqueado si ya autenticado) ───────────────────────────
+  {
+    path: 'login',
+    canActivate: [alreadyAuthGuard],
+    loadComponent: () =>
+      import('./features/auth/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'register',
+    canActivate: [alreadyAuthGuard],
+    loadComponent: () =>
+      import('./features/auth/register/register').then((m) => m.Register),
+  },
+  {
+    path: 'activate',
+    loadComponent: () =>
+      import('./features/auth/activate/activate').then((m) => m.Activate),
+  },
+  {
+    path: 'forgot-password',
+    canActivate: [alreadyAuthGuard],
+    loadComponent: () =>
+      import('./features/auth/forgot-password/forgot-password').then(
+        (m) => m.ForgotPassword,
+      ),
+  },
+
+  // ─── App Shell (requiere autenticación) ───────────────────────────────────
+  {
+    path: 'app',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/shell/shell').then((m) => m.Shell),
+    children: [
+      { path: '', redirectTo: 'inicio', pathMatch: 'full' },
+      {
+        path: 'inicio',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'turnos',
+        loadComponent: () =>
+          import('./features/turnos/turnos').then((m) => m.Turnos),
+      },
+      {
+        path: 'pacientes',
+        loadComponent: () =>
+          import('./features/pacientes/pacientes').then((m) => m.Pacientes),
+      },
+      {
+        path: 'historia-clinica',
+        loadComponent: () =>
+          import('./features/historia-clinica/historia-clinica').then(
+            (m) => m.HistoriaClinica,
+          ),
+      },
+      {
+        path: 'colaboradores',
+        loadComponent: () =>
+          import('./features/colaboradores/colaboradores').then(
+            (m) => m.Colaboradores,
+          ),
+      },
+      {
+        path: 'obras-sociales',
+        loadComponent: () =>
+          import('./features/obras-sociales/obras-sociales').then(
+            (m) => m.ObrasSociales,
+          ),
+      },
+      {
+        path: 'caja',
+        loadComponent: () =>
+          import('./features/caja/caja').then((m) => m.Caja),
+      },
+      {
+        path: 'reportes',
+        loadComponent: () =>
+          import('./features/reportes/reportes').then((m) => m.Reportes),
+      },
+      {
+        path: 'consultorios',
+        loadComponent: () =>
+          import('./features/consultorios/consultorios').then((m) => m.Consultorios),
+        loadChildren: () =>
+          import('./features/consultorios/consultorios.routes').then((m) => m.CONSULTORIO_ROUTES),
+      },
+      {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./features/perfil/perfil').then((m) => m.Perfil),
+      },
+    ],
+  },
+
+  // ─── Compatibilidad hacia atrás ───────────────────────────────────────────
+  { path: 'dashboard', redirectTo: '/app/inicio', pathMatch: 'full' },
+
+  { path: '**', redirectTo: 'home' },
+];

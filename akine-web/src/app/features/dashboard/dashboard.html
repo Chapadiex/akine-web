@@ -1,0 +1,75 @@
+<div class="dashboard">
+  <!-- Main content -->
+  <main class="dash-main">
+    <div class="dash-welcome">
+      <h1>Panel de control</h1>
+      <p>Bienvenido/a a Akine. Los módulos estarán disponibles próximamente.</p>
+    </div>
+
+    @if (loadingProfile()) {
+      <div class="dash-loading">
+        <span class="spinner spinner--primary"></span>
+        Cargando perfil...
+      </div>
+    } @else if (userProfile(); as profile) {
+      <div class="profile-card">
+        <div class="profile-card__header">
+          <div class="profile-avatar">
+            {{ profile.firstName.charAt(0) }}{{ profile.lastName.charAt(0) }}
+          </div>
+          <div>
+            <h2>{{ profile.firstName }} {{ profile.lastName }}</h2>
+            <p>{{ profile.email }}</p>
+          </div>
+        </div>
+
+        <div class="profile-card__details">
+          <div class="detail-item">
+            <span class="detail-label">Estado</span>
+            <span class="detail-value badge" [class.badge--success]="profile.status === 'ACTIVE'">
+              {{ profile.status }}
+            </span>
+          </div>
+
+          @if (profile.phone) {
+            <div class="detail-item">
+              <span class="detail-label">Teléfono</span>
+              <span class="detail-value">{{ profile.phone }}</span>
+            </div>
+          }
+
+          <div class="detail-item">
+            <span class="detail-label">Roles</span>
+            <div class="detail-value roles-list">
+              @for (role of profile.roles; track role) {
+                <span class="badge badge--primary">{{ role }}</span>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Coming soon modules -->
+    <div class="modules-grid">
+      <div class="module-card module-card--coming">
+        <div class="module-card__icon">📅</div>
+        <h3>Turnos</h3>
+        <p>Gestión de agenda y reservas</p>
+        <span class="module-badge">Próximamente</span>
+      </div>
+      <div class="module-card module-card--coming">
+        <div class="module-card__icon">📋</div>
+        <h3>Historia clínica</h3>
+        <p>Evoluciones y documentos</p>
+        <span class="module-badge">Próximamente</span>
+      </div>
+      <div class="module-card module-card--coming">
+        <div class="module-card__icon">💳</div>
+        <h3>Obras sociales</h3>
+        <p>Prestaciones y facturación</p>
+        <span class="module-badge">Próximamente</span>
+      </div>
+    </div>
+  </main>
+</div>

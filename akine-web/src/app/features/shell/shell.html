@@ -1,0 +1,102 @@
+<!-- Mobile overlay -->
+@if (mobileOpen()) {
+  <div class="shell-overlay" (click)="closeMobile()" aria-hidden="true"></div>
+}
+
+<div class="shell" [class.shell--collapsed]="collapsed()">
+  <!-- ─── Sidenav ──────────────────────────────────────────────────────────── -->
+  <aside class="sidenav" [class.sidenav--mobile-open]="mobileOpen()" aria-label="Menú principal">
+    <!-- Brand -->
+    <div class="sidenav__brand">
+      <a routerLink="/home" class="brand-link" (click)="closeMobile()">
+        <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+          <rect width="28" height="28" rx="6" fill="white" fill-opacity="0.15"/>
+          <path d="M7 20 L14 8 L21 20" stroke="white" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="14" cy="15" r="2" fill="white"/>
+        </svg>
+        @if (!collapsed()) {
+          <span class="brand-name">Akine</span>
+        }
+      </a>
+      <button
+        class="collapse-btn"
+        type="button"
+        (click)="toggle()"
+        [attr.aria-label]="collapsed() ? 'Expandir menú' : 'Colapsar menú'"
+      >
+        {{ collapsed() ? '›' : '‹' }}
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidenav__nav">
+      @for (item of visibleNav(); track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="nav-item--active"
+          class="nav-item"
+          [title]="collapsed() ? item.label : ''"
+          (click)="closeMobile()"
+        >
+          <span class="nav-item__icon" aria-hidden="true">{{ item.icon }}</span>
+          @if (!collapsed()) {
+            <span class="nav-item__label">{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <!-- User / perfil -->
+    <div class="sidenav__footer">
+      @if (currentUser(); as user) {
+        <a
+          routerLink="/app/perfil"
+          routerLinkActive="nav-item--active"
+          class="nav-item nav-item--user"
+          [title]="collapsed() ? (user.firstName + ' ' + user.lastName) : ''"
+          (click)="closeMobile()"
+        >
+          <span class="user-avatar" aria-hidden="true">{{ userInitials() }}</span>
+          @if (!collapsed()) {
+            <span class="user-info">
+              <strong>{{ user.firstName }} {{ user.lastName }}</strong>
+              <small>{{ primaryRole() }}</small>
+            </span>
+          }
+        </a>
+      }
+    </div>
+  </aside>
+
+  <!-- ─── Main area ──────────────────────────────────────────────────────── -->
+  <div class="shell-main">
+    <!-- Topbar -->
+    <header class="topbar" role="banner">
+      <!-- Mobile hamburger -->
+      <button
+        class="topbar__hamburger"
+        type="button"
+        (click)="mobileOpen.set(true)"
+        aria-label="Abrir menú"
+      >
+        ☰
+      </button>
+
+      <div class="topbar__brand-mobile">
+        <a routerLink="/home" class="brand-link-mobile">Akine</a>
+      </div>
+
+      <div class="topbar__actions">
+        <button class="btn btn--ghost btn--sm" type="button" (click)="logout()">
+          Cerrar sesión
+        </button>
+      </div>
+    </header>
+
+    <!-- Feature content -->
+    <main class="shell-content" id="main-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

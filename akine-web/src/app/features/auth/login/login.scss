@@ -1,0 +1,8 @@
+// Styles inherited from global styles.scss (auth-page, auth-card, form-field, btn, etc.)
+// Component-specific additions below
+
+.auth-card {
+  form {
+    margin-top: 0;
+  }
+}

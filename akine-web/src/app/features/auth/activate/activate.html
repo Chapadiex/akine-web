@@ -1,0 +1,97 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <a routerLink="/" class="auth-brand">
+      <span>Akine</span>
+    </a>
+
+    @switch (state()) {
+      @case ('activating') {
+        <div class="activate-loading">
+          <span class="spinner spinner--primary spinner--lg"></span>
+          <h2>Activando tu cuenta...</h2>
+          <p>Por favor esperá un momento.</p>
+        </div>
+      }
+
+      @case ('success') {
+        <div class="success-state">
+          <div class="success-icon">✓</div>
+          <h2>¡Cuenta activada!</h2>
+          <p>
+            Tu cuenta fue activada exitosamente. Ya podés iniciar sesión.
+          </p>
+          <a routerLink="/login" class="btn btn--primary">Iniciar sesión</a>
+        </div>
+      }
+
+      @case ('error') {
+        <div class="auth-header">
+          <h1>Enlace inválido</h1>
+          <p>{{ errorMessage() }}</p>
+        </div>
+        <div class="error-actions">
+          <button type="button" class="btn btn--primary btn--full" (click)="showResend()">
+            Reenviar email de activación
+          </button>
+          <a routerLink="/login" class="btn btn--ghost btn--full" style="margin-top: 0.5rem">
+            Volver al inicio de sesión
+          </a>
+        </div>
+      }
+
+      @case ('resend') {
+        <div class="auth-header">
+          <h1>Reenviar activación</h1>
+          <p>Ingresá tu email y te enviamos un nuevo enlace de activación.</p>
+        </div>
+
+        <form [formGroup]="resendForm" (ngSubmit)="submitResend()" novalidate>
+          <div class="form-field">
+            <label for="resend-email">Email</label>
+            <input
+              id="resend-email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              placeholder="tu@email.com"
+            />
+            @if (resendEmail.touched && resendEmail.hasError('required')) {
+              <span class="field-error" role="alert">El email es requerido</span>
+            } @else if (resendEmail.touched && resendEmail.hasError('email')) {
+              <span class="field-error" role="alert">Ingresá un email válido</span>
+            }
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn--primary btn--full"
+            [disabled]="loading()"
+          >
+            @if (loading()) {
+              <span class="spinner"></span>
+              Enviando...
+            } @else {
+              Enviar enlace
+            }
+          </button>
+        </form>
+
+        <p class="auth-footer">
+          <a routerLink="/login" class="link">Volver al inicio de sesión</a>
+        </p>
+      }
+
+      @case ('resend-success') {
+        <div class="success-state">
+          <div class="success-icon">✉</div>
+          <h2>¡Email enviado!</h2>
+          <p>
+            Si tu email está registrado, vas a recibir un nuevo enlace
+            de activación en breve.
+          </p>
+          <a routerLink="/login" class="btn btn--primary">Ir al inicio de sesión</a>
+        </div>
+      }
+    }
+  </div>
+</div>

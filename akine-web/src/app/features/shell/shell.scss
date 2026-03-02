@@ -1,0 +1,279 @@
+// ─── Layout variables ──────────────────────────────────────────────────────
+$sidenav-width: 224px;
+$sidenav-collapsed: 64px;
+$topbar-height: 52px;
+$sidenav-bg: #0f172a;
+$sidenav-text: #94a3b8;
+$sidenav-text-active: #f1f5f9;
+$sidenav-active-bg: rgb(255 255 255 / 0.1);
+$sidenav-hover-bg: rgb(255 255 255 / 0.06);
+
+// ─── Shell wrapper ─────────────────────────────────────────────────────────
+.shell {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.shell-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.4);
+  z-index: 99;
+  display: none;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+}
+
+// ─── Sidenav ───────────────────────────────────────────────────────────────
+.sidenav {
+  width: $sidenav-width;
+  min-height: 100vh;
+  background: $sidenav-bg;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  transition: width 0.2s ease;
+  z-index: 100;
+
+  .shell--collapsed & {
+    width: $sidenav-collapsed;
+  }
+
+  @media (max-width: 768px) {
+    position: fixed;
+    left: -$sidenav-width;
+    width: $sidenav-width !important;
+    transition: left 0.25s ease;
+    box-shadow: var(--shadow-lg);
+
+    &--mobile-open {
+      left: 0;
+    }
+  }
+
+  // ─── Brand ───────────────────────────────────────────────────────────────
+  &__brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    min-height: $topbar-height;
+    flex-shrink: 0;
+  }
+
+  // ─── Nav items ───────────────────────────────────────────────────────────
+  &__nav {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  // ─── Footer / user ───────────────────────────────────────────────────────
+  &__footer {
+    padding: 0.5rem;
+    border-top: 1px solid rgb(255 255 255 / 0.08);
+    flex-shrink: 0;
+  }
+}
+
+// ─── Brand link ────────────────────────────────────────────────────────────
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.brand-name {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  color: $sidenav-text;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: white;
+    background: $sidenav-hover-bg;
+  }
+}
+
+// ─── Nav item ──────────────────────────────────────────────────────────────
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius);
+  color: $sidenav-text;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: $sidenav-hover-bg;
+    color: $sidenav-text-active;
+  }
+
+  &--active {
+    background: $sidenav-active-bg;
+    color: $sidenav-text-active;
+  }
+
+  &__icon {
+    font-size: 1.125rem;
+    flex-shrink: 0;
+    width: 1.25rem;
+    text-align: center;
+  }
+
+  &__label {
+    flex: 1;
+  }
+
+  // User variant
+  &--user {
+    padding: 0.5rem 0.625rem;
+
+    &.nav-item--active {
+      background: $sidenav-hover-bg;
+    }
+  }
+}
+
+// ─── User avatar & info ────────────────────────────────────────────────────
+.user-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  strong {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $sidenav-text-active;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  small {
+    font-size: 0.75rem;
+    color: $sidenav-text;
+    white-space: nowrap;
+  }
+}
+
+// ─── Main area ─────────────────────────────────────────────────────────────
+.shell-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+// ─── Topbar ────────────────────────────────────────────────────────────────
+.topbar {
+  height: $topbar-height;
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  &__hamburger {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--text);
+    padding: 0.25rem;
+    border-radius: var(--radius);
+
+    @media (max-width: 768px) {
+      display: block;
+    }
+  }
+
+  &__brand-mobile {
+    display: none;
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: -0.04em;
+
+    @media (max-width: 768px) {
+      display: block;
+    }
+  }
+
+  &__actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+}
+
+.brand-link-mobile {
+  text-decoration: none;
+  color: inherit;
+}
+
+// ─── Feature content ───────────────────────────────────────────────────────
+.shell-content {
+  flex: 1;
+  padding: 2rem 2.5rem;
+  background: var(--bg);
+  overflow-y: auto;
+
+  @media (max-width: 640px) {
+    padding: 1.25rem 1rem;
+  }
+}
