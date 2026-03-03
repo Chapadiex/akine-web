@@ -9,7 +9,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog';
+import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { ProfesionalForm } from '../../components/profesional-form/profesional-form';
 import { Profesional, ProfesionalRequest } from '../../models/consultorio.models';
 import { ProfesionalService } from '../../services/profesional.service';

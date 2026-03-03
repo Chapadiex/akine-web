@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { HorarioForm } from '../../components/horario-form/horario-form';
+import { HorarioForm, HorarioFormValue } from '../../components/horario-form/horario-form';
 import { ConsultorioHorario, DayOfWeek, DIAS_SEMANA, HorarioRequest } from '../../models/agenda.models';
 import { HorarioService } from '../../services/horario.service';
 
@@ -13,7 +15,7 @@ import { HorarioService } from '../../services/horario.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sub-header">
-      <span class="sub-count">{{ items().length }} dia(s) configurado(s)</span>
+      <span class="sub-count">{{ daysConfiguredCount() }} dia(s) configurado(s)</span>
       <button class="btn-primary" (click)="showForm.set(true)">+ Configurar dia</button>
     </div>
 
@@ -24,12 +26,12 @@ import { HorarioService } from '../../services/horario.service';
         <table>
           <thead><tr><th>Dia</th><th>Apertura</th><th>Cierre</th><th>Acciones</th></tr></thead>
           <tbody>
-            @for (h of items(); track h.id) {
+            @for (h of sortedItems(); track h.id) {
               <tr>
                 <td>{{ diaLabel(h.diaSemana) }}</td>
                 <td>{{ h.horaApertura }}</td>
                 <td>{{ h.horaCierre }}</td>
-                <td><button class="btn-icon" (click)="remove(h.diaSemana)">Quitar</button></td>
+                <td><button class="btn-icon" (click)="remove(h.id, h.diaSemana)">Quitar</button></td>
               </tr>
             }
           </tbody>
@@ -60,6 +62,8 @@ export class HorariosListPage implements OnInit {
   private errMap = inject(ErrorMapperService);
 
   items = signal<ConsultorioHorario[]>([]);
+  sortedItems = signal<ConsultorioHorario[]>([]);
+  daysConfiguredCount = signal(0);
   showForm = signal(false);
   private consultorioId = '';
 
@@ -72,24 +76,126 @@ export class HorariosListPage implements OnInit {
     return DIAS_SEMANA.find((d) => d.key === day)?.label ?? day;
   }
 
-  onSave(req: HorarioRequest): void {
-    this.svc.set(this.consultorioId, req.diaSemana, req).subscribe({
-      next: () => { this.toast.success('Horario guardado'); this.showForm.set(false); this.load(); },
-      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+  onSave(req: HorarioFormValue): void {
+    const targets = this.resolveTargetDays(req.diaSeleccion);
+    const payloads: HorarioRequest[] = targets.map((d) => ({
+      diaSemana: d,
+      horaApertura: req.horaApertura,
+      horaCierre: req.horaCierre,
+    }));
+
+    if (this.hasOverlapWithExisting(payloads)) {
+      this.toast.error('Hay superposicion con horarios existentes. No se guardo ningun dia.');
+      return;
+    }
+
+    this.svc.createBatch(this.consultorioId, payloads).subscribe({
+      next: () => {
+        this.toast.success('Horario guardado');
+        this.showForm.set(false);
+        this.load();
+      },
+      error: (err) => {
+        const httpErr = err as HttpErrorResponse;
+        if (httpErr.status === 404 || httpErr.status === 405) {
+          this.saveWithLegacyEndpoints(payloads);
+          return;
+        }
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
   }
 
-  remove(day: DayOfWeek): void {
-    this.svc.delete(this.consultorioId, day).subscribe({
+  remove(horarioId: string, diaSemana: DayOfWeek): void {
+    this.svc.deleteById(this.consultorioId, horarioId).subscribe({
       next: () => { this.toast.success('Horario eliminado'); this.load(); },
-      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+      error: (err) => {
+        // Compatibilidad: si backend no expone delete por tramo, intentar borrado por dia.
+        const httpErr = err as HttpErrorResponse;
+        if (httpErr.status === 404 || httpErr.status === 405) {
+          this.svc.delete(this.consultorioId, diaSemana).subscribe({
+            next: () => { this.toast.success('Horario eliminado'); this.load(); },
+            error: (fallbackErr) => this.toast.error(this.errMap.toMessage(fallbackErr)),
+          });
+          return;
+        }
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
   }
 
   private load(): void {
     this.svc.list(this.consultorioId).subscribe({
-      next: (data) => this.items.set(data),
+      next: (data) => {
+        this.items.set(data);
+        this.sortedItems.set(this.sortByDayAndStart(data));
+        this.daysConfiguredCount.set(new Set(data.map((d) => d.diaSemana)).size);
+      },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
+  }
+
+  private resolveTargetDays(day: HorarioFormValue['diaSeleccion']): DayOfWeek[] {
+    if (day === 'MONDAY_TO_FRIDAY') {
+      return ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+    }
+    if (day === 'MONDAY_TO_SATURDAY') {
+      return ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    }
+    return [day];
+  }
+
+  private sortByDayAndStart(items: ConsultorioHorario[]): ConsultorioHorario[] {
+    const dayOrder = new Map<DayOfWeek, number>(DIAS_SEMANA.map((d, idx) => [d.key, idx]));
+    return [...items].sort((a, b) => {
+      const dayCmp = (dayOrder.get(a.diaSemana) ?? 0) - (dayOrder.get(b.diaSemana) ?? 0);
+      if (dayCmp !== 0) return dayCmp;
+      return a.horaApertura.localeCompare(b.horaApertura);
+    });
+  }
+
+  private saveWithLegacyEndpoints(payloads: HorarioRequest[]): void {
+    forkJoin(payloads.map((p) => this.svc.create(this.consultorioId, p))).subscribe({
+      next: () => {
+        this.toast.success('Horario guardado');
+        this.showForm.set(false);
+        this.load();
+      },
+      error: (err) => {
+        const httpErr = err as HttpErrorResponse;
+        if (httpErr.status === 404 || httpErr.status === 405) {
+          forkJoin(payloads.map((p) => this.svc.set(this.consultorioId, p.diaSemana, p))).subscribe({
+            next: () => {
+              this.toast.success('Horario guardado');
+              this.showForm.set(false);
+              this.load();
+            },
+            error: (fallbackErr) => this.toast.error(this.errMap.toMessage(fallbackErr)),
+          });
+          return;
+        }
+        this.toast.error(this.errMap.toMessage(err));
+      },
+    });
+  }
+
+  private hasOverlapWithExisting(payloads: HorarioRequest[]): boolean {
+    const existing = this.items();
+    return payloads.some((p) => {
+      const pStart = this.toMinutes(p.horaApertura);
+      const pEnd = this.toMinutes(p.horaCierre);
+      return existing
+        .filter((e) => e.diaSemana === p.diaSemana)
+        .some((e) => {
+          const eStart = this.toMinutes(e.horaApertura);
+          const eEnd = this.toMinutes(e.horaCierre);
+          return pStart < eEnd && pEnd > eStart;
+        });
+    });
+  }
+
+  private toMinutes(time: string): number {
+    const [hh, mm] = time.split(':').map((v) => Number.parseInt(v, 10));
+    return (hh * 60) + mm;
   }
 }

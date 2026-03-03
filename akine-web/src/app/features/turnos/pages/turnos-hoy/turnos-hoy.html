@@ -1,0 +1,109 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Turnos del d&iacute;a</h1>
+    <div class="header-actions">
+      <div class="filters">
+        <select
+          [ngModel]="selectedConsultorioId()"
+          (ngModelChange)="onConsultorioChange($event)">
+          @for (c of consultorios(); track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+        <input
+          type="date"
+          [ngModel]="selectedDate()"
+          (ngModelChange)="onDateChange($event)" />
+      </div>
+      @if (canCrearTurno()) {
+        <button class="btn-new" [disabled]="!selectedConsultorioId()" (click)="abrirAltaTurno()">
+          Nuevo turno
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (proximoTurno(); as next) {
+    <div class="next-turno-card">
+      <span class="next-label">Pr&oacute;ximo turno</span>
+      <span class="next-time">{{ formatTime(next.fechaHoraInicio) }} - {{ formatTime(next.fechaHoraFin) }}</span>
+      <span class="next-prof">{{ next.profesionalNombre }} {{ next.profesionalApellido }}</span>
+      @if (next.motivoConsulta) {
+        <span class="next-motivo">{{ next.motivoConsulta }}</span>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="loading-msg">Cargando turnos...</p>
+  } @else if (turnos().length === 0) {
+    <p class="empty-msg">No hay turnos para este d&iacute;a.</p>
+  } @else {
+    <div class="turno-list">
+      @for (t of turnos(); track t.id) {
+        <div class="turno-card">
+          <div class="turno-time">
+            <span class="time">{{ formatTime(t.fechaHoraInicio) }}</span>
+            <span class="time-sep">-</span>
+            <span class="time">{{ formatTime(t.fechaHoraFin) }}</span>
+          </div>
+          <div class="turno-info">
+            <span class="turno-prof">{{ t.profesionalNombre }} {{ t.profesionalApellido }}</span>
+            @if (pacienteNombreCompleto(t)) {
+              <span class="turno-paciente">{{ pacienteNombreCompleto(t) }}</span>
+            }
+            @if (t.boxNombre) {
+              <span class="turno-box">{{ t.boxNombre }}</span>
+            }
+            @if (t.motivoConsulta) {
+              <span class="turno-motivo">{{ t.motivoConsulta }}</span>
+            }
+          </div>
+          <span
+            class="badge"
+            [style.background]="estadoColor(t.estado) + '20'"
+            [style.color]="estadoColor(t.estado)">
+            {{ estadoLabel(t.estado) }}
+          </span>
+          <div class="turno-actions">
+            @if (canConfirmar(t)) {
+              <button class="btn-sm btn-success" (click)="startCambiarEstado(t, 'CONFIRMADO', 'Confirmar')">Confirmar</button>
+            }
+            @if (canSalaEspera(t)) {
+              <button class="btn-sm btn-orange" (click)="startCambiarEstado(t, 'EN_ESPERA', 'Sala de espera')">Sala de espera</button>
+            }
+            @if (canIniciar(t)) {
+              <button class="btn-sm btn-primary" (click)="startCambiarEstado(t, 'EN_CURSO', 'Iniciar')">Iniciar</button>
+            }
+            @if (canCompletar(t)) {
+              <button class="btn-sm btn-success" (click)="startCambiarEstado(t, 'COMPLETADO', 'Completar')">Completar</button>
+            }
+            @if (canCancelar(t)) {
+              <button class="btn-sm btn-danger" (click)="startCambiarEstado(t, 'CANCELADO', 'Cancelar')">Cancelar</button>
+            }
+            @if (canMarcarAusente(t)) {
+              <button class="btn-sm btn-warn" (click)="startCambiarEstado(t, 'AUSENTE', 'Marcar ausente')">Ausente</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (confirmAction(); as action) {
+  <app-confirm-dialog
+    [title]="action.label + ' turno'"
+    [message]="'¿' + action.label + ' el turno de ' + action.turno.profesionalNombre + ' ' + action.turno.profesionalApellido + ' a las ' + formatTime(action.turno.fechaHoraInicio) + '?'"
+    (confirmed)="confirmarCambioEstado()"
+    (cancelled)="confirmAction.set(null)"
+  />
+}
+
+@if (showCreateDialog()) {
+  <app-turno-dialog
+    [consultorioId]="selectedConsultorioId()"
+    (saved)="onTurnoCreado()"
+    (cancelled)="showCreateDialog.set(false)"
+  />
+}

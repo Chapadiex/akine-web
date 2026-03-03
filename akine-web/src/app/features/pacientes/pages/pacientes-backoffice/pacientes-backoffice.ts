@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
@@ -33,6 +33,10 @@ import { PacienteService } from '../../services/paciente.service';
 
       @if (consultorioId() && searchedQuery() && items().length === 0) {
         <div class="empty">No se encontraron pacientes para "{{ searchedQuery() }}".</div>
+      }
+
+      @if (consultorioId() && !searchedQuery() && !loading() && items().length === 0) {
+        <div class="empty">No hay pacientes cargados para este consultorio.</div>
       }
 
       @if (items().length > 0) {
@@ -152,21 +156,44 @@ export class PacientesBackofficePage {
   readonly items = signal<PacienteSearchResult[]>([]);
   readonly prefillDni = signal('');
   readonly showAlta = signal(false);
+  readonly loading = signal(false);
+
+  constructor() {
+    effect(() => {
+      const cid = this.consultorioId();
+      this.searchedQuery.set('');
+      if (!cid) {
+        this.items.set([]);
+        return;
+      }
+      this.loadAll();
+    });
+  }
 
   buscar(query: string): void {
     if (!this.consultorioId()) {
       this.toast.error('Selecciona un consultorio');
       return;
     }
-    this.searchedQuery.set(query);
+    const normalized = query.trim();
+    this.searchedQuery.set(normalized);
+    if (!normalized) {
+      this.loadAll();
+      return;
+    }
     this.items.set([]);
+    this.loading.set(true);
 
-    const isDni = /^[0-9]{7,10}$/.test(query);
-    this.pacienteSvc.search(this.consultorioId(), isDni ? query : undefined, isDni ? undefined : query).subscribe({
+    const isDni = /^[0-9]{7,10}$/.test(normalized);
+    this.pacienteSvc.search(this.consultorioId(), isDni ? normalized : undefined, isDni ? undefined : normalized).subscribe({
       next: (results) => {
         this.items.set(results);
+        this.loading.set(false);
       },
-      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+      error: (err) => {
+        this.loading.set(false);
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
   }
 
@@ -218,6 +245,22 @@ export class PacientesBackofficePage {
         );
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
+    });
+  }
+
+  private loadAll(): void {
+    const cid = this.consultorioId();
+    if (!cid) return;
+    this.loading.set(true);
+    this.pacienteSvc.list(cid).subscribe({
+      next: (results) => {
+        this.items.set(results);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
   }
 }

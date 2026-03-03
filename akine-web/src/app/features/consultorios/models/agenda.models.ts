@@ -34,6 +34,14 @@ export interface HorarioRequest {
   horaCierre: string;
 }
 
+export type HorarioDiaSeleccion = DayOfWeek | 'MONDAY_TO_FRIDAY' | 'MONDAY_TO_SATURDAY';
+
+export const HORARIO_DIA_OPTIONS: { key: HorarioDiaSeleccion; label: string }[] = [
+  ...DIAS_SEMANA,
+  { key: 'MONDAY_TO_FRIDAY', label: 'Lunes a Viernes' },
+  { key: 'MONDAY_TO_SATURDAY', label: 'Lunes a Sabado' },
+];
+
 export interface ConsultorioDuracion {
   id: string;
   consultorioId: string;

@@ -1,0 +1,30 @@
+<div class="agenda-page">
+  <div class="agenda-filters">
+    <app-turno-filters (filtersChanged)="onFiltersChanged($event)" />
+  </div>
+
+  <div class="agenda-body">
+    <div class="calendar-wrap" [class.with-detail]="selectedTurno()">
+      <full-calendar #calendar [options]="calendarOptions" />
+    </div>
+
+    @if (selectedTurno(); as turno) {
+      <div class="detail-sidebar">
+        <app-turno-detail
+          [turno]="turno"
+          (estadoCambiado)="onEstadoCambiado($event)"
+          (closed)="selectedTurno.set(null)"
+        />
+      </div>
+    }
+  </div>
+</div>
+
+@if (showDialog()) {
+  <app-turno-dialog
+    [consultorioId]="getConsultorioId()"
+    [prefilledStart]="dialogStart()"
+    (saved)="onTurnoSaved($event)"
+    (cancelled)="showDialog.set(false)"
+  />
+}

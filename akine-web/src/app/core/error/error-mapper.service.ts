@@ -18,8 +18,10 @@ export class ErrorMapperService {
     }
 
     // Backend custom format: { code, message, details? }
-    const body = err.error as Partial<ApiError>;
+    const body = err.error as Partial<ApiError> & { detail?: string; title?: string };
     if (body?.message) return body.message;
+    if (body?.detail) return body.detail;
+    if (body?.title) return body.title;
 
     return this.byStatus(err.status);
   }

@@ -57,6 +57,8 @@ export const routes: Routes = [
         path: 'turnos',
         loadComponent: () =>
           import('./features/turnos/turnos').then((m) => m.Turnos),
+        loadChildren: () =>
+          import('./features/turnos/turnos.routes').then((m) => m.TURNO_ROUTES),
       },
       {
         path: 'pacientes',

@@ -1,0 +1,230 @@
+.page {
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+
+  select, input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    background: var(--white);
+  }
+}
+
+.btn-new {
+  padding: 0.5rem 0.85rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-new:hover {
+  background: var(--primary-hover);
+}
+
+.btn-new:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.next-turno-card {
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.next-label {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.next-time {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.next-prof {
+  font-weight: 600;
+}
+
+.next-motivo {
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+.loading-msg, .empty-msg {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.turno-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.turno-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.turno-time {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 100px;
+
+  .time {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .time-sep {
+    color: var(--text-muted);
+  }
+}
+
+.turno-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 140px;
+}
+
+.turno-prof {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.turno-box {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.turno-motivo {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.turno-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-success {
+  background: var(--success-bg, #dcfce7);
+  color: var(--success, #16a34a);
+}
+
+.btn-success:hover {
+  opacity: 0.85;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-danger {
+  background: var(--error-bg, #fef2f2);
+  color: var(--error, #dc2626);
+}
+
+.btn-danger:hover {
+  opacity: 0.85;
+}
+
+.btn-warn {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.btn-warn:hover {
+  opacity: 0.85;
+}
+
+.btn-orange {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.btn-orange:hover {
+  opacity: 0.85;
+}
+
+.turno-paciente {
+  font-size: 0.85rem;
+  color: var(--primary);
+  font-weight: 500;
+}

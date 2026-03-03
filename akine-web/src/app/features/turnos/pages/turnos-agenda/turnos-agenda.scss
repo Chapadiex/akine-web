@@ -1,0 +1,80 @@
+.agenda-page {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+.agenda-filters {
+  padding: 0.5rem 0;
+}
+
+.agenda-body {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.calendar-wrap {
+  flex: 1;
+  min-width: 0;
+
+  &.with-detail {
+    flex: 3;
+  }
+}
+
+.detail-sidebar {
+  flex: 1;
+  min-width: 280px;
+  max-width: 360px;
+}
+
+// FullCalendar overrides
+:host ::ng-deep {
+  .fc {
+    font-family: inherit;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .fc .fc-button {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .fc .fc-button-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .fc .fc-button-primary:not(:disabled).fc-button-active,
+  .fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+  }
+
+  .fc-event {
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .fc .fc-timegrid-slot {
+    height: 2rem;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .fc .fc-now-indicator-line {
+    border-color: var(--error, #dc2626);
+  }
+}

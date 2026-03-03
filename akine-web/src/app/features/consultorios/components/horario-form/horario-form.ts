@@ -1,6 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DayOfWeek, DIAS_SEMANA, HorarioRequest } from '../../models/agenda.models';
+import {
+  HORARIO_DIA_OPTIONS,
+  HorarioDiaSeleccion,
+} from '../../models/agenda.models';
+
+export interface HorarioFormValue {
+  diaSeleccion: HorarioDiaSeleccion;
+  horaApertura: string;
+  horaCierre: string;
+}
 
 @Component({
   selector: 'app-horario-form',
@@ -14,7 +23,7 @@ import { DayOfWeek, DIAS_SEMANA, HorarioRequest } from '../../models/agenda.mode
         <form [formGroup]="form" (ngSubmit)="submit()">
           <div class="field">
             <label>Dia</label>
-            <select formControlName="diaSemana">
+            <select formControlName="diaSeleccion">
               @for (d of dias; track d.key) {
                 <option [value]="d.key">{{ d.label }}</option>
               }
@@ -48,14 +57,14 @@ import { DayOfWeek, DIAS_SEMANA, HorarioRequest } from '../../models/agenda.mode
   `],
 })
 export class HorarioForm {
-  saved = output<HorarioRequest>();
+  saved = output<HorarioFormValue>();
   cancelled = output<void>();
 
   private fb = inject(FormBuilder);
-  dias = DIAS_SEMANA;
+  dias = HORARIO_DIA_OPTIONS;
 
   form = this.fb.nonNullable.group({
-    diaSemana: ['MONDAY' as DayOfWeek, Validators.required],
+    diaSeleccion: ['MONDAY' as HorarioDiaSeleccion, Validators.required],
     horaApertura: ['', Validators.required],
     horaCierre: ['', Validators.required],
   });

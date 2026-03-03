@@ -16,7 +16,19 @@ export class HorarioService {
     return this.api.put<ConsultorioHorario>(API.consultorios.horarioDia(consultorioId, diaSemana), req);
   }
 
+  create(consultorioId: string, req: HorarioRequest): Observable<ConsultorioHorario> {
+    return this.api.post<ConsultorioHorario>(API.consultorios.horarios(consultorioId), req);
+  }
+
+  createBatch(consultorioId: string, requests: HorarioRequest[]): Observable<ConsultorioHorario[]> {
+    return this.api.post<ConsultorioHorario[]>(API.consultorios.horariosBatch(consultorioId), requests);
+  }
+
   delete(consultorioId: string, diaSemana: DayOfWeek): Observable<void> {
     return this.api.delete<void>(API.consultorios.horarioDia(consultorioId, diaSemana));
+  }
+
+  deleteById(consultorioId: string, horarioId: string): Observable<void> {
+    return this.api.delete<void>(API.consultorios.horarioTramoById(consultorioId, horarioId));
   }
 }

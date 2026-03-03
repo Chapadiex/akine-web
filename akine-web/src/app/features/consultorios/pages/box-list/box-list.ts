@@ -11,7 +11,7 @@ import { ErrorMapperService } from '../../../../core/error/error-mapper.service'
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { BoxCapacidadForm, BoxCapacidadPayload } from '../../components/box-capacidad-form/box-capacidad-form';
 import { BoxForm } from '../../components/box-form/box-form';
-import { ConfirmDialog } from '../../components/confirm-dialog/confirm-dialog';
+import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { Box, BoxRequest } from '../../models/consultorio.models';
 import { BoxService } from '../../services/box.service';
 

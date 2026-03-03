@@ -34,6 +34,7 @@ export const API = {
   pacientes: {
     me: '/api/v1/pacientes/me',
     create: (consultorioId: string) => `/api/v1/pacientes?consultorioId=${consultorioId}`,
+    list: (consultorioId: string) => `/api/v1/pacientes?consultorioId=${consultorioId}`,
     byId: (id: string, consultorioId: string) => `/api/v1/pacientes/${id}?consultorioId=${consultorioId}`,
     search: (consultorioId: string, dni?: string, q?: string) => {
       const params = new URLSearchParams({ consultorioId });
@@ -53,7 +54,9 @@ export const API = {
     profesionales:   (cid: string) => `/api/v1/consultorios/${cid}/profesionales`,
     profesionalById: (cid: string, id: string) => `/api/v1/consultorios/${cid}/profesionales/${id}`,
     horarios:           (cid: string) => `/api/v1/consultorios/${cid}/horarios`,
+    horariosBatch:      (cid: string) => `/api/v1/consultorios/${cid}/horarios/batch`,
     horarioDia:         (cid: string, dia: string) => `/api/v1/consultorios/${cid}/horarios/${dia}`,
+    horarioTramoById:   (cid: string, id: string) => `/api/v1/consultorios/${cid}/horarios/tramos/${id}`,
     duraciones:         (cid: string) => `/api/v1/consultorios/${cid}/duraciones`,
     duracionMin:        (cid: string, min: number) => `/api/v1/consultorios/${cid}/duraciones/${min}`,
     asignaciones:       (cid: string) => `/api/v1/consultorios/${cid}/asignaciones`,
@@ -61,5 +64,18 @@ export const API = {
     disponibilidad:     (cid: string, profId: string) => `/api/v1/consultorios/${cid}/profesionales/${profId}/disponibilidad`,
     disponibilidadById: (cid: string, profId: string, id: string) => `/api/v1/consultorios/${cid}/profesionales/${profId}/disponibilidad/${id}`,
     boxCapacidad:       (cid: string, boxId: string) => `/api/v1/consultorios/${cid}/boxes/${boxId}/capacidad`,
+  },
+  turnos: {
+    list:           (cid: string) => `/api/v1/consultorios/${cid}/turnos`,
+    create:         (cid: string) => `/api/v1/consultorios/${cid}/turnos`,
+    reprogramar:    (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/reprogramar`,
+    cambiarEstado:  (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/estado`,
+    disponibilidad: (cid: string) => `/api/v1/consultorios/${cid}/turnos/disponibilidad`,
+    historial:      (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/historial`,
+  },
+  feriados: {
+    list:   (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
+    create: (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
+    delete: (cid: string, id: string) => `/api/v1/consultorios/${cid}/feriados/${id}`,
   },
 } as const;

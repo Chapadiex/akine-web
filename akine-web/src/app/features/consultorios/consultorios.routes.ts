@@ -42,6 +42,11 @@ export const CONSULTORIO_ROUTES: Routes = [
         loadComponent: () =>
           import('./pages/disponibilidad-list/disponibilidad-list').then((m) => m.DisponibilidadListPage),
       },
+      {
+        path: 'feriados',
+        loadComponent: () =>
+          import('./pages/feriados-list/feriados-list').then((m) => m.FeriadosListPage),
+      },
     ],
   },
 ];

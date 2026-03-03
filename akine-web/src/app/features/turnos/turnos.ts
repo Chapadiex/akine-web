@@ -1,17 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ComingSoon } from '../../shared/ui/coming-soon/coming-soon';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-turnos',
   standalone: true,
-  imports: [ComingSoon],
+  imports: [RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <app-coming-soon
-      icon="📅"
-      title="Turnos"
-      description="Agenda visual, confirmación automática, recordatorios y manejo de cancelaciones."
-    />
-  `,
+  template: `<router-outlet />`,
 })
 export class Turnos {}
