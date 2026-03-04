@@ -25,6 +25,9 @@ export const API = {
     rejectActivation: '/api/v1/auth/reject-activation',
     resendActivation: '/api/v1/auth/resend-activation',
   },
+  subscriptions: {
+    create: '/api/v1/subscriptions',
+  },
   users: {
     me: '/api/v1/users/me',
     mePassword: '/api/v1/users/me/password',
@@ -32,6 +35,11 @@ export const API = {
   admin: {
     users: '/api/v1/admin/users',
     userRoles: (id: string) => `/api/v1/admin/users/${id}/roles`,
+    subscriptions: '/api/v1/admin/subscriptions',
+    approveSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/approve`,
+    rejectSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/reject`,
+    suspendSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/suspend`,
+    reactivateSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/reactivate`,
   },
   pacientes: {
     me: '/api/v1/pacientes/me',

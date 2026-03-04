@@ -12,6 +12,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/landing/landing').then((m) => m.Landing),
   },
+  {
+    path: 'suscribirme',
+    canActivate: [alreadyAuthGuard],
+    loadComponent: () =>
+      import('./features/subscriptions/pages/subscription-signup/subscription-signup').then(
+        (m) => m.SubscriptionSignupPage,
+      ),
+  },
 
   // ─── Auth (público, bloqueado si ya autenticado) ───────────────────────────
   {
@@ -22,9 +30,8 @@ export const routes: Routes = [
   },
   {
     path: 'register',
-    canActivate: [alreadyAuthGuard],
-    loadComponent: () =>
-      import('./features/auth/register/register').then((m) => m.Register),
+    redirectTo: 'suscribirme',
+    pathMatch: 'full',
   },
   {
     path: 'activate',
@@ -143,6 +150,15 @@ export const routes: Routes = [
         path: 'perfil',
         loadComponent: () =>
           import('./features/perfil/perfil').then((m) => m.Perfil),
+      },
+      {
+        path: 'admin/suscripciones',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () =>
+          import('./features/subscriptions/pages/admin-subscriptions/admin-subscriptions').then(
+            (m) => m.AdminSubscriptionsPage,
+          ),
       },
     ],
   },

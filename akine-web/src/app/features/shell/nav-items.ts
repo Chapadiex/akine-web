@@ -98,6 +98,12 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
       },
       {
+        path: '/app/admin/suscripciones',
+        label: 'Suscripciones SaaS',
+        icon: 'SA',
+        roles: ['ADMIN'],
+      },
+      {
         path: '/app/profesionales',
         label: 'Equipo',
         icon: 'EQ',

@@ -1,0 +1,187 @@
+<section class="subscription-page">
+  <div class="subscription-page__background" aria-hidden="true"></div>
+
+  <div class="subscription-card">
+    <header class="subscription-card__header">
+      <a routerLink="/home" class="subscription-card__brand">AKINE SaaS</a>
+      <h1>Suscripcion SaaS</h1>
+      <p>
+        Completa el alta del dueno, la empresa y el consultorio base para enviar
+        tu solicitud de aprobacion.
+      </p>
+    </header>
+
+    @if (successMessage(); as success) {
+      <div class="alert alert--success">
+        <strong>Solicitud enviada.</strong>
+        <p>{{ success }}</p>
+      </div>
+
+      <div class="actions">
+        <a class="btn btn--primary" routerLink="/login">Ir a login</a>
+        <a class="btn btn--ghost" routerLink="/home">Volver al inicio</a>
+      </div>
+    } @else {
+      @if (errorMessage(); as error) {
+        <div class="alert alert--error">{{ error }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <section class="form-block" formGroupName="owner">
+          <h2>Datos del dueno de la suscripcion</h2>
+          <div class="form-grid">
+            <label class="field">
+              Nombre
+              <input type="text" formControlName="firstName" [disabled]="disabled()" />
+              @if (hasError('owner.firstName', 'required')) {
+                <span class="field-error">El nombre es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field">
+              Apellido
+              <input type="text" formControlName="lastName" [disabled]="disabled()" />
+              @if (hasError('owner.lastName', 'required')) {
+                <span class="field-error">El apellido es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field">
+              DNI / CUIT
+              <input type="text" formControlName="documentoFiscal" [disabled]="disabled()" />
+              @if (hasError('owner.documentoFiscal', 'required')) {
+                <span class="field-error">El documento fiscal es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field">
+              Telefono
+              <input type="text" formControlName="phone" [disabled]="disabled()" />
+              @if (hasError('owner.phone', 'required')) {
+                <span class="field-error">El telefono es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field field--wide">
+              Email
+              <input type="email" formControlName="email" [disabled]="disabled()" />
+              @if (hasError('owner.email', 'required')) {
+                <span class="field-error">El email es obligatorio.</span>
+              }
+              @if (hasError('owner.email', 'email')) {
+                <span class="field-error">Ingresa un email valido.</span>
+              }
+            </label>
+
+            <label class="field field--wide">
+              Contrasena
+              <input type="password" formControlName="password" [disabled]="disabled()" />
+              @if (hasError('owner.password', 'required')) {
+                <span class="field-error">La contrasena es obligatoria.</span>
+              }
+              @if (hasError('owner.password', 'minlength')) {
+                <span class="field-error">Debe tener al menos 8 caracteres.</span>
+              }
+            </label>
+          </div>
+        </section>
+
+        <section class="form-block" formGroupName="company">
+          <h2>Datos de la empresa</h2>
+          <div class="form-grid">
+            <label class="field field--wide">
+              Nombre de la empresa
+              <input type="text" formControlName="name" [disabled]="disabled()" />
+              @if (hasError('company.name', 'required')) {
+                <span class="field-error">El nombre de la empresa es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field">
+              CUIT
+              <input type="text" formControlName="cuit" [disabled]="disabled()" />
+              @if (hasError('company.cuit', 'required')) {
+                <span class="field-error">El CUIT es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field">
+              Ciudad
+              <input type="text" formControlName="city" [disabled]="disabled()" />
+              @if (hasError('company.city', 'required')) {
+                <span class="field-error">La ciudad es obligatoria.</span>
+              }
+            </label>
+
+            <label class="field field--wide">
+              Direccion
+              <input type="text" formControlName="address" [disabled]="disabled()" />
+              @if (hasError('company.address', 'required')) {
+                <span class="field-error">La direccion es obligatoria.</span>
+              }
+            </label>
+
+            <label class="field field--wide">
+              Provincia
+              <input type="text" formControlName="province" [disabled]="disabled()" />
+              @if (hasError('company.province', 'required')) {
+                <span class="field-error">La provincia es obligatoria.</span>
+              }
+            </label>
+          </div>
+        </section>
+
+        <section class="form-block" formGroupName="baseConsultorio">
+          <h2>Consultorio base</h2>
+          <div class="form-grid">
+            <label class="field field--wide">
+              Nombre del consultorio
+              <input type="text" formControlName="name" [disabled]="disabled()" />
+              @if (hasError('baseConsultorio.name', 'required')) {
+                <span class="field-error">El nombre del consultorio es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field field--wide">
+              Direccion
+              <input type="text" formControlName="address" [disabled]="disabled()" />
+              @if (hasError('baseConsultorio.address', 'required')) {
+                <span class="field-error">La direccion es obligatoria.</span>
+              }
+            </label>
+
+            <label class="field">
+              Telefono
+              <input type="text" formControlName="phone" [disabled]="disabled()" />
+              @if (hasError('baseConsultorio.phone', 'required')) {
+                <span class="field-error">El telefono es obligatorio.</span>
+              }
+            </label>
+
+            <label class="field">
+              Email de contacto
+              <input type="email" formControlName="email" [disabled]="disabled()" />
+              @if (hasError('baseConsultorio.email', 'required')) {
+                <span class="field-error">El email de contacto es obligatorio.</span>
+              }
+              @if (hasError('baseConsultorio.email', 'email')) {
+                <span class="field-error">Ingresa un email valido.</span>
+              }
+            </label>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button type="submit" class="btn btn--primary" [disabled]="disabled()">
+            @if (loading()) {
+              Enviando...
+            } @else {
+              Suscribirme
+            }
+          </button>
+          <a class="btn btn--ghost" routerLink="/home">Cancelar</a>
+        </div>
+      </form>
+    }
+  </div>
+</section>

@@ -1,0 +1,167 @@
+<section class="admin-subscriptions">
+  <header class="page-header">
+    <p class="eyebrow">SaaS</p>
+    <h1>Administracion de suscripciones</h1>
+    <p>
+      Revisa solicitudes, define vigencia manual y controla aprobaciones por estado.
+    </p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Estados de suscripcion">
+    @for (tab of tabs; track tab.value) {
+      <button
+        type="button"
+        class="tab"
+        [class.tab--active]="activeStatus() === tab.value"
+        (click)="selectStatus(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  @if (errorMessage(); as error) {
+    <div class="alert alert--error">{{ error }}</div>
+  }
+
+  @if (actionError(); as actionErrorText) {
+    <div class="alert alert--error">{{ actionErrorText }}</div>
+  }
+
+  @if (loading()) {
+    <div class="state-card">Cargando suscripciones...</div>
+  } @else if (items().length === 0) {
+    <div class="state-card">No hay suscripciones en este estado.</div>
+  } @else {
+    <div class="subscriptions-grid">
+      @for (item of items(); track item.id) {
+        <article class="subscription-card">
+          <header class="subscription-card__header">
+            <div>
+              <h2>{{ item.company.name }}</h2>
+              <p>{{ item.company.cuit }} - {{ item.company.city }}, {{ item.company.province }}</p>
+            </div>
+            <span class="status-badge status-{{ item.status.toLowerCase() }}">
+              {{ item.status }}
+            </span>
+          </header>
+
+          <div class="info-grid">
+            <div>
+              <h3>Dueno</h3>
+              <p>{{ item.owner.firstName }} {{ item.owner.lastName }}</p>
+              <p>{{ item.owner.email }}</p>
+            </div>
+            <div>
+              <h3>Consultorio base</h3>
+              <p>{{ item.baseConsultorio.name }}</p>
+              <p>{{ item.baseConsultorio.address }}</p>
+            </div>
+            <div>
+              <h3>Solicitud</h3>
+              <p>{{ formatInstant(item.requestedAt) }}</p>
+            </div>
+            <div>
+              <h3>Vigencia</h3>
+              <p>{{ formatDate(item.startDate) }} a {{ formatDate(item.endDate) }}</p>
+            </div>
+            <div>
+              <h3>Revision</h3>
+              <p>{{ formatInstant(item.reviewedAt) }}</p>
+            </div>
+            <div>
+              <h3>Motivo</h3>
+              <p>{{ item.rejectionReason || '-' }}</p>
+            </div>
+          </div>
+
+          @if (item.status === 'PENDING') {
+            <div class="action-row">
+              <button
+                type="button"
+                class="btn btn--primary"
+                (click)="beginApprove(item.id)"
+                [disabled]="isBusy('approve', item.id)"
+              >
+                Aprobar
+              </button>
+
+              <input #rejectReason type="text" placeholder="Motivo rechazo (opcional)" />
+              <button
+                type="button"
+                class="btn btn--outline"
+                (click)="reject(item.id, rejectReason.value)"
+                [disabled]="isBusy('reject', item.id)"
+              >
+                Rechazar
+              </button>
+            </div>
+
+            @if (pendingApproveId() === item.id) {
+              <div class="approve-panel" [formGroup]="approveForm">
+                <label>
+                  Inicio
+                  <input type="date" formControlName="startDate" />
+                </label>
+                <label>
+                  Vencimiento
+                  <input type="date" formControlName="endDate" />
+                </label>
+                <div class="approve-panel__actions">
+                  <button type="button" class="btn btn--primary" (click)="confirmApprove()">
+                    Confirmar aprobacion
+                  </button>
+                  <button type="button" class="btn btn--ghost" (click)="cancelApprove()">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            }
+          }
+
+          @if (item.status === 'ACTIVE') {
+            <div class="action-row">
+              <input #suspendReason type="text" placeholder="Motivo suspension (opcional)" />
+              <button
+                type="button"
+                class="btn btn--outline"
+                (click)="suspend(item.id, suspendReason.value)"
+                [disabled]="isBusy('suspend', item.id)"
+              >
+                Suspender
+              </button>
+            </div>
+          }
+
+          @if (item.status === 'SUSPENDED') {
+            <div class="action-row">
+              <button
+                type="button"
+                class="btn btn--primary"
+                (click)="reactivate(item.id)"
+                [disabled]="isBusy('reactivate', item.id)"
+              >
+                Reactivar
+              </button>
+            </div>
+          }
+        </article>
+      }
+    </div>
+
+    <footer class="pagination">
+      <button type="button" class="btn btn--ghost" (click)="previousPage()" [disabled]="page() === 0">
+        Anterior
+      </button>
+      <span>Pagina {{ page() + 1 }} de {{ totalPages() }} ({{ totalElements() }} resultados)</span>
+      <button
+        type="button"
+        class="btn btn--ghost"
+        (click)="nextPage()"
+        [disabled]="page() + 1 >= totalPages()"
+      >
+        Siguiente
+      </button>
+    </footer>
+  }
+</section>

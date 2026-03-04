@@ -1,13 +1,13 @@
 import {
+  ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   inject,
   signal,
-  ChangeDetectionStrategy,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { ApiError } from '../../../core/auth/models/auth.models';
 
@@ -33,8 +33,13 @@ export class Login {
   readonly loading = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  get email() { return this.form.controls.email; }
-  get password() { return this.form.controls.password; }
+  get email() {
+    return this.form.controls.email;
+  }
+
+  get password() {
+    return this.form.controls.password;
+  }
 
   submit(): void {
     if (this.form.invalid) {
@@ -50,22 +55,44 @@ export class Login {
 
     this.authService.login({ email: email!, password: password! }).subscribe({
       next: () => {
-        const target = this.authService.hasRole('PACIENTE') ? '/app/paciente/alta' : '/app';
+        const target = this.authService.hasRole('PACIENTE')
+          ? '/app/paciente/alta'
+          : '/app';
         void this.router.navigate([target]);
       },
       error: (err: HttpErrorResponse) => {
         this.loading.set(false);
-        const apiErr = err.error as Partial<ApiError>;
-        this.errorMessage.set(
-          apiErr?.message ?? this.defaultErrorMessage(err.status),
-        );
+        this.errorMessage.set(this.resolveErrorMessage(err));
       },
     });
   }
 
+  private resolveErrorMessage(err: HttpErrorResponse): string {
+    const apiErr = err.error as Partial<ApiError> & {
+      detail?: string;
+      title?: string;
+      type?: string;
+    };
+
+    if (
+      err.status === 403 &&
+      (apiErr?.type === 'urn:akine:error:subscription-not-active' ||
+        apiErr?.detail?.toLowerCase().includes('suscripcion'))
+    ) {
+      return 'La suscripcion del consultorio no esta vigente. Contacta al administrador de plataforma.';
+    }
+
+    return (
+      apiErr?.message ??
+      apiErr?.detail ??
+      apiErr?.title ??
+      this.defaultErrorMessage(err.status)
+    );
+  }
+
   private defaultErrorMessage(status: number): string {
-    if (status === 401) return 'Email o contraseña incorrectos.';
-    if (status === 429) return 'Demasiados intentos. Esperá unos minutos.';
-    return 'No pudimos conectar con el servidor. Intentá nuevamente.';
+    if (status === 401) return 'Email o contrasena incorrectos.';
+    if (status === 429) return 'Demasiados intentos. Espera unos minutos.';
+    return 'No pudimos conectar con el servidor. Intenta nuevamente.';
   }
 }
