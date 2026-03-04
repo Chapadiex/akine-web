@@ -1,17 +1,16 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ComingSoon } from '../../shared/ui/coming-soon/coming-soon';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-colaboradores',
+  selector: 'app-colaboradores-redirect',
   standalone: true,
-  imports: [ComingSoon],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <app-coming-soon
-      icon="👤"
-      title="Colaboradores"
-      description="Alta, baja y modificación de profesionales y administrativos del consultorio."
-    />
-  `,
+  template: ``,
 })
-export class Colaboradores {}
+export class Colaboradores {
+  private readonly router = inject(Router);
+
+  constructor() {
+    this.router.navigateByUrl('/app/profesionales');
+  }
+}

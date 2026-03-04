@@ -27,32 +27,42 @@
     </div>
 
     <nav class="sidenav__nav">
-      @for (item of visibleNav(); track item.path) {
-        <div class="nav-group">
-          <a
-            [routerLink]="item.path"
-            routerLinkActive="nav-item--active"
-            class="nav-item"
-            [title]="collapsed() ? item.label : ''"
-            (click)="closeMobile()"
-          >
-            <span class="nav-item__icon" aria-hidden="true">{{ item.icon }}</span>
-            @if (!collapsed()) {
-              <span class="nav-item__label">{{ item.label }}</span>
-            }
-          </a>
+      @for (section of visibleSections(); track section.id) {
+        <div class="nav-section">
+          @if (!collapsed()) {
+            <p class="nav-section__title">{{ section.title }}</p>
+          }
 
-          @if (!collapsed() && visibleChildren(item).length > 0) {
-            <div class="nav-submenu">
-              @for (child of visibleChildren(item); track child.path) {
-                <a
-                  [routerLink]="child.path"
-                  routerLinkActive="nav-subitem--active"
-                  class="nav-subitem"
-                  (click)="closeMobile()"
-                >
-                  {{ child.label }}
-                </a>
+          @for (item of section.items; track item.path + item.label) {
+            <div class="nav-group">
+              <a
+                [routerLink]="item.path"
+                [queryParams]="item.queryParams ?? null"
+                routerLinkActive="nav-item--active"
+                class="nav-item"
+                [title]="collapsed() ? item.label : ''"
+                (click)="closeMobile()"
+              >
+                <span class="nav-item__icon" aria-hidden="true">{{ item.icon }}</span>
+                @if (!collapsed()) {
+                  <span class="nav-item__label">{{ item.label }}</span>
+                }
+              </a>
+
+              @if (!collapsed() && (item.children?.length ?? 0) > 0) {
+                <div class="nav-submenu">
+                  @for (child of item.children; track child.path + child.label) {
+                    <a
+                      [routerLink]="child.path"
+                      [queryParams]="child.queryParams ?? null"
+                      routerLinkActive="nav-subitem--active"
+                      class="nav-subitem"
+                      (click)="closeMobile()"
+                    >
+                      {{ child.label }}
+                    </a>
+                  }
+                </div>
               }
             </div>
           }
@@ -110,6 +120,7 @@
       <div class="topbar__actions">
         @if (consultorios().length > 0) {
           <div class="consultorio-switcher">
+            <span class="consultorio-switcher__icon" aria-hidden="true">🏥</span>
             <label for="consultorioSelect">Consultorio</label>
             <select
               id="consultorioSelect"

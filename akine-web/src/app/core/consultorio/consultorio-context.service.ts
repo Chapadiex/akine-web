@@ -13,10 +13,11 @@ export class ConsultorioContextService {
   );
 
   setConsultorios(items: Consultorio[]): void {
-    this.consultorios.set(items);
+    const activeItems = items.filter((c) => c.status === 'ACTIVE');
+    this.consultorios.set(activeItems);
     const stored = localStorage.getItem(STORAGE_KEY) ?? '';
-    const stillExists = items.some((c) => c.id === stored);
-    const next = stillExists ? stored : items[0]?.id ?? '';
+    const stillExists = activeItems.some((c) => c.id === stored);
+    const next = stillExists ? stored : activeItems[0]?.id ?? '';
     this.setSelectedConsultorioId(next);
   }
 

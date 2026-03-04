@@ -5,7 +5,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
@@ -23,45 +23,47 @@ import { ConsultorioService } from '../../services/consultorio.service';
     <div class="page">
       <div class="page-header">
         <h1 class="page-title">Consultorios</h1>
-        @if (canWrite()) {
+        @if (isAdmin()) {
           <button class="btn-primary" (click)="showForm.set(true)">+ Nuevo</button>
         }
       </div>
 
       @if (loading()) {
         <p class="loading-msg">Cargando...</p>
-      } @else if (items().length === 0) {
+      } @else if (visibleItems().length === 0) {
         <p class="empty-msg">No hay consultorios registrados.</p>
       } @else {
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Nombre</th><th>CUIT</th><th>Teléfono</th>
+                <th>Nombre</th><th>CUIT</th><th>Telefono</th>
                 <th>Email</th><th>Estado</th><th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              @for (c of items(); track c.id) {
+              @for (c of visibleItems(); track c.id) {
                 <tr>
                   <td>
                     <a [routerLink]="['/app/consultorios', c.id]" class="link">{{ c.name }}</a>
                   </td>
-                  <td>{{ c.cuit ?? '—' }}</td>
-                  <td>{{ c.phone ?? '—' }}</td>
-                  <td>{{ c.email ?? '—' }}</td>
+                  <td>{{ c.cuit ?? '-' }}</td>
+                  <td>{{ c.phone ?? '-' }}</td>
+                  <td>{{ c.email ?? '-' }}</td>
                   <td>
                     <span class="badge" [class.badge-active]="c.status === 'ACTIVE'">
                       {{ c.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
                   <td class="actions-cell">
-                    @if (canWrite()) {
-                      <button class="btn-icon" title="Editar" (click)="startEdit(c)">✏️</button>
-                      @if (c.status === 'ACTIVE') {
-                        <button class="btn-icon btn-danger" title="Dar de baja"
-                                (click)="startDelete(c)">🗑️</button>
-                      }
+                    @if (canEdit(c)) {
+                      <button class="btn-icon" title="Editar" (click)="startEdit(c)">Editar</button>
+                    }
+                    @if (isAdmin() && c.status === 'ACTIVE') {
+                      <button class="btn-icon btn-danger" title="Dar de baja" (click)="startDelete(c)">Baja</button>
+                    }
+                    @if (isAdmin() && c.status !== 'ACTIVE') {
+                      <button class="btn-icon btn-success" title="Reactivar" (click)="startActivate(c)">Reactivar</button>
                     }
                   </td>
                 </tr>
@@ -83,9 +85,18 @@ import { ConsultorioService } from '../../services/consultorio.service';
     @if (deleteTarget()) {
       <app-confirm-dialog
         title="Dar de baja consultorio"
-        [message]="'¿Dar de baja ' + deleteTarget()!.name + '? El consultorio quedará inactivo.'"
+        [message]="'�Dar de baja ' + deleteTarget()!.name + '? El consultorio quedar� inactivo.'"
         (confirmed)="confirmDelete()"
         (cancelled)="deleteTarget.set(null)"
+      />
+    }
+
+    @if (activateTarget()) {
+      <app-confirm-dialog
+        title="Reactivar consultorio"
+        [message]="'�Reactivar ' + activateTarget()!.name + '?'"
+        (confirmed)="confirmActivate()"
+        (cancelled)="activateTarget.set(null)"
       />
     }
   `,
@@ -111,26 +122,29 @@ import { ConsultorioService } from '../../services/consultorio.service';
              background: var(--bg); color: var(--text-muted); }
     .badge-active { background: var(--success-bg); color: var(--success); }
     .actions-cell { display: flex; gap: .5rem; }
-    .btn-icon { background: none; border: none; cursor: pointer; font-size: 1rem; padding: .2rem .4rem;
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: .9rem; padding: .2rem .4rem;
                 border-radius: var(--radius); }
     .btn-icon:hover { background: var(--bg); }
     .btn-danger:hover { background: var(--error-bg); }
+    .btn-success:hover { background: var(--success-bg); }
   `],
 })
 export class ConsultorioListPage implements OnInit {
-  private svc     = inject(ConsultorioService);
-  private auth    = inject(AuthService);
-  private toast   = inject(ToastService);
-  private errMap  = inject(ErrorMapperService);
-  private router  = inject(Router);
+  private svc = inject(ConsultorioService);
+  private auth = inject(AuthService);
+  private toast = inject(ToastService);
+  private errMap = inject(ErrorMapperService);
 
-  items       = signal<Consultorio[]>([]);
-  loading     = signal(true);
-  showForm    = signal(false);
-  editTarget  = signal<Consultorio | null>(null);
+  items = signal<Consultorio[]>([]);
+  loading = signal(true);
+  showForm = signal(false);
+  editTarget = signal<Consultorio | null>(null);
   deleteTarget = signal<Consultorio | null>(null);
+  activateTarget = signal<Consultorio | null>(null);
 
-  canWrite = () => this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
+  isAdmin = () => this.auth.hasRole('ADMIN');
+  canEdit = (c: Consultorio) => c.status === 'ACTIVE' && this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
+  visibleItems = () => this.isAdmin() ? this.items() : this.items().filter((c) => c.status === 'ACTIVE');
 
   ngOnInit(): void {
     this.load();
@@ -140,7 +154,7 @@ export class ConsultorioListPage implements OnInit {
     this.loading.set(true);
     this.svc.list().subscribe({
       next: (data) => { this.items.set(data); this.loading.set(false); },
-      error: (err)  => { this.toast.error(this.errMap.toMessage(err)); this.loading.set(false); },
+      error: (err) => { this.toast.error(this.errMap.toMessage(err)); this.loading.set(false); },
     });
   }
 
@@ -174,6 +188,10 @@ export class ConsultorioListPage implements OnInit {
     this.deleteTarget.set(c);
   }
 
+  startActivate(c: Consultorio): void {
+    this.activateTarget.set(c);
+  }
+
   confirmDelete(): void {
     const target = this.deleteTarget();
     if (!target) return;
@@ -184,6 +202,19 @@ export class ConsultorioListPage implements OnInit {
         this.load();
       },
       error: (err) => { this.toast.error(this.errMap.toMessage(err)); this.deleteTarget.set(null); },
+    });
+  }
+
+  confirmActivate(): void {
+    const target = this.activateTarget();
+    if (!target) return;
+    this.svc.activate(target.id).subscribe({
+      next: () => {
+        this.toast.success('Consultorio reactivado');
+        this.activateTarget.set(null);
+        this.load();
+      },
+      error: (err) => { this.toast.error(this.errMap.toMessage(err)); this.activateTarget.set(null); },
     });
   }
 }

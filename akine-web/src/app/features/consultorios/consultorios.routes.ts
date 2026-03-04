@@ -20,7 +20,7 @@ export const CONSULTORIO_ROUTES: Routes = [
       {
         path: 'profesionales',
         loadComponent: () =>
-          import('./pages/profesional-list/profesional-list').then((m) => m.ProfesionalListPage),
+          import('../colaboradores/colaboradores').then((m) => m.Colaboradores),
       },
       {
         path: 'horarios',
@@ -52,6 +52,13 @@ export const CONSULTORIO_ROUTES: Routes = [
         loadComponent: () =>
           import('./pages/antecedentes-catalogo/antecedentes-catalogo').then(
             (m) => m.AntecedentesCatalogoPage,
+          ),
+      },
+      {
+        path: 'especialidades',
+        loadComponent: () =>
+          import('./pages/especialidades-list/especialidades-list').then(
+            (m) => m.EspecialidadesListPage,
           ),
       },
     ],

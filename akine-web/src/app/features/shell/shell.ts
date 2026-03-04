@@ -15,7 +15,7 @@ import { ConsultorioContextService } from '../../core/consultorio/consultorio-co
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { ConsultorioService } from '../consultorios/services/consultorio.service';
-import { NAV_ITEMS, NavItem } from './nav-items';
+import { NAV_SECTIONS, NavItem, NavSection } from './nav-items';
 
 @Component({
   selector: 'app-shell',
@@ -40,26 +40,46 @@ export class Shell implements OnInit {
   readonly selectedConsultorioId = this.consultorioCtx.selectedConsultorioId;
   readonly selectedConsultorio = this.consultorioCtx.selectedConsultorio;
 
-  readonly visibleNav = computed<NavItem[]>(() => {
-    const roles = this.authService.userRoles() as string[];
-    return NAV_ITEMS.filter(
-      (item) =>
-        item.roles.length === 0 || item.roles.some((r) => roles.includes(r)),
-    );
+  readonly visibleSections = computed<NavSection[]>(() => {
+    const roles = this.authService.userRoles() as RoleName[];
+    return NAV_SECTIONS.map((section) => ({
+      ...section,
+      items: this.resolveItems(section.items, roles),
+    })).filter((section) => section.items.length > 0);
   });
 
-  visibleChildren(item: NavItem): NavItem[] {
-    const roles = this.authService.userRoles() as string[];
-    const children = item.children ?? [];
-    const selectedConsultorioId = this.selectedConsultorioId();
-    return children
-      .filter((child) => child.roles.length === 0 || child.roles.some((r) => roles.includes(r)))
-      .map((child) => ({
-        ...child,
-        path: selectedConsultorioId
-          ? child.path.replace(':consultorioId', selectedConsultorioId)
-          : child.path,
-      }));
+  private resolveItems(items: NavItem[], roles: RoleName[]): NavItem[] {
+    const selectedId = this.selectedConsultorioId();
+    return items
+      .filter((item) => this.hasAccess(item, roles))
+      .map((item) => {
+        const children = item.children
+          ? this.resolveItems(item.children, roles)
+          : undefined;
+
+        return {
+          ...item,
+          path: this.resolvePath(item.path, selectedId),
+          ...(children ? { children } : {}),
+        };
+      })
+      .filter((item) => !item.children || item.children.length > 0 || !item.path.includes(':consultorioId'));
+  }
+
+  private hasAccess(item: NavItem, roles: RoleName[]): boolean {
+    return item.roles.length === 0 || item.roles.some((role) => roles.includes(role));
+  }
+
+  private resolvePath(path: string, selectedId: string): string {
+    if (!path.includes(':consultorioId')) {
+      return path;
+    }
+
+    if (!selectedId) {
+      return '/app/consultorios';
+    }
+
+    return path.replaceAll(':consultorioId', selectedId);
   }
 
   readonly userInitials = computed(() => {

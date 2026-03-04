@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   OnInit,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
@@ -29,29 +31,39 @@ import { ConsultorioService } from '../../services/consultorio.service';
             <h1 class="title">{{ consultorio()!.name }}</h1>
             <div class="meta">
               @if (consultorio()!.address) { <span>{{ consultorio()!.address }}</span> }
-              @if (consultorio()!.phone)   { <span>{{ consultorio()!.phone }}</span> }
-              @if (consultorio()!.email)   { <span>{{ consultorio()!.email }}</span> }
+              @if (consultorio()!.phone) { <span>{{ consultorio()!.phone }}</span> }
+              @if (consultorio()!.email) { <span>{{ consultorio()!.email }}</span> }
               <span class="badge" [class.badge-active]="consultorio()!.status === 'ACTIVE'">
                 {{ consultorio()!.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
               </span>
             </div>
           </div>
-          @if (canWrite()) {
+          @if (canEdit()) {
             <button class="btn-edit" (click)="showForm.set(true)">Editar</button>
           }
         </div>
 
-        <nav class="tabs">
-          <a [routerLink]="['boxes']" routerLinkActive="tab-active" class="tab">Boxes</a>
-          <a [routerLink]="['profesionales']" routerLinkActive="tab-active" class="tab">Profesionales</a>
-          <a [routerLink]="['horarios']" routerLinkActive="tab-active" class="tab">Horarios</a>
-          <a [routerLink]="['duraciones']" routerLinkActive="tab-active" class="tab">Duraciones</a>
-          <a [routerLink]="['asignaciones']" routerLinkActive="tab-active" class="tab">Asignaciones</a>
-          <a [routerLink]="['feriados']" routerLinkActive="tab-active" class="tab">Feriados</a>
-          <a [routerLink]="['antecedentes-catalogo']" routerLinkActive="tab-active" class="tab">Antecedentes</a>
-        </nav>
+        @if (consultorio()!.status !== 'ACTIVE') {
+          <div class="inactive-alert">
+            <p>Este consultorio está inactivo. No se puede operar ni editar hasta reactivarlo.</p>
+            @if (isAdmin()) {
+              <button class="btn-reactivate" (click)="reactivate()">Reactivar consultorio</button>
+            }
+          </div>
+        } @else {
+          <nav class="tabs">
+            <a [routerLink]="['boxes']" routerLinkActive="tab-active" class="tab">Boxes</a>
+            <a [routerLink]="['/app/profesionales']" routerLinkActive="tab-active" class="tab">Profesionales</a>
+            <a [routerLink]="['horarios']" routerLinkActive="tab-active" class="tab">Horarios</a>
+            <a [routerLink]="['duraciones']" routerLinkActive="tab-active" class="tab">Duraciones</a>
+            <a [routerLink]="['asignaciones']" routerLinkActive="tab-active" class="tab">Asignaciones</a>
+            <a [routerLink]="['feriados']" routerLinkActive="tab-active" class="tab">Feriados</a>
+            <a [routerLink]="['antecedentes-catalogo']" routerLinkActive="tab-active" class="tab">Antecedentes</a>
+            <a [routerLink]="['especialidades']" routerLinkActive="tab-active" class="tab">Especialidades</a>
+          </nav>
 
-        <router-outlet />
+          <router-outlet />
+        }
       }
     </div>
 
@@ -87,36 +99,87 @@ import { ConsultorioService } from '../../services/consultorio.service';
     }
     .tab:hover { color: var(--text); }
     .tab-active { color: var(--primary); border-bottom-color: var(--primary); }
+    .inactive-alert {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .inactive-alert p { margin: 0; color: var(--text); }
+    .btn-reactivate {
+      padding: .5rem .9rem;
+      border: 1px solid var(--primary);
+      background: var(--white);
+      color: var(--primary);
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-reactivate:hover { background: var(--bg); }
   `],
 })
 export class ConsultorioDetailPage implements OnInit {
-  private route   = inject(ActivatedRoute);
-  private svc     = inject(ConsultorioService);
-  private auth    = inject(AuthService);
-  private toast   = inject(ToastService);
-  private errMap  = inject(ErrorMapperService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private svc = inject(ConsultorioService);
+  private auth = inject(AuthService);
+  private toast = inject(ToastService);
+  private errMap = inject(ErrorMapperService);
 
   consultorio = signal<Consultorio | null>(null);
-  loading     = signal(true);
-  showForm    = signal(false);
+  loading = signal(true);
+  showForm = signal(false);
 
-  canWrite = () => this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
+  readonly isAdmin = computed(() => this.auth.hasRole('ADMIN'));
+  readonly canEdit = computed(() =>
+    !!this.consultorio() && this.consultorio()!.status === 'ACTIVE' && this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN'),
+  );
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.svc.getById(id).subscribe({
       next: (c) => { this.consultorio.set(c); this.loading.set(false); },
-      error: (err) => { this.toast.error(this.errMap.toMessage(err)); this.loading.set(false); },
+      error: (err) => {
+        this.loading.set(false);
+        if (err instanceof HttpErrorResponse && err.status === 409 && !this.auth.hasRole('ADMIN')) {
+          this.toast.error('El consultorio está inactivo y no puede usarse.');
+          void this.router.navigate(['/app/consultorios']);
+          return;
+        }
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
   }
 
   onSaved(req: ConsultorioRequest): void {
-    const id = this.consultorio()!.id;
-    this.svc.update(id, req).subscribe({
+    const current = this.consultorio();
+    if (!current || current.status !== 'ACTIVE') {
+      this.toast.error('No se puede editar un consultorio inactivo.');
+      return;
+    }
+
+    this.svc.update(current.id, req).subscribe({
       next: (updated) => {
         this.consultorio.set(updated);
         this.showForm.set(false);
         this.toast.success('Consultorio actualizado');
+      },
+      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+    });
+  }
+
+  reactivate(): void {
+    const current = this.consultorio();
+    if (!current || !this.auth.hasRole('ADMIN')) return;
+
+    this.svc.activate(current.id).subscribe({
+      next: (updated) => {
+        this.consultorio.set(updated);
+        this.toast.success('Consultorio reactivado');
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });

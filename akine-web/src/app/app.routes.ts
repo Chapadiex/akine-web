@@ -94,9 +94,25 @@ export const routes: Routes = [
       },
       {
         path: 'colaboradores',
+        redirectTo: 'profesionales',
+        pathMatch: 'full',
+      },
+      {
+        path: 'profesionales',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
         loadComponent: () =>
-          import('./features/colaboradores/colaboradores').then(
-            (m) => m.Colaboradores,
+          import('./features/colaboradores/pages/profesionales-list/profesionales-list').then(
+            (m) => m.ProfesionalesListPage,
+          ),
+      },
+      {
+        path: 'empleados',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
+        loadComponent: () =>
+          import('./features/colaboradores/pages/empleados-list/empleados-list').then(
+            (m) => m.EmpleadosListPage,
           ),
       },
       {

@@ -171,6 +171,27 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   gap: 0.125rem;
 }
 
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  & + & {
+    margin-top: 0.9rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid rgb(255 255 255 / 0.07);
+  }
+
+  &__title {
+    margin: 0.35rem 0.6rem 0.3rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgb(148 163 184 / 0.8);
+    font-weight: 700;
+  }
+}
+
 .nav-submenu {
   margin-left: 2rem;
   margin-top: -0.125rem;
@@ -305,6 +326,19 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   display: flex;
   align-items: center;
   gap: 0.5rem;
+
+  &__icon {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
 
   label {
     font-size: 0.85rem;

@@ -27,4 +27,8 @@ export class ConsultorioService {
   inactivate(id: string): Observable<void> {
     return this.api.delete<void>(API.consultorios.inactivate(id));
   }
+
+  activate(id: string): Observable<Consultorio> {
+    return this.api.patch<Consultorio>(API.consultorios.activate(id), {});
+  }
 }
