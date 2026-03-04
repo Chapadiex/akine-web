@@ -2,9 +2,6 @@
 $sidenav-width: 224px;
 $sidenav-collapsed: 64px;
 $topbar-height: 52px;
-$sidenav-bg: #0f172a;
-$sidenav-text: #94a3b8;
-$sidenav-text-active: #f1f5f9;
 $sidenav-active-bg: rgb(255 255 255 / 0.1);
 $sidenav-hover-bg: rgb(255 255 255 / 0.06);
 
@@ -31,7 +28,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
 .sidenav {
   width: $sidenav-width;
   min-height: 100vh;
-  background: $sidenav-bg;
+  background: var(--sidenav-bg);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -108,7 +105,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
 .collapse-btn {
   background: none;
   border: none;
-  color: $sidenav-text;
+  color: var(--sidenav-text);
   cursor: pointer;
   font-size: 1rem;
   padding: 0.25rem;
@@ -129,7 +126,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
   border-radius: var(--radius);
-  color: $sidenav-text;
+  color: var(--sidenav-text);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 500;
@@ -139,12 +136,12 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
 
   &:hover {
     background: $sidenav-hover-bg;
-    color: $sidenav-text-active;
+    color: var(--sidenav-text-active);
   }
 
   &--active {
     background: $sidenav-active-bg;
-    color: $sidenav-text-active;
+    color: var(--sidenav-text-active);
   }
 
   &__icon {
@@ -166,6 +163,49 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
       background: $sidenav-hover-bg;
     }
   }
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.nav-submenu {
+  margin-left: 2rem;
+  margin-top: -0.125rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.nav-subitem {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius);
+  color: var(--sidenav-text);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: $sidenav-hover-bg;
+    color: var(--sidenav-text-active);
+  }
+
+  &--active {
+    background: $sidenav-active-bg;
+    color: var(--sidenav-text-active);
+  }
+}
+
+// ─── Theme toggle ─────────────────────────────────────────────────────────
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 0.25rem;
 }
 
 // ─── User avatar & info ────────────────────────────────────────────────────
@@ -191,7 +231,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   strong {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $sidenav-text-active;
+    color: var(--sidenav-text-active);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -199,7 +239,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
 
   small {
     font-size: 0.75rem;
-    color: $sidenav-text;
+    color: var(--sidenav-text);
     white-space: nowrap;
   }
 }

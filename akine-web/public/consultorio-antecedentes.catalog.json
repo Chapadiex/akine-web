@@ -1,0 +1,289 @@
+﻿{
+  "consultorioId": "CONS-001",
+  "version": "1.0.0",
+  "categories": [
+    {
+      "code": "APP",
+      "name": "Personales patológicos",
+      "order": 10,
+      "active": true,
+      "items": [
+        { "code": "APP_HTA", "label": "Hipertensión arterial", "valueType": "BOOLEAN", "active": true, "order": 10 },
+
+        {
+          "code": "APP_DIABETES",
+          "label": "Diabetes",
+          "valueType": "ENUM",
+          "active": true,
+          "order": 20,
+          "options": [
+            { "code": "TIPO_I", "label": "Tipo I", "active": true, "order": 10 },
+            { "code": "TIPO_II", "label": "Tipo II", "active": true, "order": 20 }
+          ]
+        },
+
+        {
+          "code": "APP_CARDIO",
+          "label": "Enfermedades cardiovasculares",
+          "valueType": "ENUM_MULTI",
+          "active": true,
+          "order": 30,
+          "options": [
+            { "code": "INFARTO", "label": "Infarto", "active": true, "order": 10 },
+            { "code": "ARRITMIAS", "label": "Arritmias", "active": true, "order": 20 },
+            { "code": "ICC", "label": "Insuficiencia cardíaca", "active": true, "order": 30 }
+          ]
+        },
+
+        { "code": "APP_ACV", "label": "ACV (Accidente cerebrovascular)", "valueType": "BOOLEAN", "active": true, "order": 40 },
+
+        {
+          "code": "APP_RESP",
+          "label": "Enfermedades respiratorias",
+          "valueType": "ENUM_MULTI",
+          "active": true,
+          "order": 50,
+          "options": [
+            { "code": "ASMA", "label": "Asma", "active": true, "order": 10 },
+            { "code": "EPOC", "label": "EPOC", "active": true, "order": 20 }
+          ]
+        },
+
+        {
+          "code": "APP_NEURO",
+          "label": "Enfermedades neurológicas",
+          "valueType": "ENUM_MULTI",
+          "active": true,
+          "order": 60,
+          "options": [
+            { "code": "PARKINSON", "label": "Parkinson", "active": true, "order": 10 },
+            { "code": "EPILEPSIA", "label": "Epilepsia", "active": true, "order": 20 },
+            { "code": "EM", "label": "Esclerosis múltiple", "active": true, "order": 30 }
+          ]
+        },
+
+        { "code": "APP_ARTROSIS_AR", "label": "Artrosis / Artritis reumatoidea", "valueType": "BOOLEAN", "active": true, "order": 70 },
+        { "code": "APP_OSTEOPOROSIS", "label": "Osteoporosis", "valueType": "BOOLEAN", "active": true, "order": 80 },
+        { "code": "APP_FIBROMIALGIA", "label": "Fibromialgia", "valueType": "BOOLEAN", "active": true, "order": 90 },
+
+        {
+          "code": "APP_CANCER",
+          "label": "Cáncer",
+          "valueType": "ENUM",
+          "active": true,
+          "order": 100,
+          "options": [
+            { "code": "EN_TRATAMIENTO", "label": "En tratamiento", "active": true, "order": 10 },
+            { "code": "ANTECEDENTE", "label": "Antecedente oncológico", "active": true, "order": 20 }
+          ]
+        },
+
+        { "code": "APP_AUTOINMUNE", "label": "Enfermedades autoinmunes", "valueType": "BOOLEAN", "active": true, "order": 110 },
+        { "code": "APP_COAGULACION", "label": "Trastornos de coagulación", "valueType": "BOOLEAN", "active": true, "order": 120 }
+      ]
+    },
+
+    {
+      "code": "AQX",
+      "name": "Quirúrgicos",
+      "order": 20,
+      "active": true,
+      "items": [
+        { "code": "AQX_TRAUMA", "label": "Cirugías traumatológicas", "valueType": "REPEATABLE", "active": true, "order": 10,
+          "fields": [
+            { "code": "zona", "label": "Zona", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" },
+            { "code": "detalle", "label": "Detalle", "type": "TEXT" }
+          ]
+        },
+        { "code": "AQX_PROTESIS", "label": "Prótesis articulares", "valueType": "REPEATABLE", "active": true, "order": 20,
+          "fields": [
+            { "code": "articulacion", "label": "Articulación", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" }
+          ]
+        },
+        { "code": "AQX_COLUMNA", "label": "Cirugías de columna", "valueType": "REPEATABLE", "active": true, "order": 30,
+          "fields": [
+            { "code": "segmento", "label": "Segmento", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" }
+          ]
+        },
+        { "code": "AQX_ABDOMINAL", "label": "Cirugías abdominales", "valueType": "REPEATABLE", "active": true, "order": 40,
+          "fields": [
+            { "code": "tipo", "label": "Tipo", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" }
+          ]
+        },
+        { "code": "AQX_CARDIACA", "label": "Cirugías cardíacas", "valueType": "REPEATABLE", "active": true, "order": 50,
+          "fields": [
+            { "code": "tipo", "label": "Tipo", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" }
+          ]
+        },
+        { "code": "AQX_GINECO", "label": "Cesáreas u otras cirugías ginecológicas", "valueType": "REPEATABLE", "active": true, "order": 60,
+          "fields": [
+            { "code": "tipo", "label": "Tipo", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" }
+          ]
+        },
+        { "code": "AQX_OTRAS", "label": "Otras intervenciones quirúrgicas relevantes", "valueType": "REPEATABLE", "active": true, "order": 70,
+          "fields": [
+            { "code": "tipo", "label": "Tipo", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" },
+            { "code": "detalle", "label": "Detalle", "type": "TEXT" }
+          ]
+        }
+      ]
+    },
+
+    {
+      "code": "MED",
+      "name": "Medicación actual",
+      "order": 30,
+      "active": true,
+      "items": [
+        {
+          "code": "MED_GRUPOS",
+          "label": "Grupos farmacológicos",
+          "valueType": "ENUM_MULTI",
+          "active": true,
+          "order": 10,
+          "options": [
+            { "code": "ANTIHIPERTENSIVOS", "label": "Antihipertensivos", "active": true, "order": 10 },
+            { "code": "ANTICOAGULANTES", "label": "Anticoagulantes", "active": true, "order": 20 },
+            { "code": "CORTICOIDES", "label": "Corticoides", "active": true, "order": 30 },
+            { "code": "ANALGESICOS_AINE", "label": "Analgésicos / Antiinflamatorios", "active": true, "order": 40 },
+            { "code": "INSULINA_HIPO", "label": "Insulina o hipoglucemiantes", "active": true, "order": 50 },
+            { "code": "PSICO", "label": "Antidepresivos / ansiolíticos", "active": true, "order": 60 },
+            { "code": "OTROS", "label": "Otros", "active": true, "order": 70 }
+          ]
+        }
+      ]
+    },
+
+    {
+      "code": "TRAU",
+      "name": "Traumatológicos",
+      "order": 40,
+      "active": true,
+      "items": [
+        { "code": "TRAU_FRACTURAS", "label": "Fracturas previas", "valueType": "REPEATABLE", "active": true, "order": 10,
+          "fields": [
+            { "code": "zona", "label": "Zona", "type": "TEXT" },
+            { "code": "anio", "label": "Año", "type": "NUMBER" }
+          ]
+        },
+        { "code": "TRAU_LUXACIONES", "label": "Luxaciones", "valueType": "BOOLEAN", "active": true, "order": 20 },
+        { "code": "TRAU_ESGUINCES", "label": "Esguinces recurrentes", "valueType": "BOOLEAN", "active": true, "order": 30 },
+        { "code": "TRAU_DEPORTIVAS", "label": "Lesiones deportivas", "valueType": "BOOLEAN", "active": true, "order": 40 },
+        { "code": "TRAU_TRANSITO", "label": "Accidentes de tránsito", "valueType": "BOOLEAN", "active": true, "order": 50 },
+        { "code": "TRAU_CAIDAS", "label": "Caídas recientes", "valueType": "BOOLEAN", "active": true, "order": 60 }
+      ]
+    },
+
+    {
+      "code": "FAM",
+      "name": "Familiares",
+      "order": 50,
+      "active": true,
+      "items": [
+        { "code": "FAM_CARDIO", "label": "Enfermedades cardiovasculares", "valueType": "BOOLEAN", "active": true, "order": 10 },
+        { "code": "FAM_DIABETES", "label": "Diabetes", "valueType": "BOOLEAN", "active": true, "order": 20 },
+        { "code": "FAM_REUMA", "label": "Enfermedades reumáticas", "valueType": "BOOLEAN", "active": true, "order": 30 },
+        { "code": "FAM_NEURO", "label": "Enfermedades neurológicas", "valueType": "BOOLEAN", "active": true, "order": 40 },
+        { "code": "FAM_CANCER", "label": "Cáncer", "valueType": "BOOLEAN", "active": true, "order": 50 }
+      ]
+    },
+
+    {
+      "code": "HAB",
+      "name": "Hábitos y estilo de vida",
+      "order": 60,
+      "active": true,
+      "items": [
+        {
+          "code": "HAB_ACT_FISICA",
+          "label": "Nivel de actividad física",
+          "valueType": "ENUM",
+          "active": true,
+          "order": 10,
+          "options": [
+            { "code": "BAJA", "label": "Baja", "active": true, "order": 10 },
+            { "code": "MODERADA", "label": "Moderada", "active": true, "order": 20 },
+            { "code": "ALTA", "label": "Alta", "active": true, "order": 30 }
+          ]
+        },
+        { "code": "HAB_SEDENTARISMO", "label": "Sedentarismo", "valueType": "BOOLEAN", "active": true, "order": 20 },
+        {
+          "code": "HAB_TRABAJO",
+          "label": "Tipo de trabajo",
+          "valueType": "ENUM",
+          "active": true,
+          "order": 30,
+          "options": [
+            { "code": "SEDENTARIO", "label": "Sedentario", "active": true, "order": 10 },
+            { "code": "ESFUERZO", "label": "Esfuerzo físico", "active": true, "order": 20 }
+          ]
+        },
+        {
+          "code": "HAB_TABACO",
+          "label": "Tabaquismo",
+          "valueType": "ENUM",
+          "active": true,
+          "order": 40,
+          "options": [
+            { "code": "NUNCA", "label": "Nunca", "active": true, "order": 10 },
+            { "code": "EX", "label": "Ex fumador", "active": true, "order": 20 },
+            { "code": "ACTUAL", "label": "Actual", "active": true, "order": 30 }
+          ]
+        },
+        {
+          "code": "HAB_ALCOHOL",
+          "label": "Consumo de alcohol",
+          "valueType": "ENUM",
+          "active": true,
+          "order": 50,
+          "options": [
+            { "code": "NUNCA", "label": "Nunca", "active": true, "order": 10 },
+            { "code": "OCASIONAL", "label": "Ocasional", "active": true, "order": 20 },
+            { "code": "FRECUENTE", "label": "Frecuente", "active": true, "order": 30 }
+          ]
+        },
+        {
+          "code": "HAB_SUENO",
+          "label": "Calidad del sueño",
+          "valueType": "ENUM",
+          "active": true,
+          "order": 60,
+          "options": [
+            { "code": "MALA", "label": "Mala", "active": true, "order": 10 },
+            { "code": "REGULAR", "label": "Regular", "active": true, "order": 20 },
+            { "code": "BUENA", "label": "Buena", "active": true, "order": 30 }
+          ]
+        }
+      ]
+    },
+
+    {
+      "code": "ALG",
+      "name": "Alergias",
+      "order": 70,
+      "active": true,
+      "items": [
+        {
+          "code": "ALG_TIPOS",
+          "label": "Alergias (tipos)",
+          "valueType": "ENUM_MULTI",
+          "active": true,
+          "order": 10,
+          "options": [
+            { "code": "MEDICAMENTOS", "label": "Medicamentos", "active": true, "order": 10 },
+            { "code": "LATEX", "label": "Látex", "active": true, "order": 20 },
+            { "code": "CREMAS_GELES", "label": "Cremas o geles en fisioterapia", "active": true, "order": 30 },
+            { "code": "OTRA", "label": "Otra", "active": true, "order": 40 }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -39,6 +39,22 @@ import { PacienteRequest } from '../../models/paciente.models';
         <input formControlName="email" type="email" placeholder="mail@ejemplo.com" />
       </div>
 
+      <div class="field">
+        <label>Obra Social</label>
+        <input formControlName="obraSocialNombre" placeholder="Nombre de obra social" />
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label>Plan</label>
+          <input formControlName="obraSocialPlan" placeholder="Plan" />
+        </div>
+        <div class="field">
+          <label>Nro. Afiliado</label>
+          <input formControlName="obraSocialNroAfiliado" placeholder="Nro. afiliado" />
+        </div>
+      </div>
+
       <div class="actions">
         <button type="button" class="btn-cancel" (click)="cancelled.emit()">Cancelar</button>
         <button type="submit" class="btn-save" [disabled]="form.invalid">Guardar</button>
@@ -79,6 +95,9 @@ export class PacienteForm {
     apellido: ['', [Validators.required, Validators.maxLength(100)]],
     telefono: ['', [Validators.required, Validators.maxLength(30)]],
     email: ['', [Validators.email, Validators.maxLength(255)]],
+    obraSocialNombre: [''],
+    obraSocialPlan: [''],
+    obraSocialNroAfiliado: [''],
   });
 
   ngOnInit(): void {
@@ -99,6 +118,9 @@ export class PacienteForm {
       apellido: v.apellido,
       telefono: v.telefono,
       email: v.email || undefined,
+      obraSocialNombre: v.obraSocialNombre || undefined,
+      obraSocialPlan: v.obraSocialPlan || undefined,
+      obraSocialNroAfiliado: v.obraSocialNroAfiliado || undefined,
     });
   }
 }

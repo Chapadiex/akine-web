@@ -48,6 +48,7 @@ import { ConsultorioService } from '../../services/consultorio.service';
           <a [routerLink]="['duraciones']" routerLinkActive="tab-active" class="tab">Duraciones</a>
           <a [routerLink]="['asignaciones']" routerLinkActive="tab-active" class="tab">Asignaciones</a>
           <a [routerLink]="['feriados']" routerLinkActive="tab-active" class="tab">Feriados</a>
+          <a [routerLink]="['antecedentes-catalogo']" routerLinkActive="tab-active" class="tab">Antecedentes</a>
         </nav>
 
         <router-outlet />

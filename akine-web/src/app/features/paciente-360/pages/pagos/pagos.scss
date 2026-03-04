@@ -1,0 +1,47 @@
+.pagos-page { padding: 1.5rem 2rem; }
+
+.page-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+
+.summary-row {
+  display: flex; gap: 1rem; margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  flex: 1; background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1rem 1.25rem; text-align: center;
+}
+
+.summary-label { font-size: .75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+.summary-value { font-size: 1.3rem; font-weight: 700; color: var(--text); margin-top: .25rem; }
+.summary-value--pending { color: var(--warning); }
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%; border-collapse: collapse; background: var(--white);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+
+th {
+  background: var(--bg); padding: .7rem .8rem; text-align: left;
+  font-size: .72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;
+}
+
+td { padding: .7rem .8rem; border-top: 1px solid var(--border); font-size: .85rem; }
+
+.amount { font-weight: 700; }
+.amount--cobro { color: var(--success); }
+.amount--pago { color: var(--error); }
+
+.status-chip {
+  padding: .15rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 600;
+  &--COMPLETADO { background: #DCFCE7; color: #16A34A; }
+  &--PENDIENTE { background: #FEF3C7; color: #D97706; }
+}
+
+.empty { text-align: center; color: var(--text-muted); padding: 3rem; font-size: .9rem; }
+
+@media (max-width: 768px) {
+  .pagos-page { padding: 1rem; }
+  .summary-row { flex-direction: column; }
+}

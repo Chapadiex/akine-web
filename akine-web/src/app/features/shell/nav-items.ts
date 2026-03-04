@@ -5,11 +5,17 @@ export interface NavItem {
   label: string;
   icon: string;
   roles: RoleName[];
+  children?: NavItem[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { path: '/app/inicio', label: 'Inicio', icon: 'IN', roles: [] },
-  { path: '/app/turnos', label: 'Turnos', icon: 'TU', roles: [] },
+  {
+    path: '/app/turnos',
+    label: 'Turnos (calendario)',
+    icon: 'TU',
+    roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL', 'ADMINISTRATIVO'],
+  },
   {
     path: '/app/pacientes',
     label: 'Pacientes',
@@ -17,45 +23,59 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
   },
   {
-    path: '/app/paciente/alta',
-    label: 'Mi Ficha',
-    icon: 'MF',
-    roles: ['PACIENTE'],
-  },
-  {
     path: '/app/historia-clinica',
-    label: 'Historia Clinica',
-    icon: 'HC',
+    label: 'Atenciones (sesiones)',
+    icon: 'AT',
     roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL'],
-  },
-  {
-    path: '/app/colaboradores',
-    label: 'Colaboradores',
-    icon: 'CO',
-    roles: ['ADMIN', 'PROFESIONAL_ADMIN'],
-  },
-  {
-    path: '/app/obras-sociales',
-    label: 'Obras Sociales',
-    icon: 'OS',
-    roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
   },
   {
     path: '/app/caja',
     label: 'Caja',
     icon: 'CJ',
-    roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
-  },
-  {
-    path: '/app/reportes',
-    label: 'Reportes',
-    icon: 'RE',
-    roles: ['ADMIN', 'PROFESIONAL_ADMIN'],
+    roles: ['ADMINISTRATIVO'],
   },
   {
     path: '/app/consultorios',
-    label: 'Consultorios',
-    icon: 'CL',
-    roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL', 'ADMINISTRATIVO'],
+    label: 'Configuracion',
+    icon: 'CF',
+    roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
+    children: [
+      {
+        path: '/app/consultorios',
+        label: 'Consultorios / Boxes',
+        icon: 'CL',
+        roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
+      },
+      {
+        path: '/app/colaboradores',
+        label: 'Colaboradores',
+        icon: 'CO',
+        roles: ['ADMIN', 'PROFESIONAL_ADMIN'],
+      },
+      {
+        path: '/app/obras-sociales',
+        label: 'Obras Sociales / Convenios',
+        icon: 'OS',
+        roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
+      },
+      {
+        path: '/app/reportes',
+        label: 'Reportes',
+        icon: 'RE',
+        roles: ['ADMIN', 'PROFESIONAL_ADMIN'],
+      },
+      {
+        path: '/app/consultorios/:consultorioId/antecedentes-catalogo',
+        label: 'Antecedentes (catálogo)',
+        icon: 'AN',
+        roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'],
+      },
+    ],
+  },
+  {
+    path: '/app/paciente/alta',
+    label: 'Mi Ficha',
+    icon: 'MF',
+    roles: ['PACIENTE'],
   },
 ];

@@ -1,0 +1,60 @@
+<div class="patient-header">
+  <div class="top-row">
+    <div class="patient-info">
+      <a routerLink="/app/pacientes" class="back-link">← Pacientes</a>
+      <div class="name-row">
+        <h1 class="patient-name">{{ paciente().nombre }} {{ paciente().apellido }}</h1>
+        <span class="patient-dni">DNI {{ paciente().dni }}</span>
+      </div>
+
+      <div class="meta-row">
+        @if (edad() !== null) {
+          <span class="meta-item">🎂 {{ edad() }} años ({{ paciente().fechaNacimiento | date:'dd/MM/yyyy' }})</span>
+        }
+        @if (paciente().telefono) {
+          <span class="meta-item">📞 {{ paciente().telefono }}</span>
+        }
+        @if (paciente().email) {
+          <span class="meta-item">✉ {{ paciente().email }}</span>
+        }
+      </div>
+
+      <div class="chips-row">
+        <span class="chip" [class.chip--active]="paciente().activo" [class.chip--inactive]="!paciente().activo">
+          <span class="chip-dot"></span>
+          {{ paciente().activo ? 'Activo' : 'Inactivo' }}
+        </span>
+        @if (paciente().obraSocialNombre) {
+          <span class="chip chip--os">{{ paciente().obraSocialNombre }} {{ paciente().obraSocialPlan }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="actions">
+      @if (canWrite()) {
+        <button class="btn-action btn-action--primary" type="button">
+          Nuevo turno
+        </button>
+        <button class="btn-action btn-action--outline" type="button">
+          Nueva atención
+        </button>
+        <button class="btn-action btn-action--outline" type="button">
+          Editar
+        </button>
+        <button class="btn-action btn-action--outline btn-action--icon" type="button" title="Más opciones">
+          ⋮
+        </button>
+      }
+    </div>
+  </div>
+
+  <nav class="tabs-bar">
+    @for (tab of visibleTabs(); track tab.path) {
+      <a [routerLink]="[basePath() + '/' + tab.path]"
+         routerLinkActive="tab-active"
+         class="tab-link">
+        {{ tab.label }}
+      </a>
+    }
+  </nav>
+</div>

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "pay1",
+    "pacienteId": "p1",
+    "fecha": "2026-02-24",
+    "concepto": "Sesión de seguimiento — Dra. López",
+    "monto": 15000,
+    "tipo": "COBRO",
+    "estado": "COMPLETADO"
+  },
+  {
+    "id": "pay2",
+    "pacienteId": "p1",
+    "fecha": "2026-02-10",
+    "concepto": "Evolución quincenal — Dra. López",
+    "monto": 15000,
+    "tipo": "COBRO",
+    "estado": "COMPLETADO"
+  },
+  {
+    "id": "pay3",
+    "pacienteId": "p1",
+    "fecha": "2026-01-28",
+    "concepto": "Evaluación inicial — Dr. García",
+    "monto": 25000,
+    "tipo": "COBRO",
+    "estado": "COMPLETADO"
+  },
+  {
+    "id": "pay4",
+    "pacienteId": "p1",
+    "fecha": "2026-03-05",
+    "concepto": "Control mensual — Dr. García",
+    "monto": 15000,
+    "tipo": "COBRO",
+    "estado": "PENDIENTE"
+  }
+]

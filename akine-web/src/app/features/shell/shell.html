@@ -28,22 +28,50 @@
 
     <nav class="sidenav__nav">
       @for (item of visibleNav(); track item.path) {
-        <a
-          [routerLink]="item.path"
-          routerLinkActive="nav-item--active"
-          class="nav-item"
-          [title]="collapsed() ? item.label : ''"
-          (click)="closeMobile()"
-        >
-          <span class="nav-item__icon" aria-hidden="true">{{ item.icon }}</span>
-          @if (!collapsed()) {
-            <span class="nav-item__label">{{ item.label }}</span>
+        <div class="nav-group">
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="nav-item--active"
+            class="nav-item"
+            [title]="collapsed() ? item.label : ''"
+            (click)="closeMobile()"
+          >
+            <span class="nav-item__icon" aria-hidden="true">{{ item.icon }}</span>
+            @if (!collapsed()) {
+              <span class="nav-item__label">{{ item.label }}</span>
+            }
+          </a>
+
+          @if (!collapsed() && visibleChildren(item).length > 0) {
+            <div class="nav-submenu">
+              @for (child of visibleChildren(item); track child.path) {
+                <a
+                  [routerLink]="child.path"
+                  routerLinkActive="nav-subitem--active"
+                  class="nav-subitem"
+                  (click)="closeMobile()"
+                >
+                  {{ child.label }}
+                </a>
+              }
+            </div>
           }
-        </a>
+        </div>
       }
     </nav>
 
     <div class="sidenav__footer">
+      <button
+        class="nav-item theme-toggle"
+        type="button"
+        (click)="themeSvc.toggle()"
+        [title]="collapsed() ? (themeSvc.theme() === 'light' ? 'Modo oscuro' : 'Modo claro') : ''"
+      >
+        <span class="nav-item__icon" aria-hidden="true">{{ themeSvc.theme() === 'light' ? '🌙' : '☀️' }}</span>
+        @if (!collapsed()) {
+          <span class="nav-item__label">{{ themeSvc.theme() === 'light' ? 'Modo oscuro' : 'Modo claro' }}</span>
+        }
+      </button>
       @if (currentUser(); as user) {
         <a
           routerLink="/app/perfil"

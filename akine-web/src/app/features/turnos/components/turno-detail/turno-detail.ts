@@ -18,6 +18,7 @@ import {
   TurnoEstado,
   TURNO_ESTADO_COLORS,
   TURNO_ESTADO_LABELS,
+  TURNO_ACCION_PRIMARIA,
   TIPO_CONSULTA_LABELS,
   TipoConsulta,
 } from '../../models/turno.models';
@@ -134,24 +135,18 @@ import {
         </div>
 
         <div class="detail-actions">
-          @if (t.estado === 'PROGRAMADO') {
-            <button class="btn-sm btn-success" (click)="askConfirm(t, 'CONFIRMADO', 'Confirmar')">Confirmar</button>
+          @if (primaryAction(t); as accion) {
+            <button class="btn-sm"
+              [class.btn-success]="accion.variant === 'success'"
+              [class.btn-primary]="accion.variant === 'primary'"
+              [class.btn-orange]="accion.variant === 'warning'"
+              (click)="askConfirm(t, accion.nuevoEstado, accion.label)">
+              {{ accion.label }}
+            </button>
+          }
+          @if (canCancelOrAbsent(t)) {
             <button class="btn-sm btn-danger" (click)="askCancel(t)">Cancelar</button>
             <button class="btn-sm btn-warn" (click)="askConfirm(t, 'AUSENTE', 'Marcar ausente')">Ausente</button>
-          }
-          @if (t.estado === 'CONFIRMADO') {
-            <button class="btn-sm btn-orange" (click)="askConfirm(t, 'EN_ESPERA', 'Sala de espera')">Sala de espera</button>
-            <button class="btn-sm btn-primary" (click)="askConfirm(t, 'EN_CURSO', 'Iniciar')">Iniciar</button>
-            <button class="btn-sm btn-danger" (click)="askCancel(t)">Cancelar</button>
-            <button class="btn-sm btn-warn" (click)="askConfirm(t, 'AUSENTE', 'Marcar ausente')">Ausente</button>
-          }
-          @if (t.estado === 'EN_ESPERA') {
-            <button class="btn-sm btn-primary" (click)="askConfirm(t, 'EN_CURSO', 'Iniciar')">Iniciar</button>
-            <button class="btn-sm btn-danger" (click)="askCancel(t)">Cancelar</button>
-            <button class="btn-sm btn-warn" (click)="askConfirm(t, 'AUSENTE', 'Marcar ausente')">Ausente</button>
-          }
-          @if (t.estado === 'EN_CURSO') {
-            <button class="btn-sm btn-success" (click)="askConfirm(t, 'COMPLETADO', 'Completar')">Completar</button>
           }
         </div>
       </div>
@@ -349,6 +344,12 @@ export class TurnoDetail {
     const d = new Date(iso);
     return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
       ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  primaryAction(t: Turno) { return TURNO_ACCION_PRIMARIA[t.estado] ?? null; }
+
+  canCancelOrAbsent(t: Turno): boolean {
+    return t.estado === 'PROGRAMADO' || t.estado === 'CONFIRMADO' || t.estado === 'EN_ESPERA';
   }
 
   askConfirm(turno: Turno, estado: TurnoEstado, label: string): void {

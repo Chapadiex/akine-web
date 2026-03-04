@@ -1,6 +1,10 @@
 <div class="agenda-page">
   <div class="agenda-filters">
-    <app-turno-filters (filtersChanged)="onFiltersChanged($event)" />
+    <app-turno-filters
+      [initialConsultorioId]="selectedConsultorioId()"
+      (filtersChanged)="onFiltersChanged($event)"
+    />
+    <button class="btn-daily" (click)="irAVistaDiaria()">Vista diaria</button>
   </div>
 
   <div class="agenda-body">

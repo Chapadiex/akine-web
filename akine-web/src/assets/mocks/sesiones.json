@@ -1,0 +1,43 @@
+[
+  {
+    "id": "s1",
+    "pacienteId": "p1",
+    "fecha": "2026-02-24T15:00:00Z",
+    "profesionalNombre": "Dra. López",
+    "consultorioNombre": "Centro A",
+    "boxNombre": "Box 1",
+    "estado": "REALIZADA",
+    "resumen": "Sesión de seguimiento. Buena evolución.",
+    "turnoId": "t3"
+  },
+  {
+    "id": "s2",
+    "pacienteId": "p1",
+    "fecha": "2026-02-10T11:00:00Z",
+    "profesionalNombre": "Dra. López",
+    "consultorioNombre": "Centro A",
+    "boxNombre": "Box 1",
+    "estado": "REALIZADA",
+    "resumen": "Control quincenal. Evolución favorable."
+  },
+  {
+    "id": "s3",
+    "pacienteId": "p1",
+    "fecha": "2026-01-28T09:30:00Z",
+    "profesionalNombre": "Dr. García",
+    "consultorioNombre": "Centro A",
+    "boxNombre": "Box 2",
+    "estado": "REALIZADA",
+    "resumen": "Evaluación inicial completa."
+  },
+  {
+    "id": "s4",
+    "pacienteId": "p1",
+    "fecha": "2026-01-15T10:00:00Z",
+    "profesionalNombre": "Dra. López",
+    "consultorioNombre": "Centro A",
+    "boxNombre": "Box 1",
+    "estado": "CANCELADA",
+    "resumen": "Paciente canceló por motivos personales."
+  }
+]

@@ -1,0 +1,44 @@
+.atenciones-page { padding: 1.5rem 2rem; }
+
+.page-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1.25rem;
+}
+.page-title { font-size: 1.1rem; font-weight: 700; }
+
+.btn-add {
+  padding: .4rem .875rem; border: none; border-radius: var(--radius);
+  background: var(--primary); color: #fff; font-size: .82rem;
+  font-weight: 600; cursor: pointer;
+  &:hover { opacity: .9; }
+}
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%; border-collapse: collapse; background: var(--white);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;
+}
+
+th {
+  background: var(--bg); padding: .7rem .8rem; text-align: left;
+  font-size: .72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;
+}
+
+td { padding: .7rem .8rem; border-top: 1px solid var(--border); font-size: .85rem; }
+
+.status-chip {
+  padding: .15rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 600;
+  &--REALIZADA { background: #DCFCE7; color: #16A34A; }
+  &--CANCELADA { background: #FEE2E2; color: #DC2626; }
+  &--PENDIENTE { background: #FEF3C7; color: #D97706; }
+}
+
+.link-action {
+  color: var(--primary); font-weight: 600; font-size: .78rem;
+  cursor: pointer; border: none; background: none; padding: 0;
+}
+
+.empty { text-align: center; color: var(--text-muted); padding: 3rem; font-size: .9rem; }
+
+@media (max-width: 768px) { .atenciones-page { padding: 1rem; } }

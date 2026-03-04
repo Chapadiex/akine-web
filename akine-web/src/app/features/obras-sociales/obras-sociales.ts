@@ -1,17 +1,12 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ComingSoon } from '../../shared/ui/coming-soon/coming-soon';
+﻿import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ObrasSocialesListPage } from './pages/obras-sociales-list/obras-sociales-list';
 
 @Component({
   selector: 'app-obras-sociales',
   standalone: true,
-  imports: [ComingSoon],
+  imports: [ObrasSocialesListPage],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <app-coming-soon
-      icon="💳"
-      title="Obras Sociales"
-      description="Prestaciones por cobertura, liquidaciones y reportes para facturación."
-    />
-  `,
+  template: `<app-obras-sociales-list-page />`,
 })
 export class ObrasSociales {}
+

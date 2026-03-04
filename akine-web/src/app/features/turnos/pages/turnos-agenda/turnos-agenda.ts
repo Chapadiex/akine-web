@@ -5,13 +5,15 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FullCalendarComponent, FullCalendarModule } from '@fullcalendar/angular';
-import { CalendarOptions, DateSelectArg, EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core';
+import { CalendarOptions, DateSelectArg, DatesSetArg, EventClickArg, EventDropArg, EventInput } from '@fullcalendar/core';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
+import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { TurnoService } from '../../services/turno.service';
@@ -29,13 +31,17 @@ import { TurnoDialog } from '../../components/turno-dialog/turno-dialog';
   styleUrl: './turnos-agenda.scss',
 })
 export class TurnosAgendaPage {
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private turnoSvc = inject(TurnoService);
+  private consultorioCtx = inject(ConsultorioContextService);
   private toast = inject(ToastService);
   private errMap = inject(ErrorMapperService);
 
   @ViewChild('calendar') calendarRef!: FullCalendarComponent;
 
   currentFilters = signal<TurnoFilterValues | null>(null);
+  selectedConsultorioId = this.consultorioCtx.selectedConsultorioId;
   events = signal<EventInput[]>([]);
   selectedTurno = signal<Turno | null>(null);
   showDialog = signal(false);
@@ -48,7 +54,7 @@ export class TurnosAgendaPage {
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
-      right: 'timeGridWeek,timeGridDay,listWeek',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
     },
     locale: esLocale,
     allDaySlot: false,
@@ -61,20 +67,30 @@ export class TurnosAgendaPage {
     editable: true,
     eventDurationEditable: false,
     height: 'auto',
-    datesSet: (info) => this.onDatesSet(info.startStr, info.endStr),
+    datesSet: (info) => this.onDatesSet(info),
     select: (info) => this.onSelect(info),
     eventClick: (info) => this.onEventClick(info),
     eventDrop: (info) => this.onEventDrop(info),
     events: [],
   };
 
+  irAVistaDiaria(): void {
+    this.router.navigate(['../hoy'], { relativeTo: this.route });
+  }
+
   onFiltersChanged(filters: TurnoFilterValues): void {
     this.currentFilters.set(filters);
+    if (filters.consultorioId && filters.consultorioId !== this.selectedConsultorioId()) {
+      this.consultorioCtx.setSelectedConsultorioId(filters.consultorioId);
+    }
     this.reloadEvents();
   }
 
-  private onDatesSet(start: string, end: string): void {
-    this.reloadEvents(start, end);
+  private onDatesSet(info: DatesSetArg): void {
+    this.reloadEvents(
+      this.toLocalDateTimeParam(info.start),
+      this.toLocalDateTimeParam(info.end),
+    );
   }
 
   private onSelect(info: DateSelectArg): void {
@@ -127,8 +143,8 @@ export class TurnosAgendaPage {
     if (!filters?.consultorioId) return;
 
     const calApi = this.calendarRef?.getApi();
-    const from = start ?? calApi?.view.activeStart.toISOString().substring(0, 19) ?? '';
-    const to = end ?? calApi?.view.activeEnd.toISOString().substring(0, 19) ?? '';
+    const from = start ?? (calApi ? this.toLocalDateTimeParam(calApi.view.activeStart) : '');
+    const to = end ?? (calApi ? this.toLocalDateTimeParam(calApi.view.activeEnd) : '');
     if (!from || !to) return;
 
     this.turnoSvc.list(filters.consultorioId, {
@@ -163,5 +179,15 @@ export class TurnosAgendaPage {
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
+  }
+
+  private toLocalDateTimeParam(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hour = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const sec = String(d.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hour}:${min}:${sec}`;
   }
 }

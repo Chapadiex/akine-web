@@ -11,7 +11,12 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         <p class="dialog-msg">{{ message() }}</p>
         <div class="dialog-actions">
           <button class="btn-cancel" (click)="cancelled.emit()">Cancelar</button>
-          <button class="btn-confirm" (click)="confirmed.emit()">Confirmar</button>
+          <button
+            class="btn-confirm"
+            [class.positive]="variant() === 'positive'"
+            (click)="confirmed.emit()">
+            {{ confirmLabel() }}
+          </button>
         </div>
       </div>
     </div>
@@ -44,12 +49,17 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       border-radius: var(--radius); background: var(--error);
       color: #fff; cursor: pointer; font-size: .9rem; font-weight: 600;
     }
+    .btn-confirm.positive {
+      background: var(--primary);
+    }
     .btn-confirm:hover { opacity: .9; }
   `],
 })
 export class ConfirmDialog {
   title   = input.required<string>();
   message = input.required<string>();
+  variant = input<'destructive' | 'positive'>('destructive');
+  confirmLabel = input<string>('Confirmar');
   confirmed = output<void>();
   cancelled = output<void>();
 }

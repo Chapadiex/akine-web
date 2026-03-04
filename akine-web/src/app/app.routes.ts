@@ -68,6 +68,15 @@ export const routes: Routes = [
           import('./features/pacientes/pacientes').then((m) => m.Pacientes),
       },
       {
+        path: 'pacientes/:patientId',
+        loadComponent: () =>
+          import('./features/paciente-360/paciente-360').then((m) => m.Paciente360),
+        loadChildren: () =>
+          import('./features/paciente-360/paciente-360.routes').then(
+            (m) => m.PACIENTE_360_ROUTES,
+          ),
+      },
+      {
         path: 'paciente/alta',
         canActivate: [roleGuard],
         data: { roles: ['PACIENTE'] },

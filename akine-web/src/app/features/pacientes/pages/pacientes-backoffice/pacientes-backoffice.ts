@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
@@ -66,10 +67,11 @@ import { PacienteService } from '../../services/paciente.service';
                       {{ item.linkedToConsultorio ? 'Vinculado' : 'No vinculado' }}
                     </span>
                   </td>
-                  <td>
-                    <button class="btn-link" (click)="vincularSiCorresponde(item)">
-                      {{ item.linkedToConsultorio ? 'Ya existe' : 'Vincular' }}
-                    </button>
+                  <td class="actions-cell">
+                    <button class="btn-link" (click)="verDetalle(item.id)">Ver</button>
+                    @if (!item.linkedToConsultorio) {
+                      <button class="btn-link" (click)="vincularSiCorresponde(item)">Vincular</button>
+                    }
                   </td>
                 </tr>
               }
@@ -132,6 +134,7 @@ import { PacienteService } from '../../services/paciente.service';
     .btn-link {
       border: none; background: transparent; color: var(--primary); cursor: pointer; font-weight: 600;
     }
+    .actions-cell { display: flex; gap: .5rem; }
     .overlay {
       position: fixed; inset: 0; background: rgb(0 0 0 / .35);
       display: flex; justify-content: center; align-items: flex-start; padding-top: 8vh; z-index: 900;
@@ -143,6 +146,7 @@ import { PacienteService } from '../../services/paciente.service';
   `],
 })
 export class PacientesBackofficePage {
+  private readonly router = inject(Router);
   private readonly consultorioCtx = inject(ConsultorioContextService);
   private readonly pacienteSvc = inject(PacienteService);
   private readonly toast = inject(ToastService);
@@ -226,6 +230,10 @@ export class PacientesBackofficePage {
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
+  }
+
+  verDetalle(pacienteId: string): void {
+    this.router.navigate(['/app', 'pacientes', pacienteId, 'resumen']);
   }
 
   vincularSiCorresponde(item: PacienteSearchResult): void {

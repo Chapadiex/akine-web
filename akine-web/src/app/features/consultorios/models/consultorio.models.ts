@@ -52,10 +52,18 @@ export interface Profesional {
   consultorioId: string;
   nombre: string;
   apellido: string;
+  nroDocumento?: string;
   matricula: string;
   especialidad?: string;
+  especialidades: string[];
   email?: string;
   telefono?: string;
+  domicilio?: string;
+  fotoPerfilUrl?: string;
+  fechaAlta?: string;
+  fechaBaja?: string;
+  motivoBaja?: string;
+  consultoriosAsociados?: number;
   activo: boolean;
   createdAt: string;
   updatedAt: string;
@@ -64,9 +72,19 @@ export interface Profesional {
 export interface ProfesionalRequest {
   nombre: string;
   apellido: string;
+  nroDocumento?: string;
   matricula: string;
   especialidad?: string;
+  especialidades?: string;
   email?: string;
   telefono?: string;
+  domicilio?: string;
+  fotoPerfilUrl?: string;
+}
+
+export interface ProfesionalEstadoRequest {
+  activo: boolean;
+  fechaDeBaja?: string;
+  motivoDeBaja?: string;
 }
 import { BoxCapacidadTipo } from './agenda.models';

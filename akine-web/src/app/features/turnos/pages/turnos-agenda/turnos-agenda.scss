@@ -8,6 +8,26 @@
 
 .agenda-filters {
   padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-daily {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--primary);
+    color: #fff;
+  }
 }
 
 .agenda-body {

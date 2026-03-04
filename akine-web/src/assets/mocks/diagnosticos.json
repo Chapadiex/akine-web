@@ -1,0 +1,35 @@
+[
+  {
+    "id": "d1",
+    "pacienteId": "p1",
+    "nombre": "Trastorno de ansiedad generalizada",
+    "estado": "ACTIVO",
+    "fechaInicio": "2024-12-15",
+    "notas": "Diagnóstico confirmado tras evaluación psiquiátrica. Tratamiento farmacológico + terapia cognitivo-conductual."
+  },
+  {
+    "id": "d2",
+    "pacienteId": "p1",
+    "nombre": "Cervicalgia crónica",
+    "estado": "ACTIVO",
+    "fechaInicio": "2024-06-10",
+    "notas": "Asociada a postura laboral. En tratamiento kinesiológico."
+  },
+  {
+    "id": "d3",
+    "pacienteId": "p1",
+    "nombre": "Hipotiroidismo",
+    "estado": "ACTIVO",
+    "fechaInicio": "2023-01-20",
+    "notas": "Controlado con levotiroxina 75mcg. Último TSH: 2.1 (normal)."
+  },
+  {
+    "id": "d4",
+    "pacienteId": "p1",
+    "nombre": "Gastritis aguda",
+    "estado": "RESUELTO",
+    "fechaInicio": "2024-03-05",
+    "fechaFin": "2024-04-20",
+    "notas": "Resuelto con tratamiento de 30 días con omeprazol."
+  }
+]

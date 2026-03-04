@@ -13,6 +13,7 @@ import { RoleName } from '../../core/auth/models/auth.models';
 import { ErrorMapperService } from '../../core/error/error-mapper.service';
 import { ConsultorioContextService } from '../../core/consultorio/consultorio-context.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { ConsultorioService } from '../consultorios/services/consultorio.service';
 import { NAV_ITEMS, NavItem } from './nav-items';
 
@@ -30,6 +31,7 @@ export class Shell implements OnInit {
   private readonly consultorioCtx = inject(ConsultorioContextService);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
+  readonly themeSvc = inject(ThemeService);
 
   readonly currentUser = this.authService.currentUser;
   readonly collapsed = signal(false);
@@ -45,6 +47,20 @@ export class Shell implements OnInit {
         item.roles.length === 0 || item.roles.some((r) => roles.includes(r)),
     );
   });
+
+  visibleChildren(item: NavItem): NavItem[] {
+    const roles = this.authService.userRoles() as string[];
+    const children = item.children ?? [];
+    const selectedConsultorioId = this.selectedConsultorioId();
+    return children
+      .filter((child) => child.roles.length === 0 || child.roles.some((r) => roles.includes(r)))
+      .map((child) => ({
+        ...child,
+        path: selectedConsultorioId
+          ? child.path.replace(':consultorioId', selectedConsultorioId)
+          : child.path,
+      }));
+  }
 
   readonly userInitials = computed(() => {
     const u = this.currentUser();

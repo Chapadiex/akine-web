@@ -41,13 +41,14 @@ export class TurnoService {
 
   disponibilidad(
     consultorioId: string,
-    params: { date: string; profesionalId: string; duracion: number },
+    params: { date: string; profesionalId?: string; duracion: number },
   ): Observable<SlotDisponible[]> {
-    return this.api.get<SlotDisponible[]>(API.turnos.disponibilidad(consultorioId), {
+    const qp: Record<string, string | number> = {
       date: params.date,
-      profesionalId: params.profesionalId,
       duracion: params.duracion,
-    });
+    };
+    if (params.profesionalId) qp['profesionalId'] = params.profesionalId;
+    return this.api.get<SlotDisponible[]>(API.turnos.disponibilidad(consultorioId), qp);
   }
 
   getHistorial(consultorioId: string, turnoId: string): Observable<HistorialEstadoTurno[]> {

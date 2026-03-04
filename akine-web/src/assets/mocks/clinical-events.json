@@ -1,0 +1,59 @@
+[
+  {
+    "id": "ce1",
+    "pacienteId": "p1",
+    "fecha": "2026-02-24T15:00:00Z",
+    "profesionalNombre": "Dra. López",
+    "tipo": "SESION",
+    "resumen": "Sesión de seguimiento. Paciente refiere mejoría en sintomatología ansiosa. Se ajusta plan terapéutico.",
+    "detalle": "Paciente asiste puntualmente. Refiere que las técnicas de respiración y mindfulness le han resultado útiles para manejar los episodios de ansiedad. Se trabajó sobre situaciones laborales estresantes. Se ajusta frecuencia de sesiones a quincenal.",
+    "adjuntos": []
+  },
+  {
+    "id": "ce2",
+    "pacienteId": "p1",
+    "fecha": "2026-02-10T11:00:00Z",
+    "profesionalNombre": "Dra. López",
+    "tipo": "EVOLUCION",
+    "resumen": "Evolución quincenal. Se observa progreso en técnicas de relajación. Continúa medicación actual.",
+    "detalle": "Control quincenal. Paciente muestra buena adherencia al tratamiento farmacológico. Los episodios de ansiedad han disminuido en frecuencia e intensidad. Se mantiene esquema actual.",
+    "adjuntos": []
+  },
+  {
+    "id": "ce3",
+    "pacienteId": "p1",
+    "fecha": "2026-01-28T09:30:00Z",
+    "profesionalNombre": "Dr. García",
+    "tipo": "EVALUACION",
+    "resumen": "Evaluación inicial. Se realiza anamnesis completa y examen físico. Diagnóstico presuntivo: TAG.",
+    "detalle": "Primera consulta. Paciente derivada por médica clínica por cuadro de ansiedad de 6 meses de evolución. Se realiza evaluación psiquiátrica completa. Se solicitan estudios complementarios. Se inicia tratamiento con sertralina 50mg/día.",
+    "adjuntos": [
+      {
+        "id": "att1",
+        "nombre": "Derivación médica clínica.pdf",
+        "tipo": "CLINICO",
+        "url": "/assets/mocks/placeholder.pdf",
+        "fechaCarga": "2026-01-28T09:30:00Z",
+        "vigente": true
+      },
+      {
+        "id": "att2",
+        "nombre": "Estudios de laboratorio.pdf",
+        "tipo": "CLINICO",
+        "url": "/assets/mocks/placeholder.pdf",
+        "fechaCarga": "2026-01-30T10:00:00Z",
+        "vigente": true
+      }
+    ]
+  },
+  {
+    "id": "ce4",
+    "pacienteId": "p1",
+    "fecha": "2025-12-15T14:00:00Z",
+    "profesionalNombre": "Dra. López",
+    "tipo": "NOTA",
+    "resumen": "Nota administrativa: paciente solicita cambio de horario de sesiones por motivos laborales.",
+    "detalle": "Se reprograma turno semanal de los lunes 10:00 a los miércoles 15:00.",
+    "adjuntos": []
+  }
+]

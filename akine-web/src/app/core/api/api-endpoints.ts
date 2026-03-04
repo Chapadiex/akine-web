@@ -53,6 +53,7 @@ export const API = {
     boxById:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/boxes/${id}`,
     profesionales:   (cid: string) => `/api/v1/consultorios/${cid}/profesionales`,
     profesionalById: (cid: string, id: string) => `/api/v1/consultorios/${cid}/profesionales/${id}`,
+    profesionalEstado: (cid: string, id: string) => `/api/v1/consultorios/${cid}/profesionales/${id}/estado`,
     horarios:           (cid: string) => `/api/v1/consultorios/${cid}/horarios`,
     horariosBatch:      (cid: string) => `/api/v1/consultorios/${cid}/horarios/batch`,
     horarioDia:         (cid: string, dia: string) => `/api/v1/consultorios/${cid}/horarios/${dia}`,
@@ -64,6 +65,8 @@ export const API = {
     disponibilidad:     (cid: string, profId: string) => `/api/v1/consultorios/${cid}/profesionales/${profId}/disponibilidad`,
     disponibilidadById: (cid: string, profId: string, id: string) => `/api/v1/consultorios/${cid}/profesionales/${profId}/disponibilidad/${id}`,
     boxCapacidad:       (cid: string, boxId: string) => `/api/v1/consultorios/${cid}/boxes/${boxId}/capacidad`,
+    antecedentesCatalogo: (cid: string) => `/api/v1/consultorios/${cid}/antecedentes-catalogo`,
+    antecedentesRestoreDefaults: (cid: string) => `/api/v1/consultorios/${cid}/antecedentes-catalogo/defaults/restore`,
   },
   turnos: {
     list:           (cid: string) => `/api/v1/consultorios/${cid}/turnos`,
@@ -77,5 +80,21 @@ export const API = {
     list:   (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
     create: (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
     delete: (cid: string, id: string) => `/api/v1/consultorios/${cid}/feriados/${id}`,
+  },
+  obrasSociales: {
+    list: (cid: string, params?: { q?: string; estado?: string; conPlanes?: boolean; page?: number; size?: number }) => {
+      const query = new URLSearchParams();
+      if (params?.q) query.append('q', params.q);
+      if (params?.estado) query.append('estado', params.estado);
+      if (params?.conPlanes !== undefined) query.append('conPlanes', String(params.conPlanes));
+      if (params?.page !== undefined) query.append('page', String(params.page));
+      if (params?.size !== undefined) query.append('size', String(params.size));
+      const suffix = query.toString();
+      return `/api/v1/consultorios/${cid}/obras-sociales${suffix ? `?${suffix}` : ''}`;
+    },
+    create: (cid: string) => `/api/v1/consultorios/${cid}/obras-sociales`,
+    byId: (cid: string, id: string) => `/api/v1/consultorios/${cid}/obras-sociales/${id}`,
+    update: (cid: string, id: string) => `/api/v1/consultorios/${cid}/obras-sociales/${id}`,
+    changeEstado: (cid: string, id: string) => `/api/v1/consultorios/${cid}/obras-sociales/${id}/estado`,
   },
 } as const;

@@ -10,7 +10,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgb(255 255 255 / 0.92);
+  background: var(--white);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 
@@ -370,8 +370,8 @@
 
 /* ─── Footer ─────────────────────────────────────────────────────────────── */
 .footer {
-  background: #0f172a;
-  color: #94a3b8;
+  background: var(--secondary, #0f172a);
+  color: var(--text-muted);
   padding: 2rem 0;
 
   &__inner {
@@ -401,7 +401,7 @@
 
   &__link {
     font-size: 0.875rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     text-decoration: none;
     transition: color 0.15s;
 
