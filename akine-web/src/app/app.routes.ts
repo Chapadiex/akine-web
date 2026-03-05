@@ -20,11 +20,46 @@ export const routes: Routes = [
         (m) => m.SubscriptionSignupPage,
       ),
   },
+  {
+    path: 'suscribirme/estado/:trackingToken',
+    loadComponent: () =>
+      import('./features/subscriptions/pages/subscription-status/subscription-status').then(
+        (m) => m.SubscriptionStatusPage,
+      ),
+  },
 
   // ─── Auth (público, bloqueado si ya autenticado) ───────────────────────────
   {
     path: 'login',
     canActivate: [alreadyAuthGuard],
+    loadComponent: () =>
+      import('./features/auth/login-selector/login-selector').then((m) => m.LoginSelectorPage),
+  },
+  {
+    path: 'login/paciente',
+    canActivate: [alreadyAuthGuard],
+    data: { expectedRole: 'PACIENTE' },
+    loadComponent: () =>
+      import('./features/auth/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'login/profesional',
+    canActivate: [alreadyAuthGuard],
+    data: { expectedRole: 'PROFESIONAL' },
+    loadComponent: () =>
+      import('./features/auth/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'login/administrativo',
+    canActivate: [alreadyAuthGuard],
+    data: { expectedRole: 'ADMINISTRATIVO' },
+    loadComponent: () =>
+      import('./features/auth/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'login/admin',
+    canActivate: [alreadyAuthGuard],
+    data: { expectedRole: 'ADMIN' },
     loadComponent: () =>
       import('./features/auth/login/login').then((m) => m.Login),
   },
@@ -37,6 +72,11 @@ export const routes: Routes = [
     path: 'activate',
     loadComponent: () =>
       import('./features/auth/activate/activate').then((m) => m.Activate),
+  },
+  {
+    path: 'activate-account',
+    redirectTo: 'activate',
+    pathMatch: 'full',
   },
   {
     path: 'forgot-password',
@@ -161,6 +201,18 @@ export const routes: Routes = [
           ),
       },
     ],
+  },
+  {
+    path: 'account-review',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auth/account-review/account-review').then((m) => m.AccountReviewPage),
+  },
+  {
+    path: 'account-suspended',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/auth/account-suspended/account-suspended').then((m) => m.AccountSuspendedPage),
   },
 
   // ─── Compatibilidad hacia atrás ───────────────────────────────────────────

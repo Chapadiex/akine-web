@@ -1,13 +1,17 @@
 <section class="admin-subscriptions">
   <header class="page-header">
-    <p class="eyebrow">SaaS</p>
-    <h1>Administracion de suscripciones</h1>
-    <p>
-      Revisa solicitudes, define vigencia manual y controla aprobaciones por estado.
-    </p>
+    <h1>Administración de suscripciones</h1>
+    <p>Aprobación, rechazo, solicitud de información y trazabilidad.</p>
   </header>
 
-  <div class="tabs" role="tablist" aria-label="Estados de suscripcion">
+  @if (errorMessage(); as error) {
+    <div class="alert alert--error">{{ error }}</div>
+  }
+  @if (actionError(); as actionError) {
+    <div class="alert alert--error">{{ actionError }}</div>
+  }
+
+  <div class="tabs" role="tablist" aria-label="Estados de suscripción">
     @for (tab of tabs; track tab.value) {
       <button
         type="button"
@@ -20,14 +24,6 @@
     }
   </div>
 
-  @if (errorMessage(); as error) {
-    <div class="alert alert--error">{{ error }}</div>
-  }
-
-  @if (actionError(); as actionErrorText) {
-    <div class="alert alert--error">{{ actionErrorText }}</div>
-  }
-
   @if (loading()) {
     <div class="state-card">Cargando suscripciones...</div>
   } @else if (items().length === 0) {
@@ -37,131 +33,77 @@
       @for (item of items(); track item.id) {
         <article class="subscription-card">
           <header class="subscription-card__header">
-            <div>
-              <h2>{{ item.company.name }}</h2>
-              <p>{{ item.company.cuit }} - {{ item.company.city }}, {{ item.company.province }}</p>
-            </div>
-            <span class="status-badge status-{{ item.status.toLowerCase() }}">
-              {{ item.status }}
-            </span>
+            <h2>{{ item.company.name }}</h2>
+            <span class="chip">{{ item.status }}</span>
           </header>
 
-          <div class="info-grid">
-            <div>
-              <h3>Dueno</h3>
-              <p>{{ item.owner.firstName }} {{ item.owner.lastName }}</p>
-              <p>{{ item.owner.email }}</p>
-            </div>
-            <div>
-              <h3>Consultorio base</h3>
-              <p>{{ item.baseConsultorio.name }}</p>
-              <p>{{ item.baseConsultorio.address }}</p>
-            </div>
-            <div>
-              <h3>Solicitud</h3>
-              <p>{{ formatInstant(item.requestedAt) }}</p>
-            </div>
-            <div>
-              <h3>Vigencia</h3>
-              <p>{{ formatDate(item.startDate) }} a {{ formatDate(item.endDate) }}</p>
-            </div>
-            <div>
-              <h3>Revision</h3>
-              <p>{{ formatInstant(item.reviewedAt) }}</p>
-            </div>
-            <div>
-              <h3>Motivo</h3>
-              <p>{{ item.rejectionReason || '-' }}</p>
-            </div>
+          <dl class="meta">
+            <div><dt>Plan</dt><dd>{{ item.planCode || '-' }} / {{ item.billingCycle || '-' }}</dd></div>
+            <div><dt>Paso</dt><dd>{{ item.onboardingStep || '-' }}</dd></div>
+            <div><dt>Responsable</dt><dd>{{ item.owner.firstName }} {{ item.owner.lastName }}</dd></div>
+            <div><dt>Email</dt><dd>{{ item.owner.email }}</dd></div>
+            <div><dt>Solicitado</dt><dd>{{ formatInstant(item.requestedAt) }}</dd></div>
+          </dl>
+
+          <div class="actions-row">
+            <button class="btn btn--ghost" type="button" (click)="openDetail(item.id)">Detalle</button>
+            @if (item.status === 'PENDING_APPROVAL') {
+              <button class="btn btn--primary" type="button" (click)="beginApprove(item.id)">Aprobar</button>
+              <button class="btn btn--outline" type="button" (click)="requestInfo(item.id, 'Completar datos de onboarding')">Pedir info</button>
+              <button class="btn btn--ghost" type="button" (click)="reject(item.id, 'Solicitud rechazada por revisión administrativa')">Rechazar</button>
+            }
+            @if (item.status === 'ACTIVE') {
+              <button class="btn btn--ghost" type="button" (click)="suspend(item.id, 'Suspensión administrativa')">Suspender</button>
+            }
+            @if (item.status === 'SUSPENDED') {
+              <button class="btn btn--primary" type="button" (click)="reactivate(item.id)">Reactivar</button>
+            }
           </div>
 
-          @if (item.status === 'PENDING') {
-            <div class="action-row">
-              <button
-                type="button"
-                class="btn btn--primary"
-                (click)="beginApprove(item.id)"
-                [disabled]="isBusy('approve', item.id)"
-              >
-                Aprobar
-              </button>
-
-              <input #rejectReason type="text" placeholder="Motivo rechazo (opcional)" />
-              <button
-                type="button"
-                class="btn btn--outline"
-                (click)="reject(item.id, rejectReason.value)"
-                [disabled]="isBusy('reject', item.id)"
-              >
-                Rechazar
-              </button>
-            </div>
-
-            @if (pendingApproveId() === item.id) {
-              <div class="approve-panel" [formGroup]="approveForm">
-                <label>
-                  Inicio
-                  <input type="date" formControlName="startDate" />
-                </label>
-                <label>
-                  Vencimiento
-                  <input type="date" formControlName="endDate" />
-                </label>
-                <div class="approve-panel__actions">
-                  <button type="button" class="btn btn--primary" (click)="confirmApprove()">
-                    Confirmar aprobacion
-                  </button>
-                  <button type="button" class="btn btn--ghost" (click)="cancelApprove()">
-                    Cancelar
-                  </button>
-                </div>
+          @if (pendingApproveId() === item.id) {
+            <form class="approve-form" [formGroup]="approveForm" (ngSubmit)="confirmApprove()">
+              <label>
+                Inicio
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label>
+                Vencimiento
+                <input type="date" formControlName="endDate" />
+              </label>
+              <div class="actions-row">
+                <button class="btn btn--primary" type="submit">Confirmar</button>
+                <button class="btn btn--ghost" type="button" (click)="cancelApprove()">Cancelar</button>
               </div>
-            }
-          }
-
-          @if (item.status === 'ACTIVE') {
-            <div class="action-row">
-              <input #suspendReason type="text" placeholder="Motivo suspension (opcional)" />
-              <button
-                type="button"
-                class="btn btn--outline"
-                (click)="suspend(item.id, suspendReason.value)"
-                [disabled]="isBusy('suspend', item.id)"
-              >
-                Suspender
-              </button>
-            </div>
-          }
-
-          @if (item.status === 'SUSPENDED') {
-            <div class="action-row">
-              <button
-                type="button"
-                class="btn btn--primary"
-                (click)="reactivate(item.id)"
-                [disabled]="isBusy('reactivate', item.id)"
-              >
-                Reactivar
-              </button>
-            </div>
+            </form>
           }
         </article>
       }
     </div>
+  }
 
-    <footer class="pagination">
-      <button type="button" class="btn btn--ghost" (click)="previousPage()" [disabled]="page() === 0">
-        Anterior
-      </button>
-      <span>Pagina {{ page() + 1 }} de {{ totalPages() }} ({{ totalElements() }} resultados)</span>
-      <button
-        type="button"
-        class="btn btn--ghost"
-        (click)="nextPage()"
-        [disabled]="page() + 1 >= totalPages()"
-      >
-        Siguiente
-      </button>
-    </footer>
+  <footer class="pager">
+    <button type="button" class="btn btn--ghost" (click)="previousPage()" [disabled]="page() <= 0">Anterior</button>
+    <span>Página {{ page() + 1 }} / {{ totalPages() }}</span>
+    <button type="button" class="btn btn--ghost" (click)="nextPage()" [disabled]="page() + 1 >= totalPages()">Siguiente</button>
+  </footer>
+
+  @if (detail(); as d) {
+    <section class="detail-panel">
+      <header>
+        <h2>Detalle: {{ d.subscription.company.name }}</h2>
+        <button type="button" class="btn btn--ghost" (click)="closeDetail()">Cerrar</button>
+      </header>
+      <p><strong>Consultorio:</strong> {{ d.subscription.baseConsultorio.name }}</p>
+      <p><strong>Tracking:</strong> {{ d.subscription.trackingToken || '-' }}</p>
+      <h3>Auditoría</h3>
+      <ul>
+        @for (item of d.auditTrail; track item.id) {
+          <li>
+            <strong>{{ item.action }}</strong> · {{ item.fromStatus || '-' }} → {{ item.toStatus || '-' }} ·
+            {{ formatInstant(item.createdAt) }}
+          </li>
+        }
+      </ul>
+    </section>
   }
 </section>

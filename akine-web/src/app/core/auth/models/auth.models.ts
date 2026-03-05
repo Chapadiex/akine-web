@@ -15,6 +15,9 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   roles: RoleName[];
+  accountState: string;
+  defaultRole: RoleName | string;
+  allowedRoles: RoleName[] | string[];
   consultorioIds: string[];
   profesionalId: string | null;
 }

@@ -1,195 +1,184 @@
-<header class="landing-nav">
-  <div class="container landing-nav__inner">
-    <a routerLink="/home" class="brand">AKINE</a>
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="logo" routerLink="/home">AKINE</a>
 
-    <nav aria-label="Navegacion principal">
-      <a href="#presentacion">Plataforma</a>
-      <a href="#funcionalidades">Funcionalidades</a>
-      <a href="#ventajas">Ventajas SaaS</a>
-      <a href="#flujo">Flujo</a>
+    <nav class="links" aria-label="Principal">
+      <a href="#producto">Producto</a>
+      <a href="#beneficios">Beneficios</a>
+      <a href="#pricing">Precios</a>
+      <a href="#faq">FAQ</a>
     </nav>
 
-    <div class="landing-nav__actions">
+    <div class="actions">
       @if (isAuthenticated()) {
-        <a class="btn btn--ghost" routerLink="/app">Ir al sistema</a>
+        <a mat-stroked-button routerLink="/app">Ir al sistema</a>
       } @else {
-        <a class="btn btn--ghost" routerLink="/login">Iniciar sesion</a>
-        <a class="btn btn--primary" routerLink="/suscribirme">Suscribirme</a>
+        <a mat-stroked-button routerLink="/login">Iniciar sesión</a>
+        <a mat-flat-button class="btn-main" routerLink="/suscribirme" (click)="track('click_cta_top')">Comenzar</a>
       }
     </div>
   </div>
 </header>
 
 <main class="landing">
-  <section class="hero">
-    <div class="container hero__inner">
+  <section class="hero" id="producto">
+    <div class="container hero__grid">
       <div class="hero__copy">
-        <p class="eyebrow">Modelo SaaS para consultorios</p>
-        <h1>Gestion integral para empresas y consultorios de salud</h1>
+        <p class="eyebrow">SaaS para consultorios de kinesiología y fisio</p>
+        <h1>
+          Operá tu consultorio con
+          <span>orden clínico y control administrativo</span>
+          en tiempo real.
+        </h1>
         <p>
-          AKINE centraliza agenda, historia clinica, equipo, obras sociales,
-          caja y reportes en una plataforma cloud segura, escalable y lista
-          para operar desde el primer dia.
+          Agenda, historia clínica, obras sociales y caja integradas en una plataforma con UX moderna,
+          segura y enfocada en productividad.
         </p>
 
-        <div class="hero__actions">
-          <a class="btn btn--primary btn--lg" routerLink="/suscribirme">Suscribirme</a>
-          <a class="btn btn--outline btn--lg" href="#flujo">Comenzar ahora</a>
+        <div class="hero__buttons">
+          <a mat-flat-button class="btn-main btn-lg" routerLink="/suscribirme" (click)="track('click_cta_hero')">Activar prueba</a>
+          <a mat-stroked-button class="btn-lg" href="#beneficios">Ver producto</a>
+        </div>
+
+        <mat-chip-set class="trust" aria-label="Pilares">
+          <mat-chip>Confidencialidad de datos</mat-chip>
+          <mat-chip>Acceso 24/7</mat-chip>
+          <mat-chip>Multi-dispositivo</mat-chip>
+          <mat-chip>Roles y permisos</mat-chip>
+        </mat-chip-set>
+      </div>
+
+      <aside class="hero__visual" aria-label="Vista del producto">
+        <div class="window">
+          <header>
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <p>AKINE Cloud</p>
+          </header>
+          <div class="canvas">
+            <article class="card card--primary">
+              <p>Hoy</p>
+              <strong>48 turnos</strong>
+              <small>+12% vs semana pasada</small>
+            </article>
+            <article class="card">
+              <p>Caja</p>
+              <strong>$ 1.280.000</strong>
+              <small>cierres conciliados</small>
+            </article>
+            <article class="card card--wide">
+              <p>Sesión en curso</p>
+              <strong>Paciente: Laura M.</strong>
+              <small>Evolución registrada · 14:30</small>
+            </article>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="container kpis__grid">
+      <article><strong>+320</strong><span>consultorios activos</span></article>
+      <article><strong>1.2M</strong><span>sesiones registradas</span></article>
+      <article><strong>42%</strong><span>menos tiempo administrativo</span></article>
+      <article><strong>4.9/5</strong><span>satisfacción de equipos</span></article>
+    </div>
+  </section>
+
+  <section class="section" id="beneficios">
+    <div class="container">
+      <div class="title">
+        <p class="eyebrow">Beneficios clave</p>
+        <h2>Una plataforma, todo el flujo del consultorio</h2>
+      </div>
+
+      <div class="bento">
+        <article class="bento__item">
+          <mat-icon>calendar_month</mat-icon>
+          <h3>Agenda sin fricción</h3>
+          <p>Check-in, reprogramación y disponibilidad en una experiencia rápida para recepción y profesionales.</p>
+        </article>
+        <article class="bento__item">
+          <mat-icon>description</mat-icon>
+          <h3>Historia clínica útil</h3>
+          <p>Evoluciones y sesiones trazables, con contexto para decisiones clínicas más claras.</p>
+        </article>
+        <article class="bento__item">
+          <mat-icon>payments</mat-icon>
+          <h3>Caja + obras sociales</h3>
+          <p>Cobros, convenios y reportes operativos sin planillas dispersas.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--soft" id="pricing">
+    <div class="container">
+      <div class="title title--row">
+        <div>
+          <p class="eyebrow">Pricing</p>
+          <h2>Escalá con previsibilidad</h2>
+        </div>
+        <div class="toggle">
+          <button mat-stroked-button [class.on]="billing() === 'MONTHLY'" (click)="setBilling('MONTHLY')">Mensual</button>
+          <button mat-stroked-button [class.on]="billing() === 'ANNUAL'" (click)="setBilling('ANNUAL')">Anual</button>
         </div>
       </div>
 
-      <div class="hero__card">
-        <h2>Incluye flujo SaaS completo</h2>
-        <ol>
-          <li>Alta de dueno + empresa + consultorio base</li>
-          <li>Solicitud en estado pendiente</li>
-          <li>Revision administrativa</li>
-          <li>Aprobacion con vigencia manual</li>
-          <li>Acceso inmediato al consultorio activo</li>
-        </ol>
+      <div class="plans">
+        <article class="plan">
+          <h3>Starter</h3>
+          <p class="price">{{ prices().starter }} <small>USD/mes</small></p>
+          <p class="note">{{ prices().note }}</p>
+          <ul><li>1 sede</li><li>3 boxes</li><li>Equipo inicial</li></ul>
+        </article>
+        <article class="plan plan--featured">
+          <p class="badge">Más elegido</p>
+          <h3>Pro</h3>
+          <p class="price">{{ prices().pro }} <small>USD/mes</small></p>
+          <p class="note">{{ prices().note }}</p>
+          <ul><li>Multi-sede</li><li>Reportes avanzados</li><li>Soporte prioritario</li></ul>
+        </article>
+        <article class="plan">
+          <h3>Multi-sede</h3>
+          <p class="price">{{ prices().multi }} <small>USD/mes</small></p>
+          <p class="note">{{ prices().note }}</p>
+          <ul><li>Escala empresarial</li><li>Operación consolidada</li><li>Atención dedicada</li></ul>
+        </article>
       </div>
     </div>
   </section>
 
-  <section class="section" id="presentacion">
+  <section class="section" id="faq">
     <div class="container">
-      <div class="section-heading">
-        <p class="eyebrow">Presentacion</p>
-        <h2>Que es AKINE y a quien esta dirigido</h2>
+      <div class="title">
+        <p class="eyebrow">FAQ</p>
+        <h2>Respuestas rápidas para decidir sin dudas</h2>
       </div>
-      <div class="card-grid card-grid--3">
-        <article class="info-card">
-          <h3>Que es la plataforma</h3>
-          <p>
-            Un sistema web SaaS para administrar operaciones clinicas y
-            administrativas sin instalaciones locales.
-          </p>
-        </article>
-        <article class="info-card">
-          <h3>Publico objetivo</h3>
-          <p>
-            Empresas de salud, consultorios y equipos profesionales que necesitan
-            operar con roles, permisos y trazabilidad.
-          </p>
-        </article>
-        <article class="info-card">
-          <h3>Problema que resuelve</h3>
-          <p>
-            Elimina planillas dispersas y sistemas aislados, unificando la
-            operacion diaria en un solo entorno.
-          </p>
-        </article>
+      <div class="faq">
+        <article><h3>¿Funciona desde celular?</h3><p>Sí, AKINE está optimizada para desktop, tablet y móvil.</p></article>
+        <article><h3>¿Puedo invitar colaboradores?</h3><p>Sí, profesionales y administrativos con permisos por rol.</p></article>
+        <article><h3>¿Cómo gestionan obras sociales?</h3><p>Con planes, convenios y vigencias por consultorio.</p></article>
       </div>
     </div>
   </section>
 
-  <section class="section section--tint" id="funcionalidades">
-    <div class="container">
-      <div class="section-heading">
-        <p class="eyebrow">Funcionalidades</p>
-        <h2>Capacidades actuales, beneficios y diferenciales</h2>
+  <section class="cta">
+    <div class="container cta__inner">
+      <p class="eyebrow">Listo para empezar</p>
+      <h2>Activá tu cuenta y empezá a operar con una UX de nivel producto real.</h2>
+      <div class="hero__buttons">
+        <a mat-flat-button class="btn-main btn-lg" routerLink="/suscribirme" (click)="track('click_cta_final')">Comenzar ahora</a>
+        <a mat-stroked-button class="btn-lg" routerLink="/login">Ya tengo cuenta</a>
       </div>
-
-      <div class="feature-columns">
-        <article class="info-card">
-          <h3>Operacion clinica</h3>
-          <ul>
-            <li>Turnos y calendario multi profesional</li>
-            <li>Historia clinica y seguimiento por paciente</li>
-            <li>Gestion de pacientes y ficha de alta</li>
-            <li>Consultorio base y multi consultorio</li>
-          </ul>
-        </article>
-
-        <article class="info-card">
-          <h3>Operacion administrativa</h3>
-          <ul>
-            <li>Equipo de profesionales y administrativos</li>
-            <li>Obras sociales y convenios</li>
-            <li>Caja y reportes operativos</li>
-            <li>Catalogos y configuraciones por consultorio</li>
-          </ul>
-        </article>
-
-        <article class="info-card">
-          <h3>Diferenciadores competitivos</h3>
-          <ul>
-            <li>Alta SaaS estructurada por empresa</li>
-            <li>Flujo de aprobacion con auditoria</li>
-            <li>Control de vigencia en login y refresh</li>
-            <li>Bloqueo automatico por suscripcion no vigente</li>
-          </ul>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section" id="ventajas">
-    <div class="container">
-      <div class="section-heading">
-        <p class="eyebrow">Ventajas</p>
-        <h2>Beneficios del modelo SaaS</h2>
-      </div>
-
-      <div class="card-grid card-grid--5">
-        <article class="pill-card">
-          <h3>Modelo SaaS</h3>
-          <p>Servicio centralizado, sin instalacion local.</p>
-        </article>
-        <article class="pill-card">
-          <h3>Acceso remoto</h3>
-          <p>Disponibilidad desde cualquier lugar y dispositivo.</p>
-        </article>
-        <article class="pill-card">
-          <h3>Escalabilidad</h3>
-          <p>Crecimiento por empresa, sedes y colaboradores.</p>
-        </article>
-        <article class="pill-card">
-          <h3>Seguridad</h3>
-          <p>Control de acceso por roles y vigencia de suscripcion.</p>
-        </article>
-        <article class="pill-card">
-          <h3>Soporte</h3>
-          <p>Acompanamiento en alta, activacion y operacion diaria.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section section--tint" id="flujo">
-    <div class="container">
-      <div class="section-heading">
-        <p class="eyebrow">Flujo general</p>
-        <h2>De la suscripcion al consultorio activo</h2>
-      </div>
-      <ol class="flow">
-        <li>Landing comercial</li>
-        <li>Suscripcion (dueno + empresa + consultorio base)</li>
-        <li>Estado pendiente</li>
-        <li>Revision administrativa</li>
-        <li>Aprobacion o rechazo</li>
-        <li>Email automatico al cliente</li>
-        <li>Login cliente y consultorio base activo</li>
-      </ol>
-    </div>
-  </section>
-
-  <section class="final-cta">
-    <div class="container final-cta__inner">
-      <h2>Activa tu empresa en AKINE</h2>
-      <p>
-        Inicia el alta SaaS y envia tu solicitud de aprobacion para comenzar a
-        operar con tu consultorio base configurado.
-      </p>
-      <a class="btn btn--primary btn--lg" routerLink="/suscribirme">Suscribirme</a>
     </div>
   </section>
 </main>
 
-<footer class="landing-footer">
-  <div class="container landing-footer__inner">
-    <p>© {{ currentYear }} AKINE. Plataforma SaaS para gestion de consultorios.</p>
-    <div class="landing-footer__links">
+<footer class="footer">
+  <div class="container footer__inner">
+    <p>© {{ currentYear }} AKINE · SaaS para salud.</p>
+    <div class="footer__links">
       <a routerLink="/home">Inicio</a>
       <a routerLink="/suscribirme">Suscribirme</a>
       <a routerLink="/login">Login</a>

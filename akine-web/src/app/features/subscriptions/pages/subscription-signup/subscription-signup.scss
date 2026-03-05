@@ -1,107 +1,94 @@
 .subscription-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   padding: 2rem 1rem;
-  background: radial-gradient(circle at 20% 0%, #cffafe 0%, transparent 45%),
-    radial-gradient(circle at 85% 100%, #dbeafe 0%, transparent 40%), var(--bg);
+  display: flex;
+  justify-content: center;
+  background: radial-gradient(circle at 12% 10%, #ccfbf1 0, #f8fafc 42%, #f1f5f9 100%);
 }
 
 .subscription-page__background {
   position: absolute;
   inset: 0;
+  background: linear-gradient(130deg, rgb(15 118 110 / 0.08), rgb(2 132 199 / 0.08));
   pointer-events: none;
-  background-image: linear-gradient(
-      rgba(15, 23, 42, 0.03) 1px,
-      transparent 1px
-    ),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px;
 }
 
 .subscription-card {
+  width: min(920px, 100%);
   position: relative;
   z-index: 1;
-  max-width: 980px;
-  margin: 0 auto;
-  background: var(--white);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 16px;
+  background: var(--white);
   box-shadow: var(--shadow-lg);
-  padding: 2rem;
+  padding: 1.2rem;
 }
 
 .subscription-card__header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 
   .subscription-card__brand {
     display: inline-block;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-weight: 800;
     color: var(--primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+}
+
+.progress {
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.86rem;
+  color: var(--text-muted);
+
+  .bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
   }
 
-  h1 {
-    font-size: clamp(1.5rem, 3vw, 2rem);
-    line-height: 1.2;
-    letter-spacing: -0.03em;
-  }
-
-  p {
-    margin-top: 0.625rem;
-    color: var(--text-muted);
-    max-width: 70ch;
+  i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #0f766e, #0369a1);
   }
 }
 
 .form-block {
-  padding: 1.25rem;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  margin-bottom: 1rem;
-  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.9rem;
 
   h2 {
-    margin-bottom: 1rem;
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.6rem;
   }
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
+  gap: 0.75rem;
 }
 
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text);
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
 
-  input {
+  span {
+    color: var(--text-muted);
+  }
+
+  input,
+  select {
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.62rem 0.72rem;
-    background: var(--white);
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-
-    &:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-ring);
-    }
-
-    &:disabled {
-      background: #f8fafc;
-      cursor: not-allowed;
-    }
+    border-radius: 8px;
+    padding: 0.58rem 0.7rem;
   }
 }
 
@@ -109,37 +96,36 @@
   grid-column: 1 / -1;
 }
 
-.field-error {
-  font-size: 0.78rem;
-  color: var(--error);
-  font-weight: 500;
+.payment-step {
+  ul {
+    padding-left: 1rem;
+    display: grid;
+    gap: 0.35rem;
+    color: var(--text-muted);
+  }
+}
+
+.tracking {
+  border: 1px dashed var(--border);
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.7rem;
+  margin-bottom: 0.8rem;
+
+  code {
+    display: inline-block;
+    margin-top: 0.2rem;
+  }
 }
 
 .actions {
-  margin-top: 1.4rem;
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
-.alert {
-  margin-bottom: 1rem;
-
-  p {
-    margin-top: 0.35rem;
-  }
-}
-
-@media (max-width: 720px) {
-  .subscription-card {
-    padding: 1.2rem;
-  }
-
+@media (max-width: 760px) {
   .form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .field--wide {
-    grid-column: auto;
   }
 }

@@ -27,6 +27,13 @@ export const API = {
   },
   subscriptions: {
     create: '/api/v1/subscriptions',
+    createDraft: '/api/v1/subscriptions/draft',
+    updateOwner: (id: string) => `/api/v1/subscriptions/${id}/owner`,
+    updateCompany: (id: string) => `/api/v1/subscriptions/${id}/company`,
+    updateClinic: (id: string) => `/api/v1/subscriptions/${id}/clinic`,
+    simulatePayment: (id: string) => `/api/v1/subscriptions/${id}/payment-simulate`,
+    submitApproval: (id: string) => `/api/v1/subscriptions/${id}/submit-approval`,
+    statusByTracking: (trackingToken: string) => `/api/v1/subscriptions/status/${trackingToken}`,
   },
   users: {
     me: '/api/v1/users/me',
@@ -38,8 +45,10 @@ export const API = {
     subscriptions: '/api/v1/admin/subscriptions',
     approveSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/approve`,
     rejectSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/reject`,
+    requestInfoSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/request-info`,
     suspendSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/suspend`,
     reactivateSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/reactivate`,
+    subscriptionDetail: (id: string) => `/api/v1/admin/subscriptions/${id}`,
   },
   pacientes: {
     me: '/api/v1/pacientes/me',

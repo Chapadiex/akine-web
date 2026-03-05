@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/services/auth.service';
 import { ApiError } from '../../../core/auth/models/auth.models';
 
@@ -22,6 +22,7 @@ import { ApiError } from '../../../core/auth/models/auth.models';
 export class Login {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -55,9 +56,7 @@ export class Login {
 
     this.authService.login({ email: email!, password: password! }).subscribe({
       next: () => {
-        const target = this.authService.hasRole('PACIENTE')
-          ? '/app/paciente/alta'
-          : '/app';
+        const target = this.resolveTargetAfterLogin();
         void this.router.navigate([target]);
       },
       error: (err: HttpErrorResponse) => {
@@ -94,5 +93,25 @@ export class Login {
     if (status === 401) return 'Email o contrasena incorrectos.';
     if (status === 429) return 'Demasiados intentos. Espera unos minutos.';
     return 'No pudimos conectar con el servidor. Intenta nuevamente.';
+  }
+
+  private resolveTargetAfterLogin(): string {
+    const accountState = this.authService.currentUser()?.accountState ?? 'ACTIVE';
+    if (accountState === 'PENDING_APPROVAL' || accountState === 'SETUP_PENDING' || accountState === 'PAYMENT_PENDING' || accountState === 'EMAIL_PENDING') {
+      return '/account-review';
+    }
+    if (accountState === 'SUSPENDED') {
+      return '/account-suspended';
+    }
+
+    const expectedRole = this.route.snapshot.data['expectedRole'] as string | undefined;
+    if (expectedRole && !this.authService.hasRole(expectedRole)) {
+      return '/login';
+    }
+
+    if (this.authService.hasRole('PACIENTE')) {
+      return '/app/paciente/alta';
+    }
+    return '/app';
   }
 }

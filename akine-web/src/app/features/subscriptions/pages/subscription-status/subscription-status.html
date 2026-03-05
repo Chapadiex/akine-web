@@ -1,0 +1,28 @@
+<section class="auth-page">
+  <div class="auth-card">
+    <a routerLink="/home" class="auth-brand"><span>AKINE</span></a>
+    <div class="auth-header">
+      <h1>Estado de tu suscripción</h1>
+      <p>Seguimiento del onboarding SaaS.</p>
+    </div>
+
+    @if (loading()) {
+      <div class="alert alert--info">Consultando estado...</div>
+    } @else if (error(); as e) {
+      <div class="alert alert--error">{{ e }}</div>
+    } @else {
+      <div class="alert alert--success">
+        Estado: <strong>{{ status() }}</strong>
+      </div>
+      <p><strong>Paso:</strong> {{ onboardingStep() || '-' }}</p>
+      <p><strong>Solicitud:</strong> {{ requestedAt() || '-' }}</p>
+      @if (rejectionReason()) {
+        <p><strong>Motivo:</strong> {{ rejectionReason() }}</p>
+      }
+      <div class="actions">
+        <a class="btn btn--primary" routerLink="/login">Ir a login</a>
+        <a class="btn btn--ghost" routerLink="/home">Volver</a>
+      </div>
+    }
+  </div>
+</section>

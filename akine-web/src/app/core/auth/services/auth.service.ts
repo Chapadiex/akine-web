@@ -41,6 +41,7 @@ export class AuthService {
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this._currentUser() !== null);
   readonly userRoles = computed(() => this._currentUser()?.roles ?? []);
+  readonly accountState = computed(() => this._currentUser()?.accountState ?? null);
 
   // ─── Refresh queue (handles concurrent 401s) ───────────────────────────────
 
@@ -55,6 +56,10 @@ export class AuthService {
 
   hasAnyRole(...roles: string[]): boolean {
     return roles.some((r) => this.hasRole(r));
+  }
+
+  isAccountActive(): boolean {
+    return this.accountState() === 'ACTIVE';
   }
 
   // ─── Authentication ────────────────────────────────────────────────────────
