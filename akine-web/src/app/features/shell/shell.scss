@@ -2,8 +2,6 @@
 $sidenav-width: 224px;
 $sidenav-collapsed: 64px;
 $topbar-height: 52px;
-$sidenav-active-bg: rgb(255 255 255 / 0.1);
-$sidenav-hover-bg: rgb(255 255 255 / 0.06);
 
 // ─── Shell wrapper ─────────────────────────────────────────────────────────
 .shell {
@@ -61,7 +59,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
     align-items: center;
     justify-content: space-between;
     padding: 1rem 0.75rem;
-    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+    border-bottom: 1px solid var(--sidenav-divider);
     min-height: $topbar-height;
     flex-shrink: 0;
   }
@@ -75,12 +73,43 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
     gap: 0.125rem;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--sidenav-text) 50%, transparent) transparent;
+    scrollbar-gutter: stable;
+  }
+
+  &__nav::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &__nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &__nav::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--sidenav-text) 34%, transparent);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &__nav::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--sidenav-text) 58%, transparent);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &__nav::-webkit-scrollbar-button {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   // ─── Footer / user ───────────────────────────────────────────────────────
   &__footer {
     padding: 0.5rem;
-    border-top: 1px solid rgb(255 255 255 / 0.08);
+    border-top: 1px solid var(--sidenav-divider);
     flex-shrink: 0;
   }
 }
@@ -92,12 +121,17 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   gap: 0.625rem;
   text-decoration: none;
   overflow: hidden;
+  color: var(--sidenav-text-active);
+
+  svg rect {
+    fill: var(--sidenav-brand-bg);
+  }
 }
 
 .brand-name {
   font-size: 1.125rem;
   font-weight: 800;
-  color: white;
+  color: var(--sidenav-text-active);
   letter-spacing: -0.04em;
   white-space: nowrap;
 }
@@ -114,8 +148,8 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   transition: color 0.15s, background 0.15s;
 
   &:hover {
-    color: white;
-    background: $sidenav-hover-bg;
+    color: var(--sidenav-text-active);
+    background: var(--sidenav-hover-bg);
   }
 }
 
@@ -135,12 +169,12 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   transition: background 0.15s, color 0.15s;
 
   &:hover {
-    background: $sidenav-hover-bg;
+    background: var(--sidenav-hover-bg);
     color: var(--sidenav-text-active);
   }
 
   &--active {
-    background: $sidenav-active-bg;
+    background: var(--sidenav-active-bg);
     color: var(--sidenav-text-active);
   }
 
@@ -160,7 +194,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
     padding: 0.5rem 0.625rem;
 
     &.nav-item--active {
-      background: $sidenav-hover-bg;
+      background: var(--sidenav-hover-bg);
     }
   }
 }
@@ -179,7 +213,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   & + & {
     margin-top: 0.9rem;
     padding-top: 0.8rem;
-    border-top: 1px solid rgb(255 255 255 / 0.07);
+    border-top: 1px solid var(--sidenav-divider);
   }
 
   &__title {
@@ -187,7 +221,7 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
     font-size: 0.68rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgb(148 163 184 / 0.8);
+    color: color-mix(in srgb, var(--sidenav-text) 86%, transparent);
     font-weight: 700;
   }
 }
@@ -211,12 +245,12 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   transition: background 0.15s, color 0.15s;
 
   &:hover {
-    background: $sidenav-hover-bg;
+    background: var(--sidenav-hover-bg);
     color: var(--sidenav-text-active);
   }
 
   &--active {
-    background: $sidenav-active-bg;
+    background: var(--sidenav-active-bg);
     color: var(--sidenav-text-active);
   }
 }
@@ -367,6 +401,30 @@ $sidenav-hover-bg: rgb(255 255 255 / 0.06);
   padding: 2rem 2.5rem;
   background: var(--bg);
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-muted) 45%, transparent) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--text-muted) 36%, transparent);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--text-muted) 62%, transparent);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
 
   @media (max-width: 640px) {
     padding: 1.25rem 1rem;

@@ -11,3 +11,7 @@ export interface Especialidad {
 export interface EspecialidadCreateRequest {
   nombre: string;
 }
+
+export interface EspecialidadUpdateRequest {
+  nombre: string;
+}

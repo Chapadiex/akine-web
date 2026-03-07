@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClient } from '../../../core/api/api-client.service';
 import { API } from '../../../core/api/api-endpoints';
-import { Especialidad, EspecialidadCreateRequest } from '../models/especialidad.models';
+import { Especialidad, EspecialidadCreateRequest, EspecialidadUpdateRequest } from '../models/especialidad.models';
 
 @Injectable({ providedIn: 'root' })
 export class EspecialidadService {
@@ -21,6 +21,10 @@ export class EspecialidadService {
 
   create(consultorioId: string, req: EspecialidadCreateRequest): Observable<Especialidad> {
     return this.api.post<Especialidad>(API.consultorios.especialidades(consultorioId), req);
+  }
+
+  update(consultorioId: string, especialidadId: string, req: EspecialidadUpdateRequest): Observable<Especialidad> {
+    return this.api.put<Especialidad>(API.consultorios.especialidadUpdate(consultorioId, especialidadId), req);
   }
 
   activate(consultorioId: string, especialidadId: string): Observable<Especialidad> {

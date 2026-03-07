@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { TokenService } from '../services/token.service';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../../../environments/environment';
 
 /**
  * Paths that must NOT trigger 401 → refresh retry.
@@ -13,19 +14,21 @@ const SKIP_REFRESH_PATHS = ['/auth/refresh', '/auth/login', '/auth/register'];
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const tokenService = inject(TokenService);
   const authService = inject(AuthService);
+  const isApiRequest = req.url.startsWith(environment.apiBaseUrl) || req.url.startsWith('/api/');
 
-  const shouldSkip = SKIP_REFRESH_PATHS.some((path) => req.url.includes(path));
+  const shouldSkip = !isApiRequest || SKIP_REFRESH_PATHS.some((path) => req.url.includes(path));
 
   // Attach Bearer token to outgoing requests
   const token = tokenService.getAccessToken();
   const outgoing =
-    token && !shouldSkip
+    token && isApiRequest && !shouldSkip
       ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
       : req;
 
   return next(outgoing).pipe(
     catchError((error: unknown) => {
       if (
+        isApiRequest &&
         !shouldSkip &&
         error instanceof HttpErrorResponse &&
         error.status === 401

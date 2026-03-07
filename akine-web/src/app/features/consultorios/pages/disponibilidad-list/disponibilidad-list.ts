@@ -5,6 +5,7 @@ import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { DisponibilidadForm } from '../../components/disponibilidad-form/disponibilidad-form';
 import { DIAS_SEMANA, DisponibilidadProfesional, DisponibilidadRequest } from '../../models/agenda.models';
 import { DisponibilidadService } from '../../services/disponibilidad.service';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-disponibilidad-list',
@@ -65,7 +66,11 @@ export class DisponibilidadListPage implements OnInit {
   private profesionalId = '';
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent!.snapshot.paramMap.get('id')!;
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.profesionalId = this.route.snapshot.paramMap.get('profId')!;
     this.load();
   }

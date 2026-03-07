@@ -1,20 +1,22 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { EmptyState } from '../empty-state/empty-state';
 
 /**
  * Generic placeholder shown while a feature module is under development.
- * Usage: <app-coming-soon icon="📅" title="Turnos" />
+ * Usage: <app-coming-soon icon="📌" title="Turnos" />
  */
 @Component({
   selector: 'app-coming-soon',
   standalone: true,
+  imports: [EmptyState],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="placeholder-wrap">
-      <div class="placeholder-icon">{{ icon() }}</div>
-      <h1 class="placeholder-title">{{ title() }}</h1>
-      <p class="placeholder-desc">{{ description() }}</p>
-      <span class="placeholder-badge">Próximamente</span>
-    </div>
+    <app-empty-state
+      [icon]="icon()"
+      [title]="title()"
+      [description]="description()"
+      badge="Próximamente"
+    />
   `,
 })
 export class ComingSoon {

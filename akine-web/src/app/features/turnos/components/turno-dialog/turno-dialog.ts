@@ -16,12 +16,13 @@ import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { AsignacionService } from '../../../consultorios/services/asignacion.service';
 import { DuracionService } from '../../../consultorios/services/duracion.service';
+import { FeriadoService } from '../../../consultorios/services/feriado.service';
 import { ProfesionalAsignado, ConsultorioDuracion } from '../../../consultorios/models/agenda.models';
 import { PacienteService } from '../../../pacientes/services/paciente.service';
 import { Paciente, PacienteRequest, PacienteSearchResult } from '../../../pacientes/models/paciente.models';
 import { PacienteForm } from '../../../pacientes/components/paciente-form/paciente-form';
 import { TurnoService } from '../../services/turno.service';
-import { Turno, SlotDisponible, TipoConsulta } from '../../models/turno.models';
+import { Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno.models';
 
 @Component({
   selector: 'app-turno-dialog',
@@ -100,10 +101,18 @@ import { Turno, SlotDisponible, TipoConsulta } from '../../models/turno.models';
             <div class="field">
               <label>Fecha</label>
               <input type="date" [value]="selectedDate()" [min]="todayStr" (change)="onDateInput($event)" />
+              @if (selectedFeriado(); as feriado) {
+                <div class="holiday-warning">
+                  <strong>Dia feriado.</strong>
+                  <span>
+                    {{ feriado.descripcion || 'No se pueden asignar turnos en esta fecha.' }}
+                  </span>
+                </div>
+              }
             </div>
             <div class="field">
               <label>Hora</label>
-              <select [value]="selectedTime()" (change)="onTimeSelect($event)">
+              <select [value]="selectedTime()" (change)="onTimeSelect($event)" [disabled]="isSelectedDateHoliday()">
                 <option value="" disabled>Horario</option>
                 @for (h of filteredHorarios(); track h) {
                   <option [value]="h">{{ h }}</option>
@@ -252,6 +261,18 @@ import { Turno, SlotDisponible, TipoConsulta } from '../../models/turno.models';
       font-size: 0.85rem; margin-bottom: 0.75rem;
       display: flex; align-items: center; gap: 0.5rem;
     }
+    .holiday-warning {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      margin-top: 0.45rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: var(--radius);
+      background: #fff1f2;
+      color: #9f1239;
+      font-size: 0.82rem;
+      border: 1px solid #fecdd3;
+    }
     .btn-link {
       background: none; border: none; color: var(--primary);
       cursor: pointer; font-weight: 600; font-size: 0.85rem; padding: 0;
@@ -286,6 +307,7 @@ export class TurnoDialog implements OnInit {
   private turnoSvc = inject(TurnoService);
   private asignacionSvc = inject(AsignacionService);
   private duracionSvc = inject(DuracionService);
+  private feriadoSvc = inject(FeriadoService);
   private pacienteSvc = inject(PacienteService);
   private toast = inject(ToastService);
   private errMap = inject(ErrorMapperService);
@@ -310,6 +332,14 @@ export class TurnoDialog implements OnInit {
   selectedTime = signal('');
   horariosPermitidos = signal<string[]>([]);
   todayStr = this.buildTodayStr();
+  feriados = signal<Feriado[]>([]);
+  feriadosLoadedYear = signal<number | null>(null);
+
+  selectedFeriado = computed(() => {
+    const date = this.selectedDate();
+    return this.feriados().find((feriado) => feriado.fecha === date) ?? null;
+  });
+  isSelectedDateHoliday = computed(() => this.selectedFeriado() !== null);
 
   // Patient search
   pacienteResults = signal<PacienteSearchResult[]>([]);
@@ -353,6 +383,7 @@ export class TurnoDialog implements OnInit {
       if (start) {
         this.selectedDate.set(start.substring(0, 10));
         this.selectedTime.set(start.substring(11, 16));
+        this.ensureFeriadosLoadedForDate(start.substring(0, 10));
         this.syncFechaHora();
       }
     });
@@ -385,6 +416,7 @@ export class TurnoDialog implements OnInit {
     if (!this.selectedDate()) {
       this.selectedDate.set(this.todayStr);
     }
+    this.ensureFeriadosLoadedForDate(this.selectedDate());
 
     const cid = this.consultorioId();
     this.asignacionSvc.list(cid).subscribe({
@@ -500,10 +532,12 @@ export class TurnoDialog implements OnInit {
   // -- Date/time --
 
   onDateInput(event: Event): void {
-    this.selectedDate.set((event.target as HTMLInputElement).value);
+    const date = (event.target as HTMLInputElement).value;
+    this.selectedDate.set(date);
+    this.ensureFeriadosLoadedForDate(date);
     // Reset time if it became invalid (past hours on today)
     const time = this.selectedTime();
-    if (time && !this.filteredHorarios().includes(time)) {
+    if (this.isDateHoliday(date) || (time && !this.filteredHorarios().includes(time))) {
       this.selectedTime.set('');
     }
     this.syncFechaHora();
@@ -517,6 +551,10 @@ export class TurnoDialog implements OnInit {
   private syncFechaHora(): void {
     const date = this.selectedDate();
     const time = this.selectedTime();
+    if (this.isDateHoliday(date)) {
+      this.form.patchValue({ fechaHoraInicio: '' });
+      return;
+    }
     if (date && time) {
       this.form.patchValue({ fechaHoraInicio: `${date}T${time}` });
     }
@@ -539,6 +577,11 @@ export class TurnoDialog implements OnInit {
   checkDisponibilidad(): void {
     const { fechaHoraInicio, duracionMinutos, profesionalId } = this.form.getRawValue();
     if (!fechaHoraInicio) {
+      this.slotWarning.set(false);
+      this.nextSlot.set(null);
+      return;
+    }
+    if (this.isDateHoliday(fechaHoraInicio.substring(0, 10))) {
       this.slotWarning.set(false);
       this.nextSlot.set(null);
       return;
@@ -580,6 +623,13 @@ export class TurnoDialog implements OnInit {
 
   onSubmit(): void {
     if (this.form.invalid) return;
+    if (this.isSelectedDateHoliday()) {
+      const descripcion = this.selectedFeriado()?.descripcion;
+      this.errorMsg.set(descripcion
+        ? `No se pueden crear turnos en feriado: ${descripcion}`
+        : 'No se pueden crear turnos en dia feriado.');
+      return;
+    }
     if (this.slotWarning()) {
       this.errorMsg.set('El horario seleccionado no esta disponible.');
       return;
@@ -649,5 +699,27 @@ export class TurnoDialog implements OnInit {
     return d.getFullYear() + '-' +
       String(d.getMonth() + 1).padStart(2, '0') + '-' +
       String(d.getDate()).padStart(2, '0');
+  }
+
+  private ensureFeriadosLoadedForDate(date: string): void {
+    if (!date) return;
+    const year = Number(date.substring(0, 4));
+    if (!Number.isFinite(year) || this.feriadosLoadedYear() === year) return;
+
+    this.feriadoSvc.list(this.consultorioId(), year).subscribe({
+      next: (feriados) => {
+        this.feriados.set(feriados);
+        this.feriadosLoadedYear.set(year);
+      },
+      error: () => {
+        this.feriados.set([]);
+        this.feriadosLoadedYear.set(year);
+      },
+    });
+  }
+
+  private isDateHoliday(date: string): boolean {
+    if (!date) return false;
+    return this.feriados().some((feriado) => feriado.fecha === date);
   }
 }

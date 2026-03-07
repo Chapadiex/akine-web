@@ -33,10 +33,11 @@ export interface ColaboradorEmpleado {
   nombre: string;
   apellido: string;
   dni: string | null;
+  fechaNacimiento: string | null;
   cargo: string;
-  nroLegajo: string | null;
   email: string;
   telefono: string | null;
+  direccion: string | null;
   notasInternas: string | null;
   fechaAlta: string | null;
   fechaBaja: string | null;
@@ -65,12 +66,26 @@ export interface ProfesionalColaboradorRequest {
 export interface EmpleadoColaboradorRequest {
   nombre: string;
   apellido: string;
-  dni?: string;
+  dni: string;
+  fechaNacimiento: string;
   cargo: string;
-  nroLegajo?: string;
   email: string;
-  telefono?: string;
+  telefono: string;
+  direccion: string;
   notasInternas?: string;
+}
+
+export interface CargoEmpleadoCatalogo {
+  id: string;
+  nombre: string;
+  slug: string;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CargoEmpleadoUpsertRequest {
+  nombre: string;
 }
 
 export interface ColaboradorEstadoRequest {

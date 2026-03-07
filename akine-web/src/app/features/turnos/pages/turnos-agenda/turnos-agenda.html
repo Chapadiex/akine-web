@@ -9,6 +9,19 @@
 
   <div class="agenda-body">
     <div class="calendar-wrap" [class.with-detail]="selectedTurno()">
+      @if (visibleHolidays().length > 0) {
+        <div class="holiday-strip">
+          <span class="holiday-strip__label">Feriados visibles</span>
+          @for (feriado of visibleHolidays(); track feriado.id) {
+            <span class="holiday-chip" [title]="feriado.descripcion || 'Feriado'">
+              {{ feriado.fecha.substring(8, 10) }}/{{ feriado.fecha.substring(5, 7) }}
+              @if (feriado.descripcion) {
+                <small>{{ feriado.descripcion }}</small>
+              }
+            </span>
+          }
+        </div>
+      }
       <full-calendar #calendar [options]="calendarOptions" />
     </div>
 

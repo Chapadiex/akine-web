@@ -1,12 +1,12 @@
-<div class="page">
+﻿<div class="page">
   <!-- HEADER ROW 1 -->
   <header class="page-header">
     <div class="header-left">
       <h1 class="page-title">Turnos</h1>
       <div class="date-nav">
-        <button class="date-btn" (click)="prevDay()" title="Día anterior">&lsaquo;</button>
+        <button class="date-btn" (click)="prevDay()" title="Día anterior" aria-label="Ir al día anterior">&lsaquo;</button>
         <button class="date-btn today-btn" [class.active]="isToday()" (click)="goToday()">Hoy</button>
-        <button class="date-btn" (click)="nextDay()" title="Día siguiente">&rsaquo;</button>
+        <button class="date-btn" (click)="nextDay()" title="Día siguiente" aria-label="Ir al día siguiente">&rsaquo;</button>
         <span class="date-display">{{ formattedDate() }}</span>
         <input
           type="date"
@@ -188,7 +188,7 @@
 
                   @if (canCancelar(t) || canMarcarAusente(t)) {
                     <div class="overflow-menu-wrap">
-                      <button class="btn-overflow" (click)="toggleOverflow(t.id, $event)" title="M&aacute;s acciones">&ctdot;</button>
+                      <button class="btn-overflow" (click)="toggleOverflow(t.id, $event)" title="Más acciones" aria-label="Mostrar más acciones del turno">&ctdot;</button>
                       @if (overflowMenuTurnoId() === t.id) {
                         <div class="overflow-dropdown">
                           @if (canCancelar(t)) {
@@ -249,7 +249,7 @@
 @if (confirmAction(); as action) {
   <app-confirm-dialog
     [title]="action.label + ' turno'"
-    [message]="'¿' + action.label + ' el turno de ' + pacienteNombreCompleto(action.turno) + ' a las ' + formatTime(action.turno.fechaHoraInicio) + '?'"
+    [message]="'Â¿' + action.label + ' el turno de ' + pacienteNombreCompleto(action.turno) + ' a las ' + formatTime(action.turno.fechaHoraInicio) + '?'"
     [variant]="action.variant"
     [confirmLabel]="action.label"
     (confirmed)="confirmarCambioEstado()"
@@ -265,3 +265,4 @@
     (cancelled)="showCreateDialog.set(false)"
   />
 }
+

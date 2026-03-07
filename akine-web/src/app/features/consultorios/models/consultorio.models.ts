@@ -11,6 +11,9 @@ export interface Consultorio {
   address?: string;
   phone?: string;
   email?: string;
+  mapLatitude?: number;
+  mapLongitude?: number;
+  googleMapsUrl?: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -22,6 +25,9 @@ export interface ConsultorioRequest {
   address?: string;
   phone?: string;
   email?: string;
+  mapLatitude?: number;
+  mapLongitude?: number;
+  googleMapsUrl?: string;
 }
 
 // ─── Box ──────────────────────────────────────────────────────────────────────
@@ -43,6 +49,7 @@ export interface BoxRequest {
   nombre: string;
   codigo?: string;
   tipo: BoxTipo;
+  activo?: boolean;
 }
 
 // ─── Profesional ──────────────────────────────────────────────────────────────

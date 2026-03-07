@@ -17,8 +17,16 @@ export class BoxService {
     return this.api.post<Box>(API.consultorios.boxes(consultorioId), req);
   }
 
+  update(consultorioId: string, boxId: string, req: BoxRequest): Observable<Box> {
+    return this.api.put<Box>(API.consultorios.boxById(consultorioId, boxId), req);
+  }
+
   inactivate(consultorioId: string, boxId: string): Observable<void> {
     return this.api.delete<void>(API.consultorios.boxById(consultorioId, boxId));
+  }
+
+  activate(consultorioId: string, boxId: string): Observable<Box> {
+    return this.api.patch<Box>(API.consultorios.boxActivate(consultorioId, boxId), {});
   }
 
   updateCapacidad(consultorioId: string, boxId: string, capacityType: BoxCapacidadTipo, capacity?: number): Observable<Box> {

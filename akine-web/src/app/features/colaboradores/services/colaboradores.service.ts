@@ -3,6 +3,8 @@ import { Observable } from 'rxjs';
 import { ApiClient } from '../../../core/api/api-client.service';
 import { API } from '../../../core/api/api-endpoints';
 import {
+  CargoEmpleadoCatalogo,
+  CargoEmpleadoUpsertRequest,
   ColaboradorEmpleado,
   ColaboradorEstadoRequest,
   ColaboradorProfesional,
@@ -100,6 +102,47 @@ export class ColaboradoresService {
     const query = params.toString();
     const base = API.consultorios.colaboradoresEmpleados(consultorioId);
     return this.api.get<ColaboradorEmpleado[]>(query ? `${base}?${query}` : base);
+  }
+
+  listCargosEmpleado(
+    consultorioId: string,
+    filters?: { search?: string; includeInactive?: boolean },
+  ): Observable<CargoEmpleadoCatalogo[]> {
+    const params = new URLSearchParams();
+    if (filters?.search?.trim()) params.set('search', filters.search.trim());
+    if (filters?.includeInactive !== undefined) params.set('includeInactive', String(filters.includeInactive));
+    const query = params.toString();
+    const base = API.consultorios.colaboradorCargosEmpleado(consultorioId);
+    return this.api.get<CargoEmpleadoCatalogo[]>(query ? `${base}?${query}` : base);
+  }
+
+  createCargoEmpleado(consultorioId: string, req: CargoEmpleadoUpsertRequest): Observable<CargoEmpleadoCatalogo> {
+    return this.api.post<CargoEmpleadoCatalogo>(API.consultorios.colaboradorCargosEmpleado(consultorioId), req);
+  }
+
+  updateCargoEmpleado(
+    consultorioId: string,
+    cargoId: string,
+    req: CargoEmpleadoUpsertRequest,
+  ): Observable<CargoEmpleadoCatalogo> {
+    return this.api.put<CargoEmpleadoCatalogo>(
+      API.consultorios.colaboradorCargoEmpleadoById(consultorioId, cargoId),
+      req,
+    );
+  }
+
+  activateCargoEmpleado(consultorioId: string, cargoId: string): Observable<CargoEmpleadoCatalogo> {
+    return this.api.patch<CargoEmpleadoCatalogo>(
+      API.consultorios.colaboradorCargoEmpleadoActivar(consultorioId, cargoId),
+      {},
+    );
+  }
+
+  deactivateCargoEmpleado(consultorioId: string, cargoId: string): Observable<CargoEmpleadoCatalogo> {
+    return this.api.patch<CargoEmpleadoCatalogo>(
+      API.consultorios.colaboradorCargoEmpleadoDesactivar(consultorioId, cargoId),
+      {},
+    );
   }
 
   getEmpleado(consultorioId: string, empleadoId: string): Observable<ColaboradorEmpleado> {

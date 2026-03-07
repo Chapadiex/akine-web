@@ -1,145 +1,172 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { HistoriaClinicaService } from '../../services/historia-clinica.service';
-import {
-  ClinicalEvent,
-  CLINICAL_EVENT_TYPE_COLORS,
-  CLINICAL_EVENT_TYPE_LABELS,
-  ClinicalEventType,
-} from '../../models/paciente-360.models';
-import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
+import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { Patient360ClinicalEvent, Patient360HistoriaClinica } from '../../models/paciente-360.models';
+import { Paciente360Service } from '../../services/paciente-360.service';
 
 @Component({
   selector: 'app-historia-clinica-page',
   standalone: true,
-  imports: [DatePipe],
+  imports: [FormsModule, DatePipe],
   styleUrl: './historia-clinica.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="hc-page">
-      <div class="filters">
-        <span class="filter-label">Filtros:</span>
-        <button class="filter-btn" type="button">Último mes</button>
-        <button class="filter-btn" type="button">Todos los profesionales</button>
-        <button class="filter-btn" type="button">Todos los tipos</button>
-        <button class="btn-add" type="button">+ Agregar nota</button>
-      </div>
+    <section class="history-page">
+      <header class="page-head">
+        <div class="page-head-main">
+          <h2>Historia Clinica</h2>
+          <p>Timeline clinico descendente con filtros por tipo, profesional y rango.</p>
+        </div>
+        <button
+          type="button"
+          class="btn-filters-toggle"
+          [class.btn-filters-toggle-active]="filtersOpen()"
+          [attr.aria-expanded]="filtersOpen()"
+          aria-controls="historia-filters"
+          aria-label="Mostrar u ocultar filtros de historia clinica"
+          (click)="toggleFilters()"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M4 6h16l-6 7v5l-4 2v-7L4 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </header>
+
+      @if (filtersOpen()) {
+        <section id="historia-filters" class="filters-card">
+          <label>
+            Tipo
+            <select [(ngModel)]="filters.tipo">
+              <option value="">Todos</option>
+              <option value="SESION">Sesion</option>
+            </select>
+          </label>
+
+          <label>
+            Profesional
+            <select [(ngModel)]="filters.profesionalId">
+              <option value="">Todos</option>
+              @for (prof of data()?.profesionales ?? []; track prof.id) {
+                <option [value]="prof.id">{{ prof.nombre }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Desde
+            <input type="date" [(ngModel)]="filters.from" />
+          </label>
+
+          <label>
+            Hasta
+            <input type="date" [(ngModel)]="filters.to" />
+          </label>
+
+          <button type="button" class="btn-filter" (click)="load()">Aplicar</button>
+        </section>
+      }
 
       @if (loading()) {
-        <p class="empty">Cargando historia clínica...</p>
-      } @else if (events().length === 0) {
-        <p class="empty">No hay registros en la historia clínica.</p>
-      } @else {
-        <div class="timeline">
-          @for (ev of events(); track ev.id) {
-            <div class="event">
-              <div class="event-date">
-                <div class="event-date__day">{{ ev.fecha | date:'dd MMM yyyy' }}</div>
-                <div class="event-date__time">{{ ev.fecha | date:'HH:mm' }}</div>
-              </div>
-              <div class="event-dot">
-                <span class="event-dot__circle" [style.background]="getColor(ev.tipo).bg"></span>
-              </div>
-              <div class="event-content">
-                <div class="event-meta">
-                  <span class="event-type-chip"
-                    [style.background]="getColor(ev.tipo).bg"
-                    [style.color]="getColor(ev.tipo).text">
-                    {{ getLabel(ev.tipo) }}
-                  </span>
-                  <span class="event-prof">{{ ev.profesionalNombre }}</span>
+        <p class="loading-msg">Cargando historia clinica...</p>
+      } @else if (data()?.items?.length) {
+        <div class="content-grid">
+          <div class="timeline">
+            @for (item of data()!.items; track item.id) {
+              <button class="timeline-item" type="button" (click)="selected.set(item)">
+                <span class="timeline-date">{{ item.fecha | date:'dd MMM yyyy · HH:mm' }}</span>
+                <div class="timeline-copy">
+                  <strong>{{ item.resumen }}</strong>
+                  <p>{{ item.profesionalNombre || 'Profesional sin identificar' }} · {{ item.tipo }}</p>
                 </div>
-                <p class="event-summary">{{ ev.resumen }}</p>
-                @if (ev.adjuntos.length > 0) {
-                  <div class="event-attachments">📎 {{ ev.adjuntos.length }} adjunto{{ ev.adjuntos.length > 1 ? 's' : '' }}</div>
-                }
-                <button class="event-link" type="button" (click)="openDetail(ev)">Ver detalle →</button>
-              </div>
-            </div>
-          }
-        </div>
-      }
-    </div>
-
-    @if (selectedEvent()) {
-      <div class="overlay" (click)="selectedEvent.set(null)">
-        <div class="drawer" (click)="$event.stopPropagation()">
-          <div class="drawer-header">
-            <h3>Detalle del evento</h3>
-            <button class="drawer-close" (click)="selectedEvent.set(null)">✕</button>
-          </div>
-          <div class="drawer-body">
-            <div class="event-meta" style="margin-bottom:.75rem">
-              <span class="event-type-chip"
-                [style.background]="getColor(selectedEvent()!.tipo).bg"
-                [style.color]="getColor(selectedEvent()!.tipo).text">
-                {{ getLabel(selectedEvent()!.tipo) }}
-              </span>
-              <span class="event-prof">{{ selectedEvent()!.profesionalNombre }}</span>
-              <span class="event-prof">{{ selectedEvent()!.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
-            </div>
-            <p style="font-size:.9rem;line-height:1.6;color:var(--text)">{{ selectedEvent()!.detalle }}</p>
-            @if (selectedEvent()!.adjuntos.length > 0) {
-              <h4 style="margin-top:1rem;font-size:.85rem;font-weight:600">Adjuntos</h4>
-              @for (adj of selectedEvent()!.adjuntos; track adj.id) {
-                <div style="padding:.5rem 0;font-size:.82rem;color:var(--primary)">📎 {{ adj.nombre }}</div>
-              }
+              </button>
             }
           </div>
+
+          <aside class="detail-card">
+            @if (selected(); as current) {
+              <span class="detail-tag">{{ current.tipo }}</span>
+              <h3>{{ current.resumen }}</h3>
+              <p class="detail-meta">{{ current.fecha | date:'dd/MM/yyyy HH:mm' }} · {{ current.profesionalNombre || 'Sin profesional' }}</p>
+              <p class="detail-body">{{ current.detalle }}</p>
+              <dl class="detail-grid">
+                <div>
+                  <dt>Turno vinculado</dt>
+                  <dd>{{ current.turnoId || '-' }}</dd>
+                </div>
+                <div>
+                  <dt>Ultima modificacion</dt>
+                  <dd>{{ current.ultimaModificacion ? (current.ultimaModificacion | date:'dd/MM/yyyy HH:mm') : '-' }}</dd>
+                </div>
+              </dl>
+            } @else {
+              <div class="state-empty">
+                <p>Selecciona un evento de la timeline para ver el detalle completo.</p>
+              </div>
+            }
+          </aside>
         </div>
-      </div>
-    }
+      } @else {
+        <div class="state-empty">
+          <p>No hay eventos clinicos para los filtros seleccionados.</p>
+        </div>
+      }
+    </section>
   `,
-  styles: [`
-    .overlay {
-      position: fixed; inset: 0; background: rgb(0 0 0 / .35);
-      display: flex; justify-content: flex-end; z-index: 900;
-    }
-    .drawer {
-      width: min(540px, 95vw); background: var(--white);
-      height: 100vh; overflow-y: auto; box-shadow: var(--shadow-lg);
-    }
-    .drawer-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
-    }
-    .drawer-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
-    .drawer-close {
-      background: none; border: none; font-size: 1.2rem; cursor: pointer;
-      color: var(--text-muted); padding: 0.25rem;
-    }
-    .drawer-body { padding: 1.5rem; }
-  `],
 })
-export class HistoriaClinicaPage implements OnInit {
+export class HistoriaClinicaPage {
   private readonly route = inject(ActivatedRoute);
-  private readonly svc = inject(HistoriaClinicaService);
+  private readonly consultorioCtx = inject(ConsultorioContextService);
+  private readonly svc = inject(Paciente360Service);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
 
-  readonly events = signal<ClinicalEvent[]>([]);
+  readonly data = signal<Patient360HistoriaClinica | null>(null);
+  readonly selected = signal<Patient360ClinicalEvent | null>(null);
   readonly loading = signal(true);
-  readonly selectedEvent = signal<ClinicalEvent | null>(null);
+  readonly filtersOpen = signal(false);
+  readonly filters = {
+    tipo: '',
+    profesionalId: '',
+    from: '',
+    to: '',
+  };
 
-  ngOnInit(): void {
-    const id = this.route.parent?.snapshot.paramMap.get('patientId') ?? '';
-    this.svc.list(id).subscribe({
-      next: (items) => { this.events.set(items); this.loading.set(false); },
-      error: (err) => { this.loading.set(false); this.toast.error(this.errMap.toMessage(err)); },
+  constructor() {
+    this.load();
+  }
+
+  toggleFilters(): void {
+    this.filtersOpen.set(!this.filtersOpen());
+  }
+
+  load(): void {
+    const consultorioId = this.consultorioCtx.selectedConsultorioId();
+    const pacienteId = this.route.parent?.snapshot.paramMap.get('patientId') ?? '';
+    if (!consultorioId || !pacienteId) {
+      this.loading.set(false);
+      return;
+    }
+
+    this.loading.set(true);
+    this.svc.getHistoriaClinica(consultorioId, pacienteId, {
+      tipo: this.filters.tipo || undefined,
+      profesionalId: this.filters.profesionalId || undefined,
+      from: this.filters.from || undefined,
+      to: this.filters.to || undefined,
+    }).subscribe({
+      next: (data) => {
+        this.data.set(data);
+        this.selected.set(data.items[0] ?? null);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
-  }
-
-  getColor(tipo: ClinicalEventType): { bg: string; text: string } {
-    return CLINICAL_EVENT_TYPE_COLORS[tipo];
-  }
-
-  getLabel(tipo: ClinicalEventType): string {
-    return CLINICAL_EVENT_TYPE_LABELS[tipo];
-  }
-
-  openDetail(event: ClinicalEvent): void {
-    this.selectedEvent.set(event);
   }
 }

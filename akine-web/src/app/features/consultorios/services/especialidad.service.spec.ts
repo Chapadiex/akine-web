@@ -31,13 +31,24 @@ describe('EspecialidadService', () => {
   });
 
   it('should map create endpoint', () => {
-    service.create('cid-1', { nombre: 'Kinesiología' }).subscribe();
+    service.create('cid-1', { nombre: 'Kinesiologia' }).subscribe();
 
     const req = httpMock.expectOne(
       `${environment.apiBaseUrl}/api/v1/consultorios/cid-1/especialidades`,
     );
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ nombre: 'Kinesiología' });
+    expect(req.request.body).toEqual({ nombre: 'Kinesiologia' });
+    req.flush({});
+  });
+
+  it('should map update endpoint', () => {
+    service.update('cid-1', 'esp-1', { nombre: 'Fisiatria' }).subscribe();
+
+    const req = httpMock.expectOne(
+      `${environment.apiBaseUrl}/api/v1/consultorios/cid-1/especialidades/esp-1`,
+    );
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ nombre: 'Fisiatria' });
     req.flush({});
   });
 

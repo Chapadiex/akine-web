@@ -18,6 +18,7 @@ import {
   ProfesionalRequest,
 } from '../../models/consultorio.models';
 import { ProfesionalService } from '../../services/profesional.service';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-profesional-list',
@@ -91,7 +92,7 @@ import { ProfesionalService } from '../../services/profesional.service';
                         {{ p.activo ? 'Desactivar' : 'Activar' }}
                       </button>
                     }
-                    <a class="btn-icon" [routerLink]="['../profesionales', p.id, 'disponibilidad']">Agenda</a>
+                    <a class="btn-icon" [routerLink]="['..', 'agenda', 'profesionales', p.id, 'disponibilidad']">Agenda</a>
                   </td>
                 </tr>
               }
@@ -179,7 +180,12 @@ export class ProfesionalListPage implements OnInit {
   readonly canWrite = () => this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent!.snapshot.paramMap.get('id')!;
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.loading.set(false);
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.load();
   }
 

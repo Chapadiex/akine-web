@@ -1,106 +1,140 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
-import { DatePipe } from '@angular/common';
-import { CoberturaService } from '../../services/cobertura.service';
-import { Attachment, Insurance } from '../../models/paciente-360.models';
-import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
+import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { Patient360ObraSocial } from '../../models/paciente-360.models';
+import { Paciente360Service } from '../../services/paciente-360.service';
 
 @Component({
   selector: 'app-cobertura-page',
   standalone: true,
-  imports: [DatePipe],
+  imports: [CurrencyPipe],
   styleUrl: './cobertura.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="cobertura-page">
-      <h2 class="page-title">Obra Social y Adjuntos</h2>
+    <section class="cobertura-page">
+      <header class="page-head">
+        <div class="page-head-main">
+          <h2>Obra Social</h2>
+          <p>Convenio activo, plan, coseguro y disponibilidad administrativa del paciente.</p>
+        </div>
+      </header>
 
       @if (loading()) {
-        <p class="empty">Cargando...</p>
-      } @else {
-        <div class="sections">
-          <!-- Datos de cobertura -->
-          <div class="section-card">
-            <div class="section-title">Datos de cobertura</div>
-            @if (insurance()?.obraSocialNombre) {
-              <div class="info-row">
-                <span class="info-label">Obra Social</span>
-                <span class="info-value">{{ insurance()!.obraSocialNombre }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Plan</span>
-                <span class="info-value">{{ insurance()!.plan }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">N° Afiliado</span>
-                <span class="info-value">{{ insurance()!.nroAfiliado }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Vigencia</span>
-                <span class="vigente-chip" [class]="'vigente-chip--' + insurance()!.vigente">
-                  {{ insurance()!.vigente ? 'Vigente' : 'Vencida' }}
-                </span>
-              </div>
-              @if (insurance()!.fechaVencimiento) {
-                <div class="info-row">
-                  <span class="info-label">Vence</span>
-                  <span class="info-value">{{ insurance()!.fechaVencimiento | date:'dd/MM/yyyy' }}</span>
-                </div>
-              }
-            } @else {
-              <p class="empty">Sin obra social registrada.</p>
-            }
-          </div>
+        <p class="loading-msg">Cargando cobertura...</p>
+      } @else if (data(); as current) {
+        <div class="overview-grid">
+          <article class="overview-card">
+            <span class="overview-label">Obra social</span>
+            <strong>{{ current.overview.obraSocialNombre || 'Sin cobertura' }}</strong>
+            <small>{{ current.overview.plan || 'Sin plan informado' }}</small>
+          </article>
+          <article class="overview-card">
+            <span class="overview-label">Afiliado</span>
+            <strong>{{ current.overview.nroAfiliado || '-' }}</strong>
+            <small>{{ current.overview.vigente ? 'Cobertura vigente' : 'Cobertura no vigente' }}</small>
+          </article>
+          <article class="overview-card">
+            <span class="overview-label">Cobertura</span>
+            <strong>{{ current.overview.tipoCobertura || '-' }}</strong>
+            <small>{{ current.overview.valorCobertura != null ? (current.overview.valorCobertura | currency:'ARS':'symbol':'1.0-0') : 'Sin valor definido' }}</small>
+          </article>
+          <article class="overview-card">
+            <span class="overview-label">Coseguro</span>
+            <strong>{{ current.overview.tipoCoseguro || '-' }}</strong>
+            <small>{{ current.overview.valorCoseguro != null ? (current.overview.valorCoseguro | currency:'ARS':'symbol':'1.0-0') : 'Sin coseguro cargado' }}</small>
+          </article>
+        </div>
 
-          <!-- Adjuntos administrativos -->
-          <div class="section-card">
-            <div class="section-title">Adjuntos administrativos</div>
-            @if (attachments().length === 0) {
-              <p class="empty">Sin adjuntos.</p>
-            } @else {
-              <div class="attachments-list">
-                @for (att of attachments(); track att.id) {
-                  <div class="attachment-item">
-                    <div>
-                      <div class="att-name">📎 {{ att.nombre }}</div>
-                      <div class="att-date">{{ att.fechaCarga | date:'dd/MM/yyyy' }}
-                        @if (!att.vigente) { · <span style="color:var(--error)">No vigente</span> }
-                      </div>
-                    </div>
-                    <div class="att-actions">
-                      <button class="att-btn" type="button">Descargar</button>
-                    </div>
-                  </div>
-                }
+        <div class="panels-grid">
+          <article class="panel">
+            <header class="panel-head">
+              <h3>Cobertura y limites</h3>
+            </header>
+            <dl class="detail-grid">
+              <div>
+                <dt>Estado</dt>
+                <dd>{{ current.coverage.estadoCobertura }}</dd>
               </div>
+              <div>
+                <dt>Prestaciones sin autorizacion</dt>
+                <dd>{{ current.coverage.prestacionesSinAutorizacion ?? '-' }}</dd>
+              </div>
+              <div>
+                <dt>Sesiones usadas este mes</dt>
+                <dd>{{ current.coverage.sesionesUsadasMes }}</dd>
+              </div>
+              <div>
+                <dt>Sesiones disponibles</dt>
+                <dd>{{ current.coverage.sesionesDisponibles ?? '-' }}</dd>
+              </div>
+              <div>
+                <dt>Autorizacion requerida</dt>
+                <dd>{{ current.coverage.autorizacionRequerida ? 'Si' : 'No' }}</dd>
+              </div>
+            </dl>
+            @if (current.overview.observacionesPlan) {
+              <p class="support-text">{{ current.overview.observacionesPlan }}</p>
             }
-            <button class="btn-upload" type="button">+ Subir adjunto</button>
-          </div>
+          </article>
+
+          <article class="panel">
+            <header class="panel-head">
+              <h3>Adjuntos</h3>
+            </header>
+            @if (current.adjuntos.length === 0) {
+              <div class="state-empty">
+                <p>No hay carnet, ordenes o autorizaciones cargadas para este paciente.</p>
+              </div>
+            } @else {
+              <ul class="attachment-list">
+                @for (item of current.adjuntos; track item.id) {
+                  <li>
+                    <strong>{{ item.nombre }}</strong>
+                    <span>{{ item.tipo }} · {{ item.vigente ? 'Vigente' : 'No vigente' }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </article>
+        </div>
+      } @else {
+        <div class="state-empty">
+          <p>No hay datos de cobertura para este paciente.</p>
         </div>
       }
-    </div>
+    </section>
   `,
 })
-export class CoberturaPage implements OnInit {
+export class CoberturaPage {
   private readonly route = inject(ActivatedRoute);
-  private readonly svc = inject(CoberturaService);
+  private readonly consultorioCtx = inject(ConsultorioContextService);
+  private readonly svc = inject(Paciente360Service);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
 
-  readonly insurance = signal<Insurance | null>(null);
-  readonly attachments = signal<Attachment[]>([]);
+  readonly data = signal<Patient360ObraSocial | null>(null);
   readonly loading = signal(true);
 
-  ngOnInit(): void {
-    const id = this.route.parent?.snapshot.paramMap.get('patientId') ?? '';
-    this.svc.getCobertura(id).subscribe({
+  constructor() {
+    const consultorioId = this.consultorioCtx.selectedConsultorioId();
+    const pacienteId = this.route.parent?.snapshot.paramMap.get('patientId') ?? '';
+    if (!consultorioId || !pacienteId) {
+      this.loading.set(false);
+      return;
+    }
+
+    this.svc.getObraSocial(consultorioId, pacienteId).subscribe({
       next: (data) => {
-        this.insurance.set(data.insurance);
-        this.attachments.set(data.attachments);
+        this.data.set(data);
         this.loading.set(false);
       },
-      error: (err) => { this.loading.set(false); this.toast.error(this.errMap.toMessage(err)); },
+      error: (err) => {
+        this.loading.set(false);
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
   }
 }

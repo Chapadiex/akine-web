@@ -5,6 +5,7 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
@@ -14,6 +15,7 @@ import { BoxForm } from '../../components/box-form/box-form';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { Box, BoxRequest } from '../../models/consultorio.models';
 import { BoxService } from '../../services/box.service';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-box-list',
@@ -25,7 +27,7 @@ import { BoxService } from '../../services/box.service';
       <div class="sub-header">
         <span class="sub-count">{{ items().length }} box(es)</span>
         @if (canWrite()) {
-          <button class="btn-primary" (click)="showForm.set(true)">+ Nuevo Box</button>
+          <button class="btn-primary" (click)="startCreate()">+ Nuevo Box</button>
         }
       </div>
 
@@ -37,13 +39,12 @@ import { BoxService } from '../../services/box.service';
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Nombre</th><th>Codigo</th><th>Tipo</th><th>Capacidad</th><th>Estado</th><th>Acciones</th></tr>
+              <tr><th>Nombre</th><th>Tipo</th><th>Capacidad</th><th>Estado</th><th>Acciones</th></tr>
             </thead>
             <tbody>
               @for (b of items(); track b.id) {
                 <tr>
                   <td>{{ b.nombre }}</td>
-                  <td>{{ b.codigo ?? '-' }}</td>
                   <td>{{ b.tipo }}</td>
                   <td>
                     @if (b.capacityType === 'LIMITED') {
@@ -57,11 +58,48 @@ import { BoxService } from '../../services/box.service';
                       {{ b.activo ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
-                  <td>
+                  <td class="actions-cell">
+                    @if (canWrite()) {
+                      <button
+                        class="action-btn"
+                        title="Editar box"
+                        aria-label="Editar box"
+                        (click)="startEdit(b)"
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+                          <path d="M3 17.25V21h3.75L19.8 7.95l-3.75-3.75L3 17.25z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                          <path d="M14.5 5.5 18.5 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        </svg>
+                        <span>Editar</span>
+                      </button>
+                    }
+
                     @if (canWrite() && b.activo) {
-                      <button class="btn-icon" title="Capacidad" (click)="startCapacidad(b)">Capacidad</button>
-                      <button class="btn-icon btn-danger" title="Dar de baja"
-                              (click)="startDelete(b)">Baja</button>
+                      <button
+                        class="action-btn"
+                        title="Configurar capacidad"
+                        aria-label="Configurar capacidad"
+                        (click)="startCapacidad(b)"
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+                          <path d="M4 19.5h16M7 17V10M12 17V6M17 17v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>Capacidad</span>
+                      </button>
+                      <button
+                        class="action-btn action-btn-danger"
+                        title="Dar de baja"
+                        aria-label="Dar de baja"
+                        (click)="startDelete(b)"
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+                          <path d="M4 7h16M9 7V5h6v2M8 7l.7 11h6.6L16 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                          <path d="M10.5 10.5v5M13.5 10.5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                        </svg>
+                        <span>Baja</span>
+                      </button>
+                    } @else if (!canWrite()) {
+                      <span class="actions-empty">-</span>
                     }
                   </td>
                 </tr>
@@ -73,7 +111,11 @@ import { BoxService } from '../../services/box.service';
     </div>
 
     @if (showForm()) {
-      <app-box-form (saved)="onCreate($event)" (cancelled)="showForm.set(false)" />
+      <app-box-form
+        [editItem]="editTarget()"
+        (saved)="onSaved($event)"
+        (cancelled)="closeForm()"
+      />
     }
 
     @if (deleteTarget()) {
@@ -113,9 +155,31 @@ import { BoxService } from '../../services/box.service';
     .badge { padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600;
              background: var(--bg); color: var(--text-muted); }
     .badge-active { background: var(--success-bg); color: var(--success); }
-    .btn-icon { background: none; border: none; cursor: pointer; font-size: .85rem; padding: .2rem .4rem;
-                border-radius: var(--radius); }
-    .btn-danger:hover { background: var(--error-bg); }
+    .actions-cell { width: 320px; }
+    .actions-empty { color: var(--text-muted); }
+    .action-btn {
+      height: 30px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--white);
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: 0 .5rem;
+      margin-right: .35rem;
+      color: var(--text-muted); cursor: pointer;
+      transition: all .15s ease;
+      font-size: .82rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .action-btn:last-child { margin-right: 0; }
+    .action-btn:hover {
+      border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+      color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 8%, var(--white));
+    }
+    .action-btn-danger:hover {
+      border-color: color-mix(in srgb, var(--error) 35%, var(--border));
+      color: var(--error);
+      background: var(--error-bg);
+    }
   `],
 })
 export class BoxListPage implements OnInit {
@@ -128,6 +192,7 @@ export class BoxListPage implements OnInit {
   items        = signal<Box[]>([]);
   loading      = signal(true);
   showForm     = signal(false);
+  editTarget   = signal<Box | null>(null);
   deleteTarget = signal<Box | null>(null);
   capacityTarget = signal<Box | null>(null);
 
@@ -136,7 +201,12 @@ export class BoxListPage implements OnInit {
   canWrite = () => this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent!.snapshot.paramMap.get('id')!;
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.loading.set(false);
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.load();
   }
 
@@ -148,9 +218,62 @@ export class BoxListPage implements OnInit {
     });
   }
 
-  onCreate(req: BoxRequest): void {
-    this.svc.create(this.consultorioId, req).subscribe({
-      next: () => { this.toast.success('Box creado'); this.showForm.set(false); this.load(); },
+  startCreate(): void {
+    this.editTarget.set(null);
+    this.showForm.set(true);
+  }
+
+  startEdit(item: Box): void {
+    this.editTarget.set(item);
+    this.showForm.set(true);
+  }
+
+  closeForm(): void {
+    this.showForm.set(false);
+    this.editTarget.set(null);
+  }
+
+  onSaved(req: BoxRequest): void {
+    const target = this.editTarget();
+    const request$ = target
+      ? this.svc.update(this.consultorioId, target.id, req)
+      : this.svc.create(this.consultorioId, req);
+
+    request$.subscribe({
+      next: (updated) => {
+        if (target && req.activo !== undefined && req.activo !== updated.activo) {
+          if (req.activo) {
+            this.svc.activate(this.consultorioId, target.id).subscribe({
+              next: () => {
+                this.toast.success('Box actualizado');
+                this.closeForm();
+                this.load();
+              },
+              error: (err: unknown) => {
+                if (err instanceof HttpErrorResponse && err.status === 404) {
+                  this.toast.error('No se pudo activar el box: falta endpoint /activar en backend. Reinicia/actualiza API.');
+                  return;
+                }
+                this.toast.error(this.errMap.toMessage(err));
+              },
+            });
+          } else {
+            this.svc.inactivate(this.consultorioId, target.id).subscribe({
+              next: () => {
+                this.toast.success('Box actualizado');
+                this.closeForm();
+                this.load();
+              },
+              error: (err: unknown) => this.toast.error(this.errMap.toMessage(err)),
+            });
+          }
+          return;
+        }
+
+        this.toast.success(target ? 'Box actualizado' : 'Box creado');
+        this.closeForm();
+        this.load();
+      },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }

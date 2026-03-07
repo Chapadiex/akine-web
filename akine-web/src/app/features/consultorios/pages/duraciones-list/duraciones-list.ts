@@ -5,6 +5,7 @@ import { ErrorMapperService } from '../../../../core/error/error-mapper.service'
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { ConsultorioDuracion } from '../../models/agenda.models';
 import { DuracionService } from '../../services/duracion.service';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-duraciones-list',
@@ -13,10 +14,10 @@ import { DuracionService } from '../../services/duracion.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sub-header">
-      <span class="sub-count">{{ items().length }} duracion(es)</span>
+      <span class="sub-count">{{ items().length }} intervalo(s) configurado(s)</span>
       <div class="controls">
         <input type="number" [(ngModel)]="nuevoMinutos" min="15" step="5" />
-        <button class="btn-primary" (click)="add()">Agregar</button>
+        <button class="btn-primary" (click)="add()">Agregar intervalo</button>
       </div>
     </div>
 
@@ -47,20 +48,24 @@ export class DuracionesListPage implements OnInit {
   private consultorioId = '';
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent!.snapshot.paramMap.get('id')!;
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.load();
   }
 
   add(): void {
     this.svc.add(this.consultorioId, this.nuevoMinutos).subscribe({
-      next: () => { this.toast.success('Duracion agregada'); this.load(); },
+      next: () => { this.toast.success('Intervalo agregado'); this.load(); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }
 
   remove(minutos: number): void {
     this.svc.remove(this.consultorioId, minutos).subscribe({
-      next: () => { this.toast.success('Duracion eliminada'); this.load(); },
+      next: () => { this.toast.success('Intervalo eliminado'); this.load(); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }

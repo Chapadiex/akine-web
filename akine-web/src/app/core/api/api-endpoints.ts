@@ -62,6 +62,16 @@ export const API = {
       return `/api/v1/pacientes/search?${params.toString()}`;
     },
   },
+  pacientes360: {
+    header: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/header`,
+    resumen: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/resumen`,
+    historiaClinica: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/historia-clinica`,
+    diagnosticos: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/diagnosticos`,
+    atenciones: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/atenciones`,
+    turnos: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/turnos`,
+    obraSocial: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/obra-social`,
+    pagos: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/pagos`,
+  },
   consultorios: {
     list:            '/api/v1/consultorios',
     create:          '/api/v1/consultorios',
@@ -71,6 +81,7 @@ export const API = {
     activate:        (id: string) => `/api/v1/consultorios/${id}/activar`,
     boxes:           (cid: string) => `/api/v1/consultorios/${cid}/boxes`,
     boxById:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/boxes/${id}`,
+    boxActivate:     (cid: string, id: string) => `/api/v1/consultorios/${cid}/boxes/${id}/activar`,
     profesionales:   (cid: string) => `/api/v1/consultorios/${cid}/profesionales`,
     profesionalById: (cid: string, id: string) => `/api/v1/consultorios/${cid}/profesionales/${id}`,
     profesionalEstado: (cid: string, id: string) => `/api/v1/consultorios/${cid}/profesionales/${id}/estado`,
@@ -89,6 +100,7 @@ export const API = {
     antecedentesRestoreDefaults: (cid: string) => `/api/v1/consultorios/${cid}/antecedentes-catalogo/defaults/restore`,
     especialidades: (cid: string) => `/api/v1/consultorios/${cid}/especialidades`,
     especialidadById: (cid: string, especialidadId: string) => `/api/v1/consultorios/${cid}/especialidades/${especialidadId}`,
+    especialidadUpdate: (cid: string, especialidadId: string) => `/api/v1/consultorios/${cid}/especialidades/${especialidadId}`,
     especialidadActivar: (cid: string, especialidadId: string) => `/api/v1/consultorios/${cid}/especialidades/${especialidadId}/activar`,
     especialidadDesactivar: (cid: string, especialidadId: string) => `/api/v1/consultorios/${cid}/especialidades/${especialidadId}/desactivar`,
     colaboradoresProfesionales: (cid: string) => `/api/v1/consultorios/${cid}/colaboradores/profesionales`,
@@ -97,6 +109,10 @@ export const API = {
     colaboradorProfesionalCrearCuenta: (cid: string, id: string) => `/api/v1/consultorios/${cid}/colaboradores/profesionales/${id}/crear-cuenta`,
     colaboradorProfesionalReenviar: (cid: string, id: string) => `/api/v1/consultorios/${cid}/colaboradores/profesionales/${id}/reenviar-activacion`,
     colaboradoresEmpleados: (cid: string) => `/api/v1/consultorios/${cid}/colaboradores/empleados`,
+    colaboradorCargosEmpleado: (cid: string) => `/api/v1/consultorios/${cid}/colaboradores/cargos-empleado`,
+    colaboradorCargoEmpleadoById: (cid: string, cargoId: string) => `/api/v1/consultorios/${cid}/colaboradores/cargos-empleado/${cargoId}`,
+    colaboradorCargoEmpleadoActivar: (cid: string, cargoId: string) => `/api/v1/consultorios/${cid}/colaboradores/cargos-empleado/${cargoId}/activar`,
+    colaboradorCargoEmpleadoDesactivar: (cid: string, cargoId: string) => `/api/v1/consultorios/${cid}/colaboradores/cargos-empleado/${cargoId}/desactivar`,
     colaboradorEmpleadoById: (cid: string, id: string) => `/api/v1/consultorios/${cid}/colaboradores/empleados/${id}`,
     colaboradorEmpleadoEstado: (cid: string, id: string) => `/api/v1/consultorios/${cid}/colaboradores/empleados/${id}/estado`,
     colaboradorEmpleadoReenviar: (cid: string, id: string) => `/api/v1/consultorios/${cid}/colaboradores/empleados/${id}/reenviar-activacion`,
@@ -110,9 +126,10 @@ export const API = {
     historial:      (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/historial`,
   },
   feriados: {
-    list:   (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
-    create: (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
-    delete: (cid: string, id: string) => `/api/v1/consultorios/${cid}/feriados/${id}`,
+    list:            (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
+    create:          (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
+    delete:          (cid: string, id: string) => `/api/v1/consultorios/${cid}/feriados/${id}`,
+    syncNacionales:  (cid: string, year: number) => `/api/v1/consultorios/${cid}/feriados/sync-nacionales?year=${year}`,
   },
   obrasSociales: {
     list: (cid: string, params?: { q?: string; estado?: string; conPlanes?: boolean; page?: number; size?: number }) => {

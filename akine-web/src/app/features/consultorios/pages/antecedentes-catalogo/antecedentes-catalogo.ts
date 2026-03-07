@@ -22,6 +22,7 @@ import {
   RepeatableFieldType,
 } from '../../models/antecedente-catalog.models';
 import { AntecedenteCatalogService } from '../../services/antecedente-catalog.service';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 const VALUE_TYPES: AntecedenteValueType[] = ['BOOLEAN', 'ENUM', 'ENUM_MULTI', 'REPEATABLE', 'TEXT'];
 const FIELD_TYPES: RepeatableFieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN'];
@@ -327,7 +328,12 @@ export class AntecedentesCatalogoPage implements OnInit {
   });
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent?.snapshot.paramMap.get('id') ?? '';
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.loading.set(false);
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.load();
   }
 

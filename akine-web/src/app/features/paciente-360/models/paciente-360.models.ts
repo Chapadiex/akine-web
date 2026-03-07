@@ -1,122 +1,227 @@
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type ClinicalEventType = 'EVALUACION' | 'SESION' | 'EVOLUCION' | 'ALTA' | 'NOTA';
-
-export const CLINICAL_EVENT_TYPE_LABELS: Record<ClinicalEventType, string> = {
-  EVALUACION: 'Evaluación',
-  SESION: 'Sesión',
-  EVOLUCION: 'Evolución',
-  ALTA: 'Alta',
-  NOTA: 'Nota',
-};
-
-export const CLINICAL_EVENT_TYPE_COLORS: Record<ClinicalEventType, { bg: string; text: string }> = {
-  EVALUACION: { bg: '#DCFCE7', text: '#16A34A' },
-  SESION: { bg: '#DBEAFE', text: '#2563EB' },
-  EVOLUCION: { bg: '#F3E8FF', text: '#7C3AED' },
-  ALTA: { bg: '#FEF3C7', text: '#D97706' },
-  NOTA: { bg: '#F1F5F9', text: '#64748B' },
-};
-
-export type DiagnosisStatus = 'ACTIVO' | 'RESUELTO';
-
-export const DIAGNOSIS_STATUS_LABELS: Record<DiagnosisStatus, string> = {
-  ACTIVO: 'Activo',
-  RESUELTO: 'Resuelto',
-};
-
-export type SessionStatus = 'REALIZADA' | 'CANCELADA' | 'PENDIENTE';
-
-export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
-  REALIZADA: 'Realizada',
-  CANCELADA: 'Cancelada',
-  PENDIENTE: 'Pendiente',
-};
-
-export type AttachmentType = 'ADMINISTRATIVO' | 'CLINICO';
-
-export type PaymentType = 'COBRO' | 'PAGO';
-export type PaymentStatus = 'PENDIENTE' | 'COMPLETADO';
-
-// ─── Interfaces ──────────────────────────────────────────────────────────────
-
-export interface ClinicalEvent {
+export interface Patient360Header {
   id: string;
-  pacienteId: string;
+  consultorioId: string;
+  dni: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string | null;
+  email?: string | null;
+  fechaNacimiento?: string | null;
+  sexo?: string | null;
+  domicilio?: string | null;
+  nacionalidad?: string | null;
+  estadoCivil?: string | null;
+  profesion?: string | null;
+  obraSocialNombre?: string | null;
+  obraSocialPlan?: string | null;
+  obraSocialNroAfiliado?: string | null;
+  activo: boolean;
+  coberturaVigente: boolean;
+  coberturaResumen: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Patient360SummaryKpis {
+  proximoTurnoFecha?: string | null;
+  proximoTurnoProfesional?: string | null;
+  proximoTurnoEstado?: string | null;
+  ultimaAtencionFecha?: string | null;
+  ultimaAtencionProfesional?: string | null;
+  ultimaAtencionResumen?: string | null;
+  diagnosticosActivos: number;
+  sesionesMes: number;
+  coberturaEstado: string;
+  saldoPendiente: number;
+}
+
+export interface Patient360AlertItem {
+  tipo: 'warning' | 'info' | 'error' | string;
+  mensaje: string;
+  route: string;
+}
+
+export interface Patient360ActionItem {
+  tipo: string;
+  etiqueta: string;
+  route: string;
+  fechaReferencia?: string | null;
+}
+
+export interface Patient360ActivityItem {
+  id: string;
+  tipo: string;
+  titulo: string;
+  detalle: string;
   fecha: string;
-  profesionalNombre: string;
-  tipo: ClinicalEventType;
+  route: string;
+}
+
+export interface Patient360Summary {
+  kpis: Patient360SummaryKpis;
+  alertas: Patient360AlertItem[];
+  proximasAcciones: Patient360ActionItem[];
+  actividadReciente: Patient360ActivityItem[];
+}
+
+export interface Patient360ProfessionalOption {
+  id: string;
+  nombre: string;
+}
+
+export interface Patient360ClinicalEvent {
+  id: string;
+  fecha: string;
+  profesionalId?: string | null;
+  profesionalNombre?: string | null;
+  tipo: string;
   resumen: string;
   detalle: string;
-  adjuntos: Attachment[];
+  turnoId?: string | null;
+  ultimaModificacion?: string | null;
 }
 
-export interface Diagnosis {
+export interface Patient360HistoriaClinica {
+  profesionales: Patient360ProfessionalOption[];
+  items: Patient360ClinicalEvent[];
+  page: number;
+  size: number;
+  total: number;
+}
+
+export interface Patient360Diagnosis {
   id: string;
-  pacienteId: string;
   nombre: string;
-  estado: DiagnosisStatus;
-  fechaInicio: string;
-  fechaFin?: string;
-  notas?: string;
+  estado: string;
+  fechaInicio?: string | null;
+  fechaFin?: string | null;
+  profesionalId?: string | null;
+  profesionalNombre?: string | null;
+  notas?: string | null;
+  ultimaAtencionResumen?: string | null;
 }
 
-export interface Session {
+export interface Patient360Diagnosticos {
+  totalActivos: number;
+  ultimaFechaRegistrada?: string | null;
+  items: Patient360Diagnosis[];
+  page: number;
+  size: number;
+  total: number;
+}
+
+export interface Patient360AtencionItem {
   id: string;
-  pacienteId: string;
   fecha: string;
-  profesionalNombre: string;
+  profesionalId?: string | null;
+  profesionalNombre?: string | null;
   consultorioNombre: string;
-  boxNombre?: string;
-  estado: SessionStatus;
-  resumen?: string;
-  turnoId?: string;
+  boxNombre?: string | null;
+  estado: string;
+  resumen: string;
+  turnoId?: string | null;
 }
 
-export interface Insurance {
-  obraSocialNombre: string;
-  plan: string;
-  nroAfiliado: string;
+export interface Patient360Atenciones {
+  total: number;
+  ultimaAsistencia?: string | null;
+  profesionales: Patient360ProfessionalOption[];
+  items: Patient360AtencionItem[];
+  page: number;
+  size: number;
+}
+
+export interface Patient360TurnoItem {
+  id: string;
+  fechaHoraInicio: string;
+  fechaHoraFin: string;
+  profesionalId?: string | null;
+  profesionalNombre?: string | null;
+  boxNombre?: string | null;
+  estado: string;
+  tipoConsulta?: string | null;
+  motivoConsulta?: string | null;
+  canalAsignacion?: string | null;
+  alerta?: string | null;
+}
+
+export interface Patient360Turnos {
+  scope: string;
+  proximosCount: number;
+  historicosCount: number;
+  canceladosCount: number;
+  profesionales: Patient360ProfessionalOption[];
+  items: Patient360TurnoItem[];
+  page: number;
+  size: number;
+  total: number;
+}
+
+export interface Patient360ObraSocialOverview {
+  obraSocialNombre?: string | null;
+  plan?: string | null;
+  nroAfiliado?: string | null;
   vigente: boolean;
-  fechaVencimiento?: string;
+  fechaVencimiento?: string | null;
+  tipoCobertura?: string | null;
+  valorCobertura?: number | null;
+  tipoCoseguro?: string | null;
+  valorCoseguro?: number | null;
+  observacionesPlan?: string | null;
 }
 
-export interface Attachment {
+export interface Patient360ObraSocialCoverage {
+  prestacionesSinAutorizacion?: number | null;
+  sesionesUsadasMes: number;
+  sesionesDisponibles?: number | null;
+  autorizacionRequerida: boolean;
+  estadoCobertura: string;
+}
+
+export interface Patient360AttachmentItem {
   id: string;
   nombre: string;
-  tipo: AttachmentType;
-  url: string;
-  fechaCarga: string;
+  tipo: string;
   vigente: boolean;
+  fechaCarga?: string | null;
 }
 
-export interface Payment {
+export interface Patient360ObraSocial {
+  overview: Patient360ObraSocialOverview;
+  coverage: Patient360ObraSocialCoverage;
+  adjuntos: Patient360AttachmentItem[];
+}
+
+export interface Patient360PaymentSummary {
+  saldoPendiente: number;
+  totalCobrado: number;
+  ultimoPagoMonto: number;
+  ultimoPagoFecha?: string | null;
+  deudaVencida: number;
+}
+
+export interface Patient360PaymentItem {
   id: string;
-  pacienteId: string;
   fecha: string;
   concepto: string;
   monto: number;
-  tipo: PaymentType;
-  estado: PaymentStatus;
+  tipo: string;
+  estado: string;
+  medioPago?: string | null;
+  comprobante?: string | null;
 }
 
-export interface PatientAlert {
+export interface Patient360ConciliationItem {
   id: string;
-  tipo: 'WARNING' | 'ERROR' | 'INFO';
-  mensaje: string;
+  estado: string;
+  detalle: string;
 }
 
-// ─── Resumen ─────────────────────────────────────────────────────────────────
-
-export interface PatientSummary {
-  proximoTurnoId?: string;
-  proximoTurnoFecha?: string;
-  proximoTurnoProfesional?: string;
-  proximoTurnoEstado?: string;
-  ultimaAtencionId?: string;
-  ultimaAtencionFecha?: string;
-  ultimaAtencionProfesional?: string;
-  ultimaAtencionResumen?: string;
-  diagnosticosActivos: Diagnosis[];
-  alertas: PatientAlert[];
+export interface Patient360Pagos {
+  summary: Patient360PaymentSummary;
+  items: Patient360PaymentItem[];
+  conciliacion: Patient360ConciliationItem[];
+  page: number;
+  size: number;
+  total: number;
 }

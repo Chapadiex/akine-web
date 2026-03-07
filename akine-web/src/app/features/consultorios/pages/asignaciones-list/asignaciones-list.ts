@@ -7,6 +7,7 @@ import { Profesional } from '../../models/consultorio.models';
 import { ProfesionalAsignado } from '../../models/agenda.models';
 import { AsignacionService } from '../../services/asignacion.service';
 import { ProfesionalService } from '../../services/profesional.service';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-asignaciones-list',
@@ -15,7 +16,7 @@ import { ProfesionalService } from '../../services/profesional.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sub-header">
-      <span class="sub-count">{{ items().length }} asignacion(es)</span>
+      <span class="sub-count">{{ items().length }} cobertura(s) configurada(s)</span>
       <div class="controls">
         <select [(ngModel)]="selectedProfesionalId">
           <option [ngValue]="''">Seleccionar profesional</option>
@@ -23,7 +24,7 @@ import { ProfesionalService } from '../../services/profesional.service';
             <option [ngValue]="p.id">{{ p.nombre }} {{ p.apellido }}</option>
           }
         </select>
-        <button class="btn-primary" (click)="asignar()" [disabled]="!selectedProfesionalId">Asignar</button>
+        <button class="btn-primary" (click)="asignar()" [disabled]="!selectedProfesionalId">Asignar cobertura</button>
       </div>
     </div>
 
@@ -68,7 +69,11 @@ export class AsignacionesListPage implements OnInit {
   private consultorioId = '';
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent!.snapshot.paramMap.get('id')!;
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.load();
     this.profesionalSvc.list(this.consultorioId).subscribe({
       next: (data) => this.profesionales.set(data),
@@ -79,14 +84,14 @@ export class AsignacionesListPage implements OnInit {
   asignar(): void {
     if (!this.selectedProfesionalId) return;
     this.svc.asignar(this.consultorioId, this.selectedProfesionalId).subscribe({
-      next: () => { this.toast.success('Profesional asignado'); this.selectedProfesionalId = ''; this.load(); },
+      next: () => { this.toast.success('Cobertura asignada'); this.selectedProfesionalId = ''; this.load(); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }
 
   desasignar(profesionalId: string): void {
     this.svc.desasignar(this.consultorioId, profesionalId).subscribe({
-      next: () => { this.toast.success('Asignacion eliminada'); this.load(); },
+      next: () => { this.toast.success('Cobertura eliminada'); this.load(); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }

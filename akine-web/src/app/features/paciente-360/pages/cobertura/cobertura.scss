@@ -1,60 +1,137 @@
-.cobertura-page { padding: 1.5rem 2rem; }
-
-.page-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
-
-.sections { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-
-.section-card {
-  background: var(--white); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 1.25rem;
+.cobertura-page {
+  display: grid;
+  gap: .75rem;
 }
 
-.section-title {
-  font-size: .95rem; font-weight: 700; margin-bottom: 1rem;
-  display: flex; align-items: center; gap: .5rem;
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .9rem;
 }
 
-.info-row {
-  display: flex; justify-content: space-between; padding: .5rem 0;
-  border-bottom: 1px solid var(--border); font-size: .85rem;
-  &:last-child { border-bottom: none; }
+.page-head-main {
+  display: flex;
+  align-items: baseline;
+  gap: .75rem;
+  flex-wrap: wrap;
 }
 
-.info-label { color: var(--text-muted); }
-.info-value { font-weight: 600; color: var(--text); }
-
-.vigente-chip {
-  padding: .15rem .5rem; border-radius: 999px; font-size: .7rem; font-weight: 600;
-  &--true { background: #DCFCE7; color: #16A34A; }
-  &--false { background: #FEE2E2; color: #DC2626; }
+.page-head h2,
+.overview-card strong {
+  margin: 0;
+  color: var(--text);
 }
 
-.attachments-list { display: flex; flex-direction: column; gap: .5rem; }
-
-.attachment-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: .625rem .75rem; border-radius: var(--radius); background: var(--bg);
+.page-head p,
+.support-text,
+.state-empty p {
+  margin: 0;
+  color: var(--text-muted);
 }
 
-.att-name { font-size: .82rem; font-weight: 500; color: var(--text); }
-.att-date { font-size: .75rem; color: var(--text-muted); }
-.att-actions { display: flex; gap: .5rem; }
-
-.att-btn {
-  font-size: .75rem; font-weight: 600; color: var(--primary); cursor: pointer;
-  border: none; background: none; padding: 0;
+.overview-grid {
+  display: grid;
+  gap: .55rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.btn-upload {
-  margin-top: .75rem; padding: .4rem .875rem; border: 1px dashed var(--border);
-  border-radius: var(--radius); background: var(--white); color: var(--text-muted);
-  font-size: .82rem; cursor: pointer; width: 100%; text-align: center;
-  &:hover { background: var(--bg); border-color: var(--primary); color: var(--primary); }
+.overview-card,
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
 }
 
-.empty { color: var(--text-muted); font-size: .85rem; text-align: center; padding: 2rem; }
+.overview-card {
+  padding: .75rem;
+  display: grid;
+  gap: .18rem;
+}
 
-@media (max-width: 768px) {
-  .cobertura-page { padding: 1rem; }
-  .sections { grid-template-columns: 1fr; }
+.overview-label,
+.detail-grid dt {
+  color: var(--text-muted);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  font-weight: 700;
+}
+
+.overview-card small {
+  color: var(--text-muted);
+}
+
+.panels-grid {
+  display: grid;
+  gap: .65rem;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+}
+
+.panel {
+  padding: .8rem;
+  display: grid;
+  gap: .65rem;
+}
+
+.panel-head h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.detail-grid {
+  margin: 0;
+  display: grid;
+  gap: .55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-grid dd {
+  margin: .15rem 0 0;
+  color: var(--text);
+}
+
+.attachment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: .45rem;
+}
+
+.attachment-list li {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .65rem .7rem;
+  display: grid;
+  gap: .18rem;
+}
+
+.attachment-list span {
+  color: var(--text-muted);
+  font-size: .76rem;
+}
+
+.loading-msg {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.state-empty {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: .85rem;
+}
+
+@media (max-width: 980px) {
+  .page-head,
+  .page-head-main { align-items: flex-start; }
+  .page-head,
+  .page-head-main { flex-direction: column; }
+  .overview-grid,
+  .panels-grid,
+  .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

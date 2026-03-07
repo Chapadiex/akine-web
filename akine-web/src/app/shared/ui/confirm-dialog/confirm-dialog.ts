@@ -1,19 +1,36 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
+type ConfirmDialogVariant =
+  | 'destructive'
+  | 'positive'
+  | 'primary'
+  | 'secondary'
+  | 'tertiary'
+  | 'warning'
+  | 'danger';
+
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="overlay" (click)="cancelled.emit()">
-      <div class="dialog" (click)="$event.stopPropagation()">
+      <div
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="title()"
+        (click)="$event.stopPropagation()"
+      >
         <h3 class="dialog-title">{{ title() }}</h3>
         <p class="dialog-msg">{{ message() }}</p>
         <div class="dialog-actions">
-          <button class="btn-cancel" (click)="cancelled.emit()">Cancelar</button>
+          <button type="button" class="btn-cancel" (click)="cancelled.emit()">Cancelar</button>
           <button
+            type="button"
             class="btn-confirm"
-            [class.positive]="variant() === 'positive'"
+            [class.btn-confirm--positive]="isPositive()"
+            [class.btn-confirm--warning]="isWarning()"
             (click)="confirmed.emit()">
             {{ confirmLabel() }}
           </button>
@@ -49,8 +66,12 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       border-radius: var(--radius); background: var(--error);
       color: #fff; cursor: pointer; font-size: .9rem; font-weight: 600;
     }
-    .btn-confirm.positive {
+    .btn-confirm.btn-confirm--positive {
       background: var(--primary);
+    }
+    .btn-confirm.btn-confirm--warning {
+      background: var(--warning);
+      color: #1f2937;
     }
     .btn-confirm:hover { opacity: .9; }
   `],
@@ -58,8 +79,16 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 export class ConfirmDialog {
   title   = input.required<string>();
   message = input.required<string>();
-  variant = input<'destructive' | 'positive'>('destructive');
+  variant = input<ConfirmDialogVariant>('destructive');
   confirmLabel = input<string>('Confirmar');
   confirmed = output<void>();
   cancelled = output<void>();
+
+  isPositive(): boolean {
+    return this.variant() === 'positive' || this.variant() === 'primary';
+  }
+
+  isWarning(): boolean {
+    return this.variant() === 'warning';
+  }
 }

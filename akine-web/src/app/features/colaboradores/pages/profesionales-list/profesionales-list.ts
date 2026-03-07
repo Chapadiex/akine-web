@@ -17,6 +17,7 @@ import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import {
   ColaboradorEstado,
   ColaboradorProfesional,
+  CuentaStatus,
   ModoAltaProfesional,
   ProfesionalColaboradorRequest,
 } from '../../models/colaboradores.models';
@@ -33,31 +34,50 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
   template: `
     <div class="page">
       <header class="page-header">
-        <div class="header-copy">
+        <div class="header-copy header-inline">
           <h1>Profesionales</h1>
-          <p>Administra altas, invitaciones y estado de cada profesional del consultorio.</p>
+          <p>Administra altas, invitaciones y estado de cada profesional del consultorio</p>
         </div>
 
         <div class="header-actions">
-          <button class="btn-secondary" type="button" (click)="load()">Actualizar</button>
+          <button
+            class="btn-icon"
+            type="button"
+            aria-label="Mostrar u ocultar filtros"
+            [attr.aria-expanded]="filtersExpanded()"
+            (click)="toggleFilters()"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+              <path
+                d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
           @if (canWrite()) {
             <button class="btn-primary" type="button" (click)="openCreate()">+ Agregar / Invitar</button>
           }
         </div>
       </header>
 
-      <form class="filters" [formGroup]="filtersForm" (ngSubmit)="load()">
-        <input formControlName="q" placeholder="Buscar por nombre, email o matricula" />
-        <input formControlName="matricula" placeholder="Matricula" />
-        <select formControlName="estado">
-          <option value="ALL">Todos los estados</option>
-          <option value="ACTIVO">Activo</option>
-          <option value="INACTIVO">Inactivo</option>
-          <option value="INVITADO">Invitacion pendiente</option>
-          <option value="RECHAZADO">Rechazado</option>
-        </select>
-        <button class="btn-filter" type="submit">Aplicar filtros</button>
-      </form>
+      @if (filtersExpanded()) {
+        <form class="filters" [formGroup]="filtersForm" (ngSubmit)="load()">
+          <input formControlName="q" placeholder="Buscar por nombre, email o matricula" />
+          <input formControlName="matricula" placeholder="Matricula" />
+          <select formControlName="estado">
+            <option value="ALL">Todos los estados</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="INACTIVO">Inactivo</option>
+            <option value="INVITADO">Invitacion pendiente</option>
+            <option value="RECHAZADO">Rechazado</option>
+          </select>
+          <button class="btn-filter" type="submit">Aplicar filtros</button>
+        </form>
+      }
 
       <section class="kpi-strip">
         <article class="kpi-card">
@@ -139,29 +159,32 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
                 <div class="meta-row"><b>Matricula</b><span>{{ selected()!.matricula }}</span></div>
                 <div class="meta-row"><b>Telefono</b><span>{{ selected()!.telefono || '-' }}</span></div>
                 <div class="meta-row"><b>Estado</b><span>{{ labelEstado(selected()!.estadoColaborador) }}</span></div>
-                <div class="meta-row"><b>Cuenta</b><span>{{ selected()!.cuentaStatus }}</span></div>
-              </div>
-
-              <div class="chips">
-                @for (esp of selected()!.especialidades; track esp) {
-                  <span class="chip">{{ esp }}</span>
-                }
+                <div class="meta-row"><b>Cuenta</b><span>{{ labelCuentaStatus(selected()!.cuentaStatus) }}</span></div>
+                <div class="meta-row meta-row-especialidades">
+                  <b>Especialidades</b>
+                  <div class="chips">
+                    @for (esp of selected()!.especialidades; track esp) {
+                      <span class="chip">{{ esp }}</span>
+                    }
+                  </div>
+                </div>
               </div>
 
               <div class="actions">
                 <a
                   class="btn-link"
+                  title="Gestión de disponibilidad"
                   [routerLink]="['/app/consultorios', selectedConsultorioId(), 'profesionales', selected()!.id, 'disponibilidad']"
                 >
-                  Gestionar disponibilidad
+                  Disponibilidad
                 </a>
                 @if (canWrite()) {
-                  <button class="btn-link btn-action" type="button" (click)="openEdit(selected()!)">Editar ficha</button>
+                  <button class="btn-link btn-action" type="button" title="Editar ficha" (click)="openEdit(selected()!)">Editar</button>
                   @if (selected()!.estadoColaborador === 'ACTIVO') {
                     <button class="btn-link btn-action danger" type="button" (click)="askToggleEstado(selected()!, false)">Desactivar</button>
                   }
                   @if (selected()!.estadoColaborador === 'INACTIVO') {
-                    <button class="btn-link btn-action" type="button" (click)="askToggleEstado(selected()!, true)">Reactivar</button>
+                    <button class="btn-link btn-action" type="button" title="Reactivar cuenta" (click)="askToggleEstado(selected()!, true)">Reactivar</button>
                   }
                   @if (selected()!.estadoColaborador === 'INVITADO' || selected()!.estadoColaborador === 'RECHAZADO') {
                     <button class="btn-link btn-action" type="button" (click)="reenviarActivacion(selected()!)">Reenviar activacion</button>
@@ -311,9 +334,36 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
     .page { padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
     .header-copy { max-width: 720px; }
+    .header-inline {
+      display: flex;
+      align-items: baseline;
+      gap: .7rem;
+      flex-wrap: wrap;
+    }
     .page-header h1 { margin: 0; font-size: 1.5rem; }
-    .page-header p { margin: .25rem 0 0; color: var(--text-muted); line-height: 1.4; }
+    .page-header p { margin: 0; color: var(--text-muted); line-height: 1.4; }
     .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .header-actions .btn-primary {
+      height: 2.4rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 .95rem;
+    }
+    .btn-icon {
+      width: 2.6rem;
+      height: 2.4rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--white);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .btn-icon:hover { background: var(--bg); }
     .filters {
       display: grid;
       grid-template-columns: minmax(260px, 2fr) minmax(170px, 1fr) minmax(190px, 1fr) auto;
@@ -380,6 +430,8 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
     .empty-list h3 { margin: 0; }
     .empty-list p { margin: 0; color: var(--text-muted); }
     .detail h2 { margin: 0 0 .8rem; }
+    .detail { font-size: .95rem; }
+    .detail h2 { font-size: 1.95rem; line-height: 1.1; }
     .detail-meta {
       display: grid;
       gap: .45rem;
@@ -395,6 +447,8 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
       align-items: center;
       gap: .45rem;
     }
+    .meta-row-especialidades { align-items: start; }
+    .meta-row-especialidades .chips { margin-top: .1rem; }
     .meta-row b { color: var(--text); }
     .form { display: flex; flex-direction: column; gap: .55rem; }
     .field { display: flex; flex-direction: column; gap: .28rem; font-size: .87rem; color: var(--text-muted); }
@@ -457,6 +511,11 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
     .btn-link.danger { color: var(--error); border-color: var(--error); }
     .chips { display: flex; flex-wrap: wrap; gap: .35rem; }
     .chip { background: var(--bg); border-radius: 999px; padding: .15rem .5rem; font-size: .75rem; }
+    .list-panel .chip {
+      background: color-mix(in srgb, var(--primary) 12%, white);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+      color: color-mix(in srgb, var(--primary) 78%, #112240);
+    }
     .badge { border-radius: 999px; font-size: .73rem; padding: .16rem .55rem; font-weight: 600; }
     .badge-activo { background: var(--success-bg); color: var(--success); }
     .badge-inactivo { background: var(--bg); color: var(--text-muted); }
@@ -527,6 +586,7 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
       .filters { grid-template-columns: 1fr; }
       .header-actions { width: 100%; }
       .header-actions .btn-primary, .header-actions .btn-secondary { flex: 1; text-align: center; }
+      .header-actions .btn-icon { flex: 0 0 auto; }
     }
   `],
 })
@@ -543,6 +603,7 @@ export class ProfesionalesListPage {
   readonly rows = signal<ColaboradorProfesional[]>([]);
   readonly especialidadOptions = signal<string[]>([]);
   readonly loading = signal(false);
+  readonly filtersExpanded = signal(false);
   readonly saving = signal(false);
   readonly submitAttempted = signal(false);
   readonly selected = signal<ColaboradorProfesional | null>(null);
@@ -621,6 +682,15 @@ export class ProfesionalesListPage {
     this.especialidadOptions.set(merged.sort((a, b) => a.localeCompare(b)));
   }
 
+  private normalizeEspecialidadesInput(values: string[]): string[] {
+    return [...new Set(
+      (values ?? [])
+        .flatMap((value) => (value ?? '').split(/[|,]/))
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
+    )];
+  }
+
   private loadEspecialidades(): void {
     const consultorioId = this.selectedConsultorioId();
     if (!consultorioId) {
@@ -691,12 +761,25 @@ export class ProfesionalesListPage {
     return 'ALL';
   }
 
+  toggleFilters(): void {
+    this.filtersExpanded.update((v) => !v);
+  }
+
   labelEstado(estado: ColaboradorEstado): string {
     switch (estado) {
       case 'ACTIVO': return 'Activo';
       case 'INACTIVO': return 'Inactivo';
       case 'INVITADO': return 'Invitado';
       case 'RECHAZADO': return 'Rechazado';
+    }
+  }
+
+  labelCuentaStatus(status: CuentaStatus): string {
+    switch (status) {
+      case 'NONE': return 'Sin cuenta';
+      case 'PENDING': return 'Pendiente activacion';
+      case 'ACTIVE': return 'Activa';
+      case 'REJECTED': return 'Rechazada';
     }
   }
 
@@ -754,6 +837,8 @@ export class ProfesionalesListPage {
   }
 
   openEdit(row: ColaboradorProfesional): void {
+    const existingEspecialidades = this.normalizeEspecialidadesInput(row.especialidades ?? []);
+
     this.selected.set(row);
     this.form.reset({
       modoAlta: 'DIRECTA',
@@ -764,10 +849,11 @@ export class ProfesionalesListPage {
       email: row.email ?? '',
       telefono: row.telefono ?? '',
       domicilio: row.domicilio ?? '',
-      especialidades: row.especialidades,
+      especialidades: existingEspecialidades,
     });
+    this.form.controls.especialidades.setValue(existingEspecialidades);
     this.submitAttempted.set(false);
-    this.mergeEspecialidadOptions(row.especialidades);
+    this.mergeEspecialidadOptions(existingEspecialidades);
     this.panelMode.set('edit');
   }
 
@@ -791,9 +877,7 @@ export class ProfesionalesListPage {
     if (!consultorioId) return;
 
     const v = this.form.getRawValue();
-    const especialidades = (v.especialidades as string[])
-      .map((x: string) => x.trim())
-      .filter((x: string) => x.length > 0);
+    const especialidades = this.normalizeEspecialidadesInput(v.especialidades as string[]);
     const emailValue = v.email.trim();
 
     const req: ProfesionalColaboradorRequest = {

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   signal,
   ViewChild,
@@ -13,14 +14,16 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import esLocale from '@fullcalendar/core/locales/es';
+import { FeriadoService } from '../../../consultorios/services/feriado.service';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { TurnoService } from '../../services/turno.service';
-import { Turno, TURNO_ESTADO_COLORS } from '../../models/turno.models';
+import { Feriado, Turno, TURNO_ESTADO_COLORS } from '../../models/turno.models';
 import { TurnoFilters, TurnoFilterValues } from '../../components/turno-filters/turno-filters';
 import { TurnoDetail } from '../../components/turno-detail/turno-detail';
 import { TurnoDialog } from '../../components/turno-dialog/turno-dialog';
+import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-turnos-agenda',
@@ -34,6 +37,7 @@ export class TurnosAgendaPage {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private turnoSvc = inject(TurnoService);
+  private feriadoSvc = inject(FeriadoService);
   private consultorioCtx = inject(ConsultorioContextService);
   private toast = inject(ToastService);
   private errMap = inject(ErrorMapperService);
@@ -47,6 +51,19 @@ export class TurnosAgendaPage {
   showDialog = signal(false);
   dialogStart = signal('');
   turnosCache = signal<Map<string, Turno>>(new Map());
+  feriados = signal<Feriado[]>([]);
+  visibleRange = signal<{ start: Date; end: Date } | null>(null);
+  visibleHolidays = computed(() => {
+    const range = this.visibleRange();
+    if (!range) return [] as Feriado[];
+
+    return this.feriados()
+      .filter((feriado) => {
+        const date = new Date(`${feriado.fecha}T00:00:00`);
+        return date >= range.start && date < range.end;
+      })
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  });
 
   calendarOptions: CalendarOptions = {
     plugins: [timeGridPlugin, dayGridPlugin, interactionPlugin, listPlugin],
@@ -69,6 +86,7 @@ export class TurnosAgendaPage {
     height: 'auto',
     datesSet: (info) => this.onDatesSet(info),
     select: (info) => this.onSelect(info),
+    selectAllow: (info) => !this.selectionFallsOnHoliday(info.start),
     eventClick: (info) => this.onEventClick(info),
     eventDrop: (info) => this.onEventDrop(info),
     events: [],
@@ -83,10 +101,16 @@ export class TurnosAgendaPage {
     if (filters.consultorioId && filters.consultorioId !== this.selectedConsultorioId()) {
       this.consultorioCtx.setSelectedConsultorioId(filters.consultorioId);
     }
+    const range = this.visibleRange();
+    if (range && filters.consultorioId) {
+      this.loadFeriadosForRange(range.start, range.end);
+    }
     this.reloadEvents();
   }
 
   private onDatesSet(info: DatesSetArg): void {
+    this.visibleRange.set({ start: info.start, end: info.end });
+    this.loadFeriadosForRange(info.start, info.end);
     this.reloadEvents(
       this.toLocalDateTimeParam(info.start),
       this.toLocalDateTimeParam(info.end),
@@ -96,6 +120,12 @@ export class TurnosAgendaPage {
   private onSelect(info: DateSelectArg): void {
     const filters = this.currentFilters();
     if (!filters?.consultorioId) return;
+    if (this.selectionFallsOnHoliday(info.start)) {
+      const feriado = this.findHolidayByDate(this.toLocalDate(info.start));
+      const detail = feriado?.descripcion ? `: ${feriado.descripcion}` : '';
+      this.toast.warning(`No se pueden crear turnos en feriado${detail}`);
+      return;
+    }
     this.dialogStart.set(info.startStr.substring(0, 16));
     this.showDialog.set(true);
   }
@@ -156,7 +186,7 @@ export class TurnosAgendaPage {
     }).subscribe({
       next: (turnos) => {
         const cache = new Map<string, Turno>();
-        const evts: EventInput[] = turnos.map((t) => {
+        const turnoEvents: EventInput[] = turnos.map((t) => {
           cache.set(t.id, t);
           const profName = `${t.profesionalNombre ?? ''} ${t.profesionalApellido ?? ''}`.trim();
           const pacName = t.pacienteNombre ? `${t.pacienteApellido}, ${t.pacienteNombre}` : '';
@@ -170,6 +200,7 @@ export class TurnosAgendaPage {
             borderColor: TURNO_ESTADO_COLORS[t.estado],
           };
         });
+        const evts = [...this.buildHolidayEvents(), ...turnoEvents];
         this.turnosCache.set(cache);
         this.events.set(evts);
         if (calApi) {
@@ -189,5 +220,72 @@ export class TurnosAgendaPage {
     const min = String(d.getMinutes()).padStart(2, '0');
     const sec = String(d.getSeconds()).padStart(2, '0');
     return `${year}-${month}-${day}T${hour}:${min}:${sec}`;
+  }
+
+  private toLocalDate(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private loadFeriadosForRange(start: Date, end: Date): void {
+    const consultorioId = this.currentFilters()?.consultorioId;
+    if (!consultorioId) {
+      this.feriados.set([]);
+      return;
+    }
+
+    const years = Array.from(new Set([start.getFullYear(), end.getFullYear()]));
+    const requests = years.map((year) => this.feriadoSvc.list(consultorioId, year));
+    forkJoin(requests.length ? requests : [of([] as Feriado[])]).subscribe({
+      next: (responses) => {
+        const unique = new Map<string, Feriado>();
+        responses.flat().forEach((feriado) => unique.set(feriado.fecha, feriado));
+        this.feriados.set(Array.from(unique.values()));
+        this.renderEvents();
+      },
+      error: () => {
+        this.feriados.set([]);
+        this.renderEvents();
+      },
+    });
+  }
+
+  private buildHolidayEvents(): EventInput[] {
+    return this.visibleHolidays().map((feriado) => ({
+      id: `holiday-${feriado.id}`,
+      title: feriado.descripcion || 'Feriado',
+      start: feriado.fecha,
+      end: this.addOneDay(feriado.fecha),
+      allDay: true,
+      display: 'background',
+      classNames: ['holiday-bg-event'],
+      overlap: false,
+    }));
+  }
+
+  private addOneDay(dateStr: string): string {
+    const date = new Date(`${dateStr}T12:00:00`);
+    date.setDate(date.getDate() + 1);
+    return this.toLocalDate(date);
+  }
+
+  private selectionFallsOnHoliday(date: Date): boolean {
+    return this.findHolidayByDate(this.toLocalDate(date)) !== null;
+  }
+
+  private findHolidayByDate(dateStr: string): Feriado | null {
+    return this.feriados().find((feriado) => feriado.fecha === dateStr) ?? null;
+  }
+
+  private renderEvents(): void {
+    const calApi = this.calendarRef?.getApi();
+    const events = [...this.buildHolidayEvents(), ...this.events().filter((event) => !String(event.id).startsWith('holiday-'))];
+    this.events.set(events);
+    if (!calApi) return;
+
+    calApi.removeAllEvents();
+    events.forEach((event) => calApi.addEvent(event));
   }
 }

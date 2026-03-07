@@ -12,6 +12,7 @@ import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { FeriadoService } from '../../services/feriado.service';
 import { Feriado } from '../../../turnos/models/turno.models';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-feriados-list',
@@ -22,26 +23,21 @@ import { Feriado } from '../../../turnos/models/turno.models';
     <div class="section">
       <div class="section-header">
         <h3>Feriados</h3>
-        <div class="year-filter">
-          <label>A&ntilde;o:</label>
-          <select [ngModel]="selectedYear()" (ngModelChange)="onYearChange($event)">
-            @for (y of years; track y) {
-              <option [value]="y">{{ y }}</option>
-            }
-          </select>
+        <div class="header-actions">
+          <button class="btn-add-header" (click)="openForm()">Agregar feriado</button>
+          <div class="year-filter">
+            <label>A&ntilde;o:</label>
+            <select [ngModel]="selectedYear()" (ngModelChange)="onYearChange($event)">
+              @for (y of years; track y) {
+                <option [value]="y">{{ y }}</option>
+              }
+            </select>
+          </div>
+          <button class="btn-secondary" (click)="syncNacionales()" [disabled]="syncing()">
+            {{ syncing() ? 'Sincronizando...' : 'Importar nacionales' }}
+          </button>
         </div>
       </div>
-
-      @if (showForm()) {
-        <div class="form-row">
-          <input type="date" [(ngModel)]="newFecha" />
-          <input type="text" [(ngModel)]="newDescripcion" placeholder="Descripci&oacute;n (opcional)" maxlength="200" />
-          <button class="btn-primary" (click)="addFeriado()" [disabled]="!newFecha">Agregar</button>
-          <button class="btn-cancel" (click)="showForm.set(false)">Cancelar</button>
-        </div>
-      } @else {
-        <button class="btn-add" (click)="showForm.set(true)">+ Agregar feriado</button>
-      }
 
       @if (feriados().length === 0) {
         <p class="empty-msg">No hay feriados para este a&ntilde;o.</p>
@@ -49,8 +45,8 @@ import { Feriado } from '../../../turnos/models/turno.models';
         <table class="data-table">
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Descripci&oacute;n</th>
+              <th>FECHA</th>
+              <th>DESCRIPCI&Oacute;N</th>
               <th></th>
             </tr>
           </thead>
@@ -69,6 +65,28 @@ import { Feriado } from '../../../turnos/models/turno.models';
       }
     </div>
 
+    @if (showForm()) {
+      <div class="overlay" (click)="closeForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <h4>Agregar feriado</h4>
+          <div class="form-row">
+            <div class="field">
+              <label>Fecha *</label>
+              <input type="date" [(ngModel)]="newFecha" />
+            </div>
+            <div class="field">
+              <label>Descripci&oacute;n</label>
+              <input type="text" [(ngModel)]="newDescripcion" placeholder="Descripci&oacute;n (opcional)" maxlength="200" />
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-cancel" (click)="closeForm()">Cancelar</button>
+            <button class="btn-primary" (click)="addFeriado()" [disabled]="!newFecha">Guardar</button>
+          </div>
+        </div>
+      </div>
+    }
+
     @if (deleteTarget(); as target) {
       <app-confirm-dialog
         title="Eliminar feriado"
@@ -85,33 +103,57 @@ import { Feriado } from '../../../turnos/models/turno.models';
       margin-bottom: 1rem;
       h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
     }
+    .header-actions { display: flex; gap: 0.45rem; align-items: center; }
     .year-filter {
       display: flex; gap: 0.5rem; align-items: center;
       label { font-size: 0.85rem; font-weight: 600; }
       select {
-        padding: 0.35rem 0.5rem; border: 1px solid var(--border);
-        border-radius: var(--radius); font-size: 0.85rem;
+        height: 38px;
+        padding: 0 .68rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.86rem;
       }
     }
-    .form-row {
-      display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;
-      input {
-        padding: 0.4rem 0.6rem; border: 1px solid var(--border);
-        border-radius: var(--radius); font-size: 0.85rem;
-      }
-      input[type="text"] { flex: 1; min-width: 150px; }
+    .form-row { display: grid; grid-template-columns: 220px 1fr; gap: .75rem; }
+    .field { display: flex; flex-direction: column; gap: .35rem; }
+    .field label { font-size: .83rem; font-weight: 600; color: var(--text-muted); }
+    .field input {
+      height: 38px;
+      padding: 0 .68rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.86rem;
     }
-    .btn-add {
-      background: none; border: 1px dashed var(--border); border-radius: var(--radius);
-      padding: 0.5rem 1rem; cursor: pointer; color: var(--primary); font-weight: 600;
-      font-size: 0.85rem; margin-bottom: 1rem;
+    .btn-add-header {
+      height: 38px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      padding: 0 .82rem;
+      cursor: pointer;
+      color: #fff;
+      font-weight: 400;
+      font-size: 0.86rem;
     }
-    .btn-add:hover { background: var(--bg, #f9fafb); }
+    .btn-add-header:hover { background: var(--primary-hover); }
     .btn-primary {
       padding: 0.4rem 0.75rem; border: none; border-radius: var(--radius);
       background: var(--primary); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 600;
     }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      height: 38px;
+      padding: 0 .82rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      cursor: pointer;
+      font-size: 0.86rem;
+      font-weight: 400;
+      color: #fff;
+    }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-cancel {
       padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius);
       background: var(--white); cursor: pointer; font-size: 0.85rem;
@@ -119,7 +161,14 @@ import { Feriado } from '../../../turnos/models/turno.models';
     .data-table {
       width: 100%; border-collapse: collapse;
       th, td { padding: 0.5rem 0.75rem; text-align: left; font-size: 0.85rem; }
-      th { font-weight: 600; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+      th {
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--text-muted);
+        border-bottom: 2px solid var(--border);
+      }
       td { border-bottom: 1px solid var(--border); }
     }
     .btn-sm {
@@ -129,6 +178,36 @@ import { Feriado } from '../../../turnos/models/turno.models';
     .btn-danger { background: var(--error-bg, #fef2f2); color: var(--error, #dc2626); }
     .btn-danger:hover { opacity: 0.85; }
     .empty-msg { color: var(--text-muted); font-size: 0.85rem; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgb(0 0 0 / 0.35);
+      display: grid;
+      place-items: center;
+      z-index: 950;
+    }
+    .modal {
+      width: min(640px, 92vw);
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      padding: 1rem;
+    }
+    .modal h4 {
+      margin: 0 0 .8rem;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: .5rem;
+      margin-top: .9rem;
+    }
+    @media (max-width: 760px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
   `],
 })
 export class FeriadosListPage implements OnInit {
@@ -141,6 +220,7 @@ export class FeriadosListPage implements OnInit {
   feriados = signal<Feriado[]>([]);
   selectedYear = signal(new Date().getFullYear());
   showForm = signal(false);
+  syncing = signal(false);
   newFecha = '';
   newDescripcion = '';
   deleteTarget = signal<Feriado | null>(null);
@@ -149,7 +229,11 @@ export class FeriadosListPage implements OnInit {
   years = [this.currentYear - 1, this.currentYear, this.currentYear + 1];
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent?.snapshot.paramMap.get('id') ?? '';
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.loadFeriados();
   }
 
@@ -174,9 +258,7 @@ export class FeriadosListPage implements OnInit {
     }).subscribe({
       next: () => {
         this.toast.success('Feriado agregado');
-        this.showForm.set(false);
-        this.newFecha = '';
-        this.newDescripcion = '';
+        this.closeForm();
         this.loadFeriados();
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
@@ -185,6 +267,32 @@ export class FeriadosListPage implements OnInit {
 
   askDelete(f: Feriado): void {
     this.deleteTarget.set(f);
+  }
+
+  openForm(): void {
+    this.showForm.set(true);
+  }
+
+  closeForm(): void {
+    this.showForm.set(false);
+    this.newFecha = '';
+    this.newDescripcion = '';
+  }
+
+  syncNacionales(): void {
+    if (!this.consultorioId || this.syncing()) return;
+    this.syncing.set(true);
+    this.feriadoSvc.syncNacionalesCompat(this.consultorioId, this.selectedYear()).subscribe({
+      next: (result) => {
+        this.toast.success(`Sincronizados ${result.created} feriados nacionales`);
+        this.loadFeriados();
+      },
+      error: (err) => {
+        this.toast.error(this.errMap.toMessage(err));
+        this.syncing.set(false);
+      },
+      complete: () => this.syncing.set(false),
+    });
   }
 
   confirmDelete(): void {

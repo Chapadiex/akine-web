@@ -7,6 +7,7 @@ import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { HorarioForm, HorarioFormValue } from '../../components/horario-form/horario-form';
 import { ConsultorioHorario, DayOfWeek, DIAS_SEMANA, HorarioRequest } from '../../models/agenda.models';
 import { HorarioService } from '../../services/horario.service';
+import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-horarios-list',
@@ -68,7 +69,11 @@ export class HorariosListPage implements OnInit {
   private consultorioId = '';
 
   ngOnInit(): void {
-    this.consultorioId = this.route.parent!.snapshot.paramMap.get('id')!;
+    this.consultorioId = resolveConsultorioId(this.route) ?? '';
+    if (!this.consultorioId) {
+      this.toast.error('No se pudo resolver el consultorio activo.');
+      return;
+    }
     this.load();
   }
 
