@@ -37,8 +37,8 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         path: '/app/historia-clinica',
-        label: 'Sesiones',
-        icon: 'SE',
+        label: 'Historia clinica',
+        icon: 'HC',
         roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL'],
       },
       {

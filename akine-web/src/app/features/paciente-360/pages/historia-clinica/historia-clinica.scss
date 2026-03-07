@@ -10,6 +10,12 @@
   gap: .9rem;
 }
 
+.page-head-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
 .page-head-main {
   display: flex;
   align-items: baseline;
@@ -39,6 +45,15 @@
   color: var(--text);
   cursor: pointer;
   box-shadow: var(--shadow-sm);
+}
+
+.btn-filters-link {
+  width: auto;
+  min-width: 3.25rem;
+  padding: 0 .85rem;
+  text-decoration: none;
+  font-size: .82rem;
+  font-weight: 700;
 }
 
 .btn-filters-toggle-active {

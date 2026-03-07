@@ -15,6 +15,22 @@ export interface PacienteRequest {
   obraSocialNroAfiliado?: string;
 }
 
+export interface PacienteUpdateRequest {
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  email?: string;
+  fechaNacimiento?: string;
+  sexo?: string;
+  domicilio?: string;
+  nacionalidad?: string;
+  estadoCivil?: string;
+  profesion?: string;
+  obraSocialNombre?: string;
+  obraSocialPlan?: string;
+  obraSocialNroAfiliado?: string;
+}
+
 export interface Paciente {
   id: string;
   dni: string;

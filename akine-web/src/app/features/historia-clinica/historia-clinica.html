@@ -1,0 +1,532 @@
+<section class="historia-page">
+  <header class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Workspace clinico global</p>
+      <h1>Historia clinica consultorio-scoped</h1>
+      <p>
+        Seguimiento operativo de sesiones, legajo del paciente y registro clinico en un solo
+        espacio.
+      </p>
+    </div>
+    <div class="hero-meta">
+      <span class="meta-chip">
+        {{ consultorioCtx.selectedConsultorio()?.name || 'Sin consultorio seleccionado' }}
+      </span>
+      @if (workspace(); as data) {
+        <span class="meta-chip meta-chip--quiet">{{ data.total }} sesiones visibles</span>
+      }
+    </div>
+  </header>
+
+  @if (!consultorioCtx.selectedConsultorioId()) {
+    <section class="empty-card">
+      <h2>Selecciona un consultorio activo</h2>
+      <p>El workspace clinico necesita contexto de consultorio para cargar pacientes y sesiones.</p>
+    </section>
+  } @else {
+    <div class="workspace-shell">
+      <aside class="workspace-panel">
+        <section class="panel-card">
+          <div class="card-head">
+            <h2>Pacientes</h2>
+            @if (routeState().pacienteId) {
+              <button type="button" class="btn btn--ghost btn--sm" (click)="clearSelectedPatient()">
+                Limpiar
+              </button>
+            }
+          </div>
+
+          <label class="field">
+            <span>Buscar paciente</span>
+            <input
+              type="search"
+              [formControl]="patientSearchControl"
+              placeholder="Apellido, nombre o DNI"
+              aria-label="Buscar paciente"
+            />
+          </label>
+
+          @if (patientMatches().length) {
+            <div class="match-list">
+              @for (match of patientMatches(); track match.id) {
+                <button type="button" class="match-item" (click)="selectPatient(match)">
+                  <strong>{{ formatPaciente(match) }}</strong>
+                  <span>{{ match.dni }}</span>
+                </button>
+              }
+            </div>
+          }
+        </section>
+
+        <section class="panel-card">
+          <div class="card-head">
+            <h2>Filtros</h2>
+            <button type="button" class="btn btn--ghost btn--sm" (click)="clearFilters()">
+              Reset
+            </button>
+          </div>
+
+          <form class="filters-grid" [formGroup]="filterForm">
+            <label class="field field--full">
+              <span>Texto libre</span>
+              <input type="search" formControlName="q" placeholder="Motivo, resumen o evaluacion" />
+            </label>
+
+            <label class="field">
+              <span>Profesional</span>
+              <select formControlName="profesionalId">
+                <option value="">Todos</option>
+                @for (profesional of professionalOptions(); track profesional.id) {
+                  <option [value]="profesional.id">{{ profesional.nombre }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Estado</span>
+              <select formControlName="estado">
+                <option value="">Todos</option>
+                @for (estado of estadoOptions; track estado.value) {
+                  <option [value]="estado.value">{{ estado.label }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Desde</span>
+              <input type="date" formControlName="from" />
+            </label>
+
+            <label class="field">
+              <span>Hasta</span>
+              <input type="date" formControlName="to" />
+            </label>
+          </form>
+
+          <div class="card-actions">
+            <button type="button" class="btn btn--primary btn--sm" (click)="applyFilters()">
+              Aplicar filtros
+            </button>
+          </div>
+        </section>
+
+        <section class="panel-card">
+          <div class="card-head">
+            <h2>Sesiones globales</h2>
+            @if (workspace(); as data) {
+              <span class="card-counter">{{ data.total }}</span>
+            }
+          </div>
+
+          @if (workspaceStatus() === 'loading') {
+            <div class="state-box">
+              <span class="spinner spinner--primary" aria-hidden="true"></span>
+              <p>Cargando sesiones del consultorio...</p>
+            </div>
+          } @else if (workspaceStatus() === 'error') {
+            <div class="alert alert--error">{{ workspaceError() }}</div>
+          } @else if (workspace()?.items?.length) {
+            <div class="workspace-list">
+              @for (item of workspace()!.items; track item.sesionId) {
+                <button
+                  type="button"
+                  class="workspace-item"
+                  [class.workspace-item--active]="routeState().sesionId === item.sesionId"
+                  (click)="selectWorkspaceItem(item)"
+                >
+                  <div class="workspace-item__head">
+                    <strong>{{ item.pacienteApellido }}, {{ item.pacienteNombre }}</strong>
+                    <span class="state-pill" [attr.data-tone]="item.estado.toLowerCase()">
+                      {{ estadoLabel(item.estado) }}
+                    </span>
+                  </div>
+                  <p>{{ item.pacienteDni }} · {{ item.profesionalNombre || 'Sin profesional' }}</p>
+                  <p class="workspace-item__summary">{{ item.resumenClinico }}</p>
+                  <span class="workspace-item__date">
+                    {{ item.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </button>
+              }
+            </div>
+
+            <div class="pagination-row">
+              <button type="button" class="btn btn--ghost btn--sm" [disabled]="!canGoPrevPage()" (click)="goToPrevPage()">
+                Anterior
+              </button>
+              <span>Pagina {{ workspacePage() + 1 }}</span>
+              <button type="button" class="btn btn--ghost btn--sm" [disabled]="!canGoNextPage()" (click)="goToNextPage()">
+                Siguiente
+              </button>
+            </div>
+          } @else {
+            <div class="state-box state-box--empty">
+              <h3>Sin sesiones</h3>
+              <p>No hay resultados para el filtro actual.</p>
+            </div>
+          }
+        </section>
+      </aside>
+
+      <section class="detail-panel">
+        @if (!selectedPatient()) {
+          <section class="empty-card">
+            <h2>Selecciona un paciente</h2>
+            <p>
+              Puedes buscarlo por apellido o elegir una sesion del panel izquierdo para abrir el
+              legajo clinico y comenzar a registrar evoluciones.
+            </p>
+          </section>
+        } @else {
+          <section class="patient-card">
+            <div>
+              <p class="eyebrow">Legajo del paciente</p>
+              <h2>{{ patientSummary() }}</h2>
+              <p class="patient-copy">
+                {{ selectedPatient()!.dni }} · {{ selectedPatient()!.telefono || 'Sin telefono' }} ·
+                {{ selectedPatient()!.obraSocialNombre || 'Sin cobertura declarada' }}
+              </p>
+            </div>
+
+            <div class="patient-actions">
+              <span class="meta-chip">{{ selectedPatient()!.diagnosticosActivos }} diagnosticos activos</span>
+              <a
+                class="btn btn--secondary btn--sm"
+                [routerLink]="['/app/pacientes', selectedPatient()!.id, 'historia-clinica']"
+                [queryParams]="patient360QueryParams()"
+              >
+                Abrir Paciente 360
+              </a>
+            </div>
+          </section>
+
+          @if (detailStatus() === 'error') {
+            <div class="alert alert--error">{{ detailError() }}</div>
+          } @else {
+            <div class="detail-grid">
+              <section class="panel-card panel-card--compact">
+                <div class="card-head">
+                  <h3>Diagnosticos activos</h3>
+                  <span class="card-counter">{{ activeDiagnosticos().length }}</span>
+                </div>
+
+                @if (activeDiagnosticos().length) {
+                  <div class="diagnostico-list">
+                    @for (diagnostico of activeDiagnosticos(); track diagnostico.id) {
+                      <article class="diagnostico-item">
+                        <div>
+                          <strong>{{ diagnostico.descripcion }}</strong>
+                          <p>
+                            {{ diagnostico.codigo || 'Sin codigo' }} ·
+                            {{ diagnostico.fechaInicio | date: 'dd/MM/yyyy' }}
+                          </p>
+                        </div>
+                        <div class="diagnostico-actions">
+                          <button
+                            type="button"
+                            class="btn btn--ghost btn--sm"
+                            [disabled]="isSavingDiagnostico()"
+                            (click)="resolveDiagnostico(diagnostico)"
+                          >
+                            Resolver
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn--danger btn--sm"
+                            [disabled]="isSavingDiagnostico()"
+                            (click)="discardDiagnostico(diagnostico)"
+                          >
+                            Descartar
+                          </button>
+                        </div>
+                      </article>
+                    }
+                  </div>
+                } @else {
+                  <div class="state-box state-box--empty">
+                    <p>No hay diagnosticos activos para este paciente.</p>
+                  </div>
+                }
+
+                <form class="diagnostico-form" [formGroup]="diagnosticoForm">
+                  <div class="card-head">
+                    <h3>Nuevo diagnostico</h3>
+                  </div>
+
+                  <div class="mini-grid">
+                    <label class="field">
+                      <span>Profesional</span>
+                      <select formControlName="profesionalId">
+                        <option value="">Seleccionar</option>
+                        @for (profesional of professionalOptions(); track profesional.id) {
+                          <option [value]="profesional.id">{{ profesional.nombre }}</option>
+                        }
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Fecha inicio</span>
+                      <input type="date" formControlName="fechaInicio" />
+                    </label>
+                  </div>
+
+                  <div class="mini-grid">
+                    <label class="field">
+                      <span>Codigo</span>
+                      <input type="text" formControlName="codigo" placeholder="Opcional" />
+                    </label>
+
+                    <label class="field">
+                      <span>Descripcion</span>
+                      <input type="text" formControlName="descripcion" placeholder="Diagnostico clinico" />
+                    </label>
+                  </div>
+
+                  <label class="field">
+                    <span>Notas</span>
+                    <textarea formControlName="notas" rows="3" placeholder="Notas de contexto"></textarea>
+                  </label>
+
+                  <div class="card-actions">
+                    <button
+                      type="button"
+                      class="btn btn--primary btn--sm"
+                      [disabled]="isSavingDiagnostico()"
+                      (click)="createDiagnostico()"
+                    >
+                      Guardar diagnostico
+                    </button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="panel-card panel-card--compact">
+                <div class="card-head">
+                  <h3>Timeline clinica</h3>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="startNewSesion()">
+                    Nueva sesion
+                  </button>
+                </div>
+
+                @if (detailStatus() === 'loading') {
+                  <div class="state-box">
+                    <span class="spinner spinner--primary" aria-hidden="true"></span>
+                    <p>Cargando legajo clinico...</p>
+                  </div>
+                } @else if (sesiones().length) {
+                  <div class="timeline-list">
+                    @for (sesion of sesiones(); track sesion.id) {
+                      <button
+                        type="button"
+                        class="timeline-item"
+                        [class.timeline-item--active]="selectedSesion()?.id === sesion.id"
+                        (click)="openSesion(sesion.id)"
+                      >
+                        <div class="timeline-item__head">
+                          <strong>{{ tipoLabel(sesion.tipoAtencion) }}</strong>
+                          <span class="state-pill" [attr.data-tone]="sesion.estado.toLowerCase()">
+                            {{ estadoLabel(sesion.estado) }}
+                          </span>
+                        </div>
+                        <p>{{ sesion.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</p>
+                        <p class="timeline-item__copy">
+                          {{ sesion.resumenClinico || sesion.motivoConsulta || 'Sin resumen cargado.' }}
+                        </p>
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  <div class="state-box state-box--empty">
+                    <p>No hay sesiones registradas para los filtros clinicos actuales.</p>
+                  </div>
+                }
+              </section>
+            </div>
+
+            <section class="panel-card editor-card">
+              <div class="card-head">
+                <div>
+                  <h3>{{ selectedSesion() ? 'Sesion clinica' : 'Nueva sesion clinica' }}</h3>
+                  <p>
+                    @if (selectedSesion()) {
+                      {{ selectedSesion()!.estado }} ·
+                      {{ selectedSesion()!.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}
+                    } @else {
+                      Completa el formulario estructurado y guarda en borrador.
+                    }
+                  </p>
+                </div>
+
+                @if (selectedSesion()) {
+                  <div class="editor-actions">
+                    <button
+                      type="button"
+                      class="btn btn--warning btn--sm"
+                      [disabled]="!canEditSesion() || isSavingSesion()"
+                      (click)="closeSesion()"
+                    >
+                      Cerrar sesion
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn--danger btn--sm"
+                      [disabled]="!canEditSesion() || isSavingSesion()"
+                      (click)="annulSesion()"
+                    >
+                      Anular
+                    </button>
+                  </div>
+                }
+              </div>
+
+              @if (!canEditSesion() && selectedSesion()) {
+                <div class="alert alert--info">
+                  La sesion esta en solo lectura. Para v1 no existe reapertura.
+                </div>
+              }
+
+              <form class="session-form" [formGroup]="sesionForm">
+                <div class="mini-grid">
+                  <label class="field">
+                    <span>Profesional</span>
+                    <select formControlName="profesionalId">
+                      <option value="">Seleccionar</option>
+                      @for (profesional of professionalOptions(); track profesional.id) {
+                        <option [value]="profesional.id">{{ profesional.nombre }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Fecha atencion</span>
+                    <input type="datetime-local" formControlName="fechaAtencion" />
+                  </label>
+
+                  <label class="field">
+                    <span>Tipo atencion</span>
+                    <select formControlName="tipoAtencion">
+                      @for (tipo of tipoAtencionOptions; track tipo.value) {
+                        <option [value]="tipo.value">{{ tipo.label }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+
+                <div class="mini-grid">
+                  <label class="field">
+                    <span>Turno vinculado</span>
+                    <input type="text" formControlName="turnoId" placeholder="UUID opcional" />
+                  </label>
+
+                  <label class="field">
+                    <span>Box</span>
+                    <input type="text" formControlName="boxId" placeholder="UUID opcional" />
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>Motivo consulta</span>
+                  <textarea formControlName="motivoConsulta" rows="2"></textarea>
+                </label>
+
+                <label class="field">
+                  <span>Resumen clinico</span>
+                  <textarea formControlName="resumenClinico" rows="3"></textarea>
+                </label>
+
+                <div class="double-column">
+                  <label class="field">
+                    <span>Subjetivo</span>
+                    <textarea formControlName="subjetivo" rows="5"></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Objetivo</span>
+                    <textarea formControlName="objetivo" rows="5"></textarea>
+                  </label>
+                </div>
+
+                <div class="double-column">
+                  <label class="field">
+                    <span>Evaluacion</span>
+                    <textarea formControlName="evaluacion" rows="5"></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Plan</span>
+                    <textarea formControlName="plan" rows="5"></textarea>
+                  </label>
+                </div>
+              </form>
+
+              <section class="adjuntos-card">
+                <div class="card-head">
+                  <div>
+                    <h3>Adjuntos</h3>
+                    <p>Formatos permitidos: pdf, jpg, jpeg, png. Limite sugerido: 10 MB.</p>
+                  </div>
+
+                  <label class="btn btn--secondary btn--sm" [class.is-disabled]="!selectedSesion() || !canEditSesion()">
+                    Cargar archivo
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      [disabled]="!selectedSesion() || !canEditSesion() || isUploadingAdjunto()"
+                      (change)="uploadAdjunto($event)"
+                    />
+                  </label>
+                </div>
+
+                @if (selectedSesion()?.adjuntos?.length) {
+                  <div class="adjunto-list">
+                    @for (adjunto of selectedSesion()!.adjuntos; track adjunto.id) {
+                      <div class="adjunto-item">
+                        <div>
+                          <strong>{{ adjunto.originalFilename }}</strong>
+                          <p>
+                            {{ humanFileSize(adjunto.sizeBytes) }} ·
+                            {{ adjunto.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                          </p>
+                        </div>
+                        <div class="adjunto-actions">
+                          <button type="button" class="btn btn--ghost btn--sm" (click)="downloadAdjunto(adjunto.id)">
+                            Descargar
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn--danger btn--sm"
+                            [disabled]="!canEditSesion()"
+                            (click)="deleteAdjunto(adjunto.id)"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                } @else {
+                  <div class="state-box state-box--empty">
+                    <p>No hay adjuntos cargados para la sesion actual.</p>
+                  </div>
+                }
+              </section>
+
+              <div class="editor-footer">
+                <button type="button" class="btn btn--ghost" (click)="startNewSesion()" [disabled]="!selectedPatient()">
+                  Nuevo borrador
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  [disabled]="!canEditSesion() || isSavingSesion()"
+                  (click)="saveSesion()"
+                >
+                  {{ selectedSesion() ? 'Guardar cambios' : 'Crear sesion' }}
+                </button>
+              </div>
+            </section>
+          }
+        }
+      </section>
+    </div>
+  }
+</section>

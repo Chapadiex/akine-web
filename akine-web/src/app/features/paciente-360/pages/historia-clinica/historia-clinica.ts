@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
@@ -11,7 +11,7 @@ import { Paciente360Service } from '../../services/paciente-360.service';
 @Component({
   selector: 'app-historia-clinica-page',
   standalone: true,
-  imports: [FormsModule, DatePipe],
+  imports: [FormsModule, DatePipe, RouterLink],
   styleUrl: './historia-clinica.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -21,19 +21,29 @@ import { Paciente360Service } from '../../services/paciente-360.service';
           <h2>Historia Clinica</h2>
           <p>Timeline clinico descendente con filtros por tipo, profesional y rango.</p>
         </div>
-        <button
-          type="button"
-          class="btn-filters-toggle"
-          [class.btn-filters-toggle-active]="filtersOpen()"
-          [attr.aria-expanded]="filtersOpen()"
-          aria-controls="historia-filters"
-          aria-label="Mostrar u ocultar filtros de historia clinica"
-          (click)="toggleFilters()"
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-            <path d="M4 6h16l-6 7v5l-4 2v-7L4 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-          </svg>
-        </button>
+        <div class="page-head-actions">
+          <a
+            class="btn-filters-toggle btn-filters-link"
+            [routerLink]="['/app/historia-clinica']"
+            [queryParams]="workspaceQueryParams()"
+            aria-label="Abrir workspace global de historia clinica"
+          >
+            Global
+          </a>
+          <button
+            type="button"
+            class="btn-filters-toggle"
+            [class.btn-filters-toggle-active]="filtersOpen()"
+            [attr.aria-expanded]="filtersOpen()"
+            aria-controls="historia-filters"
+            aria-label="Mostrar u ocultar filtros de historia clinica"
+            (click)="toggleFilters()"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+              <path d="M4 6h16l-6 7v5l-4 2v-7L4 6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
       </header>
 
       @if (filtersOpen()) {
@@ -141,6 +151,16 @@ export class HistoriaClinicaPage {
 
   toggleFilters(): void {
     this.filtersOpen.set(!this.filtersOpen());
+  }
+
+  workspaceQueryParams(): Record<string, string> {
+    const pacienteId = this.route.parent?.snapshot.paramMap.get('patientId') ?? '';
+    return {
+      ...(pacienteId ? { pacienteId } : {}),
+      ...(this.filters.profesionalId ? { profesionalId: this.filters.profesionalId } : {}),
+      ...(this.filters.from ? { from: this.filters.from } : {}),
+      ...(this.filters.to ? { to: this.filters.to } : {}),
+    };
   }
 
   load(): void {

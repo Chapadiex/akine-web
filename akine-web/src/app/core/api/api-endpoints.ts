@@ -55,6 +55,7 @@ export const API = {
     create: (consultorioId: string) => `/api/v1/pacientes?consultorioId=${consultorioId}`,
     list: (consultorioId: string) => `/api/v1/pacientes?consultorioId=${consultorioId}`,
     byId: (id: string, consultorioId: string) => `/api/v1/pacientes/${id}?consultorioId=${consultorioId}`,
+    update: (id: string, consultorioId: string) => `/api/v1/pacientes/${id}?consultorioId=${consultorioId}`,
     search: (consultorioId: string, dni?: string, q?: string) => {
       const params = new URLSearchParams({ consultorioId });
       if (dni) params.append('dni', dni);
@@ -71,6 +72,20 @@ export const API = {
     turnos: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/turnos`,
     obraSocial: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/obra-social`,
     pagos: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/360/pagos`,
+  },
+  historiaClinicaGlobal: {
+    workspace: (cid: string) => `/api/v1/consultorios/${cid}/historia-clinica/workspace`,
+    paciente: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}`,
+    sesiones: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones`,
+    sesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}`,
+    cerrarSesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}/cerrar`,
+    anularSesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}/anular`,
+    diagnosticos: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/diagnosticos`,
+    diagnostico: (cid: string, pid: string, did: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/diagnosticos/${did}`,
+    resolverDiagnostico: (cid: string, pid: string, did: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/diagnosticos/${did}/resolver`,
+    descartarDiagnostico: (cid: string, pid: string, did: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/diagnosticos/${did}/descartar`,
+    adjuntos: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}/adjuntos`,
+    adjunto: (cid: string, pid: string, aid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/adjuntos/${aid}`,
   },
   consultorios: {
     list:            '/api/v1/consultorios',
