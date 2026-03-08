@@ -7,10 +7,16 @@
     <div class="sidenav__brand">
       <a routerLink="/home" class="brand-link" (click)="closeMobile()">
         <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-          <rect width="28" height="28" rx="6" fill="currentColor" fill-opacity="0.15"/>
-          <path d="M7 20 L14 8 L21 20" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-          <circle cx="14" cy="15" r="2" fill="currentColor"/>
+          <rect width="28" height="28" rx="6" fill="currentColor" fill-opacity="0.15" />
+          <path
+            d="M7 20 L14 8 L21 20"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            fill="none"
+          />
+          <circle cx="14" cy="15" r="2" fill="currentColor" />
         </svg>
         @if (!collapsed()) {
           <span class="brand-name">Akine</span>
@@ -22,7 +28,11 @@
         (click)="toggle()"
         [attr.aria-label]="collapsed() ? 'Expandir menu' : 'Colapsar menu'"
       >
-        {{ collapsed() ? '>' : '<' }}
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          @for (path of iconPaths(collapsed() ? 'chevron-right' : 'chevron-left'); track path) {
+            <path [attr.d]="path" />
+          }
+        </svg>
       </button>
     </div>
 
@@ -43,7 +53,13 @@
                 [title]="collapsed() ? item.label : ''"
                 (click)="closeMobile()"
               >
-                <span class="nav-item__icon" aria-hidden="true">{{ item.icon }}</span>
+                <span class="nav-item__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" class="nav-item__glyph">
+                    @for (path of iconPaths(item.icon); track path) {
+                      <path [attr.d]="path" />
+                    }
+                  </svg>
+                </span>
                 @if (!collapsed()) {
                   <span class="nav-item__label">{{ item.label }}</span>
                 }
@@ -59,6 +75,13 @@
                       class="nav-subitem"
                       (click)="closeMobile()"
                     >
+                      <span class="nav-subitem__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" class="nav-subitem__glyph">
+                          @for (path of iconPaths(child.icon); track path) {
+                            <path [attr.d]="path" />
+                          }
+                        </svg>
+                      </span>
                       {{ child.label }}
                     </a>
                   }
@@ -78,7 +101,13 @@
         [title]="collapsed() ? (themeSvc.theme() === 'light' ? 'Modo oscuro' : 'Modo claro') : ''"
         [attr.aria-label]="themeSvc.theme() === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'"
       >
-        <span class="nav-item__icon" aria-hidden="true">{{ themeSvc.theme() === 'light' ? '🌙' : '☀️' }}</span>
+        <span class="nav-item__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" class="nav-item__glyph">
+            @for (path of iconPaths(themeSvc.theme() === 'light' ? 'moon' : 'sun'); track path) {
+              <path [attr.d]="path" />
+            }
+          </svg>
+        </span>
         @if (!collapsed()) {
           <span class="nav-item__label">{{ themeSvc.theme() === 'light' ? 'Modo oscuro' : 'Modo claro' }}</span>
         }
@@ -105,13 +134,12 @@
 
   <div class="shell-main">
     <header class="topbar" role="banner">
-      <button
-        class="topbar__hamburger"
-        type="button"
-        (click)="mobileOpen.set(true)"
-        aria-label="Abrir menu"
-      >
-        ☰
+      <button class="topbar__hamburger" type="button" (click)="mobileOpen.set(true)" aria-label="Abrir menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          @for (path of iconPaths('menu'); track path) {
+            <path [attr.d]="path" />
+          }
+        </svg>
       </button>
 
       <div class="topbar__brand-mobile">
@@ -121,7 +149,13 @@
       <div class="topbar__actions">
         @if (consultorios().length > 0) {
           <div class="consultorio-switcher">
-            <span class="consultorio-switcher__icon" aria-hidden="true">🏥</span>
+            <span class="consultorio-switcher__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                @for (path of iconPaths('hospital'); track path) {
+                  <path [attr.d]="path" />
+                }
+              </svg>
+            </span>
             <label for="consultorioSelect">Consultorio</label>
             <select
               id="consultorioSelect"
@@ -135,9 +169,7 @@
           </div>
         }
 
-        <button class="btn btn--ghost btn--sm" type="button" (click)="logout()">
-          Cerrar sesion
-        </button>
+        <button class="btn btn--ghost btn--sm" type="button" (click)="logout()">Cerrar sesion</button>
       </div>
     </header>
 

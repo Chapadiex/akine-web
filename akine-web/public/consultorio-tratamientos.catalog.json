@@ -1,0 +1,16 @@
+{
+  "consultorioId": "CONS-001",
+  "version": "1.0.0",
+  "items": [
+    { "code": "KINESIO_MOTORA", "label": "Kinesioterapia motora", "category": "Rehabilitacion", "active": true, "order": 10 },
+    { "code": "REHAB_FUNCIONAL", "label": "Rehabilitacion funcional", "category": "Rehabilitacion", "active": true, "order": 20 },
+    { "code": "ELECTROTERAPIA", "label": "Electroterapia", "category": "Agentes fisicos", "active": true, "order": 30 },
+    { "code": "MAGNETOTERAPIA", "label": "Magnetoterapia", "category": "Agentes fisicos", "active": true, "order": 40 },
+    { "code": "ULTRASONIDO", "label": "Ultrasonido", "category": "Agentes fisicos", "active": true, "order": 50 },
+    { "code": "RPG", "label": "RPG", "category": "Postural", "active": true, "order": 60 },
+    { "code": "TERAPIA_MANUAL", "label": "Terapia manual", "category": "Manual", "active": true, "order": 70 },
+    { "code": "EJERCICIOS_TERAPEUTICOS", "label": "Ejercicios terapeuticos", "category": "Ejercicio", "active": true, "order": 80 },
+    { "code": "DRENAJE_LINFATICO", "label": "Drenaje linfatico", "category": "Manual", "active": true, "order": 90 },
+    { "code": "READAPTACION_DEPORTIVA", "label": "Readaptacion deportiva", "category": "Rehabilitacion", "active": true, "order": 100 }
+  ]
+}

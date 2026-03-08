@@ -15,14 +15,22 @@ import { ConsultorioContextService } from '../../../../core/consultorio/consulto
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { AntecedenteCatalogCategory } from '../../../consultorios/models/antecedente-catalog.models';
+import { TratamientoCatalogItem } from '../../../consultorios/models/tratamiento-catalog.models';
+import { AntecedenteCatalogService } from '../../../consultorios/services/antecedente-catalog.service';
+import { TratamientoCatalogService } from '../../../consultorios/services/tratamiento-catalog.service';
+import { AntecedentesWorkspaceComponent } from '../../components/antecedentes-workspace/antecedentes-workspace';
 import { PacienteForm } from '../../../pacientes/components/paciente-form/paciente-form';
 import { PacienteRequest, PacienteSearchResult } from '../../../pacientes/models/paciente.models';
 import { PacienteService } from '../../../pacientes/services/paciente.service';
 import {
+  AtencionInicialTipoIngreso,
+  CreateAtencionInicialRequest,
   DiagnosticoClinicoResponse,
   HistoriaClinicaActiveCaseSummary,
   HistoriaClinicaAntecedenteItem,
   HistoriaClinicaOverview,
+  PlanTratamientoCaracter,
   HistoriaClinicaSesionEstado,
   HistoriaClinicaTimelineEvent,
   HistoriaClinicaTipoAtencion,
@@ -36,6 +44,7 @@ type TimelineFilter = 'all' | 'sessions' | 'cases' | 'antecedents' | 'attachment
 type SessionListFilter = 'all' | HistoriaClinicaSesionEstado;
 type ClinicalTab = 'summary' | 'cases' | 'timeline' | 'background';
 type ClinicalScreenState = 'no-patient' | 'no-history' | 'history-no-case' | 'history-active-case';
+type LegajoWizardStep = 0 | 1 | 2 | 3;
 
 type RouteState = {
   pacienteId?: string;
@@ -59,13 +68,26 @@ type CasePanelItem = {
   isActive: boolean;
 };
 
+type StatusSummaryItem = {
+  label: string;
+  value: string;
+};
+
 const TIMELINE_BATCH_SIZE = 12;
 const SESSION_PAGE_SIZE = 80;
 
 @Component({
   selector: 'app-historia-clinica-paciente-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, DatePipe, PacienteForm, ConfirmDialog],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterLink,
+    DatePipe,
+    PacienteForm,
+    ConfirmDialog,
+    AntecedentesWorkspaceComponent,
+  ],
   templateUrl: './historia-clinica-paciente.html',
   styleUrl: './historia-clinica-paciente.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -78,6 +100,8 @@ export class HistoriaClinicaPacientePage {
   readonly consultorioCtx = inject(ConsultorioContextService);
   private readonly historiaSvc = inject(HistoriaClinicaService);
   private readonly pacienteSvc = inject(PacienteService);
+  private readonly antecedenteCatalogSvc = inject(AntecedenteCatalogService);
+  private readonly tratamientoCatalogSvc = inject(TratamientoCatalogService);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
 
@@ -114,22 +138,52 @@ export class HistoriaClinicaPacientePage {
   readonly showCasoDrawer = signal(false);
   readonly showAntecedentesDrawer = signal(false);
   readonly showClearPatientConfirm = signal(false);
+  readonly showLegajoCloseConfirm = signal(false);
   readonly isSavingLegajo = signal(false);
   readonly isSavingSesion = signal(false);
   readonly isSavingCaso = signal(false);
   readonly isSavingAntecedentes = signal(false);
   readonly isUploadingAdjunto = signal(false);
+  readonly antecedenteCatalogCategories = signal<AntecedenteCatalogCategory[]>([]);
+  readonly treatmentCatalogItems = signal<TratamientoCatalogItem[]>([]);
+  readonly createLegajoAdjuntos = signal<File[]>([]);
+  readonly treatmentSearchControl = new FormControl('', { nonNullable: true });
+
+  readonly createLegajoStep = signal<LegajoWizardStep>(0);
 
   readonly createLegajoForm = new FormGroup({
-    profesionalId: new FormControl('', { nonNullable: true }),
-    fechaAtencion: new FormControl(this.nowForInput(), { nonNullable: true }),
-    motivoConsulta: new FormControl('', { nonNullable: true }),
-    resumenClinico: new FormControl('', { nonNullable: true }),
-    evaluacion: new FormControl('', { nonNullable: true }),
-    casoDescripcion: new FormControl('', { nonNullable: true }),
-    casoFechaInicio: new FormControl(this.todayForInput(), { nonNullable: true }),
+    profesionalId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    fechaHora: new FormControl(this.nowForInput(), {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    tipoIngreso: new FormControl<AtencionInicialTipoIngreso>('CONSULTA_PARTICULAR', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    motivoConsultaBreve: new FormControl('', { nonNullable: true }),
+    sintomasPrincipales: new FormControl('', { nonNullable: true }),
+    tiempoEvolucion: new FormControl('', { nonNullable: true }),
+    observaciones: new FormControl('', { nonNullable: true }),
+    especialidadDerivante: new FormControl('', { nonNullable: true }),
+    profesionalDerivante: new FormControl('', { nonNullable: true }),
+    fechaPrescripcion: new FormControl('', { nonNullable: true }),
+    diagnosticoTexto: new FormControl('', { nonNullable: true }),
+    observacionesPrescripcion: new FormControl('', { nonNullable: true }),
+    peso: new FormControl('', { nonNullable: true }),
+    altura: new FormControl('', { nonNullable: true }),
+    imc: new FormControl('', { nonNullable: true }),
+    presionArterial: new FormControl('', { nonNullable: true }),
+    frecuenciaCardiaca: new FormControl('', { nonNullable: true }),
+    saturacion: new FormControl('', { nonNullable: true }),
+    temperatura: new FormControl('', { nonNullable: true }),
+    evaluacionObservaciones: new FormControl('', { nonNullable: true }),
+    resumenClinicoInicial: new FormControl('', { nonNullable: true }),
+    hallazgosRelevantes: new FormControl('', { nonNullable: true }),
+    planObservacionesGenerales: new FormControl('', { nonNullable: true }),
   });
-  readonly createLegajoAntecedentes = new FormArray([this.createAntecedenteGroup()]);
+  readonly createLegajoAntecedentes = new FormArray<FormGroup>([]);
+  readonly createLegajoTratamientos = new FormArray<FormGroup>([]);
 
   readonly sesionForm = new FormGroup({
     profesionalId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -165,6 +219,15 @@ export class HistoriaClinicaPacientePage {
   readonly antecedentesForm = new FormGroup({
     items: new FormArray([this.createAntecedenteGroup()]),
   });
+  readonly tipoIngresoOptions: ReadonlyArray<{ value: AtencionInicialTipoIngreso; label: string }> = [
+    { value: 'CON_PRESCRIPCION', label: 'Con prescripcion medica' },
+    { value: 'CONSULTA_PARTICULAR', label: 'Consulta particular' },
+  ];
+  readonly caracterCasoOptions: ReadonlyArray<{ value: PlanTratamientoCaracter; label: string }> = [
+    { value: 'PARCIAL', label: 'Parcial' },
+    { value: 'DEFINITIVO', label: 'Definitivo' },
+    { value: 'CRONICO', label: 'Cronico' },
+  ];
 
   readonly tabOptions: ReadonlyArray<{ value: ClinicalTab; label: string }> = [
     { value: 'summary', label: 'Resumen' },
@@ -233,7 +296,7 @@ export class HistoriaClinicaPacientePage {
   readonly clinicalStatusDescription = computed(() => {
     switch (this.screenState()) {
       case 'no-history':
-        return 'Primero hay que crear la historia clinica para dejar base, antecedentes y punto de partida.';
+        return 'Primero hay que registrar la atencion inicial para dejar base clinica, antecedentes y plan terapeutico.';
       case 'history-no-case':
         return 'La historia clinica existe, pero hoy no hay un caso abierto. El siguiente paso operativo es abrir uno.';
       case 'history-active-case':
@@ -245,7 +308,7 @@ export class HistoriaClinicaPacientePage {
   readonly primaryActionLabel = computed(() => {
     switch (this.screenState()) {
       case 'no-history':
-        return 'Crear historia clinica';
+        return 'Registrar atencion inicial';
       case 'history-no-case':
         return 'Nuevo caso clinico';
       case 'history-active-case':
@@ -254,6 +317,25 @@ export class HistoriaClinicaPacientePage {
         return '';
     }
   });
+  readonly currentProfessionalLabel = computed(
+    () => this.overview()?.ultimaSesion?.profesionalNombre || this.overview()?.profesionalHabitual || 'Sin registro',
+  );
+  readonly statusSummaryItems = computed<StatusSummaryItem[]>(() => [
+    { label: 'HC', value: this.hasLegajo() ? 'Creada' : 'Pendiente' },
+    { label: 'Casos activos', value: String(this.overview()?.casosActivos?.length ?? 0) },
+    {
+      label: 'Ultima atencion',
+      value: this.overview()?.ultimaSesion?.fechaAtencion
+        ? this.formatDateTime(this.overview()!.ultimaSesion!.fechaAtencion)
+        : 'Sin sesiones',
+    },
+    {
+      label: 'Alertas',
+      value: String(this.overview()?.alertasClinicas?.length ?? this.recentCriticalAntecedentes().length ?? 0),
+    },
+    { label: 'Profesional actual/habitual', value: this.currentProfessionalLabel() },
+    { label: 'Accion sugerida', value: this.suggestedActionLabel() },
+  ]);
   readonly compatibilityFilters = computed(() => {
     const state = this.routeState();
     return [
@@ -330,6 +412,46 @@ export class HistoriaClinicaPacientePage {
       ? this.antecedentes().filter((item) => item.critical).slice(0, 4)
       : this.overview()?.antecedentesRelevantes.filter((item) => item.critical).slice(0, 4) ?? [],
   );
+  readonly summaryMainCase = computed(() => this.activeCaseCards()[0] ?? null);
+  readonly summaryLatestEvent = computed(() => this.overview()?.ultimaSesion ?? null);
+  readonly summaryAntecedentes = computed(() => this.overview()?.antecedentesRelevantes?.slice(0, 4) ?? []);
+  readonly summaryAdjuntos = computed(() => this.overview()?.adjuntosRecientes?.slice(0, 4) ?? []);
+  readonly availableTreatmentItems = computed(() => {
+    const selected = new Set(
+      this.createLegajoTratamientos.controls.map((control) => control.get('tratamientoId')?.value as string),
+    );
+    const query = this.normalizeSearch(this.treatmentSearchControl.value);
+    return this.treatmentCatalogItems()
+      .filter((item) => item.active && !selected.has(item.code))
+      .filter((item) => !query || this.normalizeSearch(`${item.label} ${item.category ?? ''}`).includes(query))
+      .sort((a, b) => a.order - b.order);
+  });
+  readonly legajoWizardSteps: ReadonlyArray<{
+    step: LegajoWizardStep;
+    label: string;
+    title: string;
+  }> = [
+    {
+      step: 0,
+      label: 'Paso 1',
+      title: 'Ingreso clinico',
+    },
+    {
+      step: 1,
+      label: 'Paso 2',
+      title: 'Evaluacion clinica',
+    },
+    {
+      step: 2,
+      label: 'Paso 3',
+      title: 'Antecedentes',
+    },
+    {
+      step: 3,
+      label: 'Paso 4',
+      title: 'Plan terapeutico',
+    },
+  ];
 
   constructor() {
     this.seedDefaultProfessionals();
@@ -431,21 +553,68 @@ export class HistoriaClinicaPacientePage {
     this.createLegajoForm.reset(
       {
         profesionalId: this.defaultProfesionalId(),
-        fechaAtencion: this.nowForInput(),
-        motivoConsulta: '',
-        resumenClinico: '',
-        evaluacion: '',
-        casoDescripcion: '',
-        casoFechaInicio: this.todayForInput(),
+        fechaHora: this.nowForInput(),
+        tipoIngreso: 'CONSULTA_PARTICULAR',
+        motivoConsultaBreve: '',
+        sintomasPrincipales: '',
+        tiempoEvolucion: '',
+        observaciones: '',
+        especialidadDerivante: '',
+        profesionalDerivante: '',
+        fechaPrescripcion: '',
+        diagnosticoTexto: '',
+        observacionesPrescripcion: '',
+        peso: '',
+        altura: '',
+        imc: '',
+        presionArterial: '',
+        frecuenciaCardiaca: '',
+        saturacion: '',
+        temperatura: '',
+        evaluacionObservaciones: '',
+        resumenClinicoInicial: '',
+        hallazgosRelevantes: '',
+        planObservacionesGenerales: '',
       },
       { emitEvent: false },
     );
     this.resetAntecedenteArray(this.createLegajoAntecedentes, []);
+    this.resetTratamientoArray();
+    this.createLegajoAdjuntos.set([]);
+    this.treatmentSearchControl.setValue('', { emitEvent: false });
+    this.createLegajoStep.set(0);
+    this.showLegajoCloseConfirm.set(false);
     this.showLegajoModal.set(true);
+    this.loadAntecedenteCatalog();
+    this.loadTratamientoCatalog();
   }
 
   dismissLegajoModal(): void {
+    if (this.hasLegajoWizardDraft()) {
+      this.showLegajoCloseConfirm.set(true);
+      return;
+    }
     this.showLegajoModal.set(false);
+  }
+
+  confirmDismissLegajoModal(): void {
+    this.showLegajoCloseConfirm.set(false);
+    this.showLegajoModal.set(false);
+  }
+
+  cancelDismissLegajoModal(): void {
+    this.showLegajoCloseConfirm.set(false);
+  }
+
+  nextLegajoStep(): void {
+    if (!this.validateLegajoStep(this.createLegajoStep())) {
+      return;
+    }
+    this.createLegajoStep.update((step) => (step < 3 ? ((step + 1) as LegajoWizardStep) : step));
+  }
+
+  previousLegajoStep(): void {
+    this.createLegajoStep.update((step) => (step > 0 ? ((step - 1) as LegajoWizardStep) : step));
   }
 
   saveLegajo(): void {
@@ -454,25 +623,64 @@ export class HistoriaClinicaPacientePage {
     if (!consultorioId || !pacienteId) {
       return;
     }
+    if (!this.validateLegajoStep(3)) {
+      this.createLegajoStep.set(3);
+      return;
+    }
     const raw = this.createLegajoForm.getRawValue();
+    const payload: CreateAtencionInicialRequest = {
+      profesionalId: raw.profesionalId,
+      fechaHora: raw.fechaHora,
+      tipoIngreso: raw.tipoIngreso,
+      motivoConsultaBreve: this.emptyToUndefined(raw.motivoConsultaBreve) ?? null,
+      sintomasPrincipales: this.emptyToUndefined(raw.sintomasPrincipales) ?? null,
+      tiempoEvolucion: this.emptyToUndefined(raw.tiempoEvolucion) ?? null,
+      observaciones: this.emptyToUndefined(raw.observaciones) ?? null,
+      especialidadDerivante: this.emptyToUndefined(raw.especialidadDerivante) ?? null,
+      profesionalDerivante: this.emptyToUndefined(raw.profesionalDerivante) ?? null,
+      fechaPrescripcion: this.emptyToUndefined(raw.fechaPrescripcion) ?? null,
+      diagnosticoTexto: this.emptyToUndefined(raw.diagnosticoTexto) ?? null,
+      observacionesPrescripcion: this.emptyToUndefined(raw.observacionesPrescripcion) ?? null,
+      evaluacion: this.buildEvaluacionPayload(raw),
+      resumenClinicoInicial: this.emptyToUndefined(raw.resumenClinicoInicial) ?? null,
+      hallazgosRelevantes: this.emptyToUndefined(raw.hallazgosRelevantes) ?? null,
+      antecedentes: this.buildAntecedentesPayload(this.createLegajoAntecedentes),
+      planObservacionesGenerales: this.emptyToUndefined(raw.planObservacionesGenerales) ?? null,
+      tratamientos: this.buildTratamientosPayload(),
+    };
     this.isSavingLegajo.set(true);
     this.historiaSvc
-      .createLegajo(consultorioId, pacienteId, {
-        profesionalId: this.emptyToUndefined(raw.profesionalId) ?? null,
-        fechaAtencion: this.emptyToUndefined(raw.fechaAtencion) ?? null,
-        motivoConsulta: this.emptyToUndefined(raw.motivoConsulta) ?? null,
-        resumenClinico: this.emptyToUndefined(raw.resumenClinico) ?? null,
-        evaluacion: this.emptyToUndefined(raw.evaluacion) ?? null,
-        casoDescripcion: this.emptyToUndefined(raw.casoDescripcion) ?? null,
-        casoFechaInicio: this.emptyToUndefined(raw.casoFechaInicio) ?? null,
-        antecedentes: this.buildAntecedentesPayload(this.createLegajoAntecedentes),
-      })
+      .createAtencionInicial(consultorioId, pacienteId, payload)
       .subscribe({
-        next: () => {
-          this.isSavingLegajo.set(false);
-          this.dismissLegajoModal();
-          this.toast.success('Historia clinica creada.');
-          this.reloadSelectedPatient();
+        next: (overview) => {
+          const atencionInicialId = overview.atencionInicial?.id ?? null;
+          const queuedFiles = this.createLegajoAdjuntos();
+          if (!atencionInicialId || !queuedFiles.length) {
+            this.finishCreateAtencionInicial();
+            return;
+          }
+          this.isUploadingAdjunto.set(true);
+          forkJoin(
+            queuedFiles.map((file) =>
+              this.historiaSvc
+                .uploadAtencionInicialAdjunto(consultorioId, pacienteId, atencionInicialId, file)
+                .pipe(catchError(() => of(null))),
+            ),
+          ).subscribe({
+            next: (uploads) => {
+              this.isUploadingAdjunto.set(false);
+              const failed = uploads.filter((item) => item === null).length;
+              this.finishCreateAtencionInicial();
+              if (failed > 0) {
+                this.toast.info('La atencion inicial se guardo, pero algunos adjuntos no se pudieron subir.');
+              }
+            },
+            error: () => {
+              this.isUploadingAdjunto.set(false);
+              this.finishCreateAtencionInicial();
+              this.toast.info('La atencion inicial se guardo, pero fallaron los adjuntos.');
+            },
+          });
         },
         error: (err) => {
           this.isSavingLegajo.set(false);
@@ -685,6 +893,7 @@ export class HistoriaClinicaPacientePage {
   openAntecedentesDrawer(): void {
     this.ensureBackgroundData();
     this.resetAntecedenteArray(this.antecedentesItems, this.antecedentes());
+    this.loadAntecedenteCatalog();
     this.showAntecedentesDrawer.set(true);
   }
 
@@ -711,19 +920,37 @@ export class HistoriaClinicaPacientePage {
       });
   }
 
-  addAntecedente(target: 'create' | 'edit'): void {
-    (target === 'create' ? this.createLegajoAntecedentes : this.antecedentesItems).push(
-      this.createAntecedenteGroup(),
+  addTratamientoFromCatalog(item: TratamientoCatalogItem): void {
+    this.createLegajoTratamientos.push(
+      this.createTratamientoGroup({
+        tratamientoId: item.code,
+        tratamientoNombre: item.label,
+        cantidadSesiones: 10,
+        caracterCaso: 'PARCIAL',
+        fechaEstimadaInicio: this.todayForInput(),
+        requiereAutorizacion: false,
+      }),
     );
   }
 
-  removeAntecedente(target: 'create' | 'edit', index: number): void {
-    const array = target === 'create' ? this.createLegajoAntecedentes : this.antecedentesItems;
-    if (array.length <= 1) {
-      array.at(0)?.reset({ label: '', valueText: '', critical: false, notes: '' });
+  removeTratamiento(index: number): void {
+    this.createLegajoTratamientos.removeAt(index);
+  }
+
+  queueCreateAdjuntos(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const files = Array.from(input?.files ?? []);
+    if (!files.length) {
       return;
     }
-    array.removeAt(index);
+    this.createLegajoAdjuntos.update((current) => [...current, ...files]);
+    if (input) {
+      input.value = '';
+    }
+  }
+
+  removeCreateAdjunto(index: number): void {
+    this.createLegajoAdjuntos.update((files) => files.filter((_, fileIndex) => fileIndex !== index));
   }
 
   uploadAdjunto(event: Event): void {
@@ -1112,11 +1339,73 @@ export class HistoriaClinicaPacientePage {
   }
 
   private hasPendingDrafts(): boolean {
-    const legajoDirty = this.showLegajoModal() && (this.createLegajoForm.dirty || this.createLegajoAntecedentes.dirty);
+    const legajoDirty =
+      this.showLegajoModal() &&
+      (this.createLegajoForm.dirty ||
+        this.createLegajoAntecedentes.dirty ||
+        this.createLegajoTratamientos.dirty ||
+        this.createLegajoAdjuntos().length > 0);
     const sesionDirty = this.showSesionDrawer() && this.sesionForm.dirty;
     const casoDirty = this.showCasoDrawer() && this.casoForm.dirty;
     const antecedentesDirty = this.showAntecedentesDrawer() && this.antecedentesForm.dirty;
     return legajoDirty || sesionDirty || casoDirty || antecedentesDirty;
+  }
+
+  private hasLegajoWizardDraft(): boolean {
+    return (
+      this.showLegajoModal() &&
+      (this.createLegajoForm.dirty ||
+        this.createLegajoAntecedentes.dirty ||
+        this.createLegajoTratamientos.dirty ||
+        this.createLegajoAdjuntos().length > 0)
+    );
+  }
+
+  private validateLegajoStep(step: LegajoWizardStep): boolean {
+    const controls = this.legajoStepControls(step);
+    controls.forEach((control) => {
+      control.markAsTouched();
+      control.updateValueAndValidity({ emitEvent: false });
+    });
+    if (!controls.every((control) => control.valid)) {
+      return false;
+    }
+    if (step === 0) {
+      const raw = this.createLegajoForm.getRawValue();
+      if (raw.tipoIngreso === 'CONSULTA_PARTICULAR') {
+        return !!this.emptyToUndefined(raw.motivoConsultaBreve);
+      }
+      return !!(
+        this.emptyToUndefined(raw.motivoConsultaBreve) ||
+        this.emptyToUndefined(raw.diagnosticoTexto) ||
+        this.emptyToUndefined(raw.profesionalDerivante) ||
+        this.emptyToUndefined(raw.especialidadDerivante) ||
+        raw.fechaPrescripcion ||
+        this.createLegajoAdjuntos().length
+      );
+    }
+    if (step === 3) {
+      return this.buildTratamientosPayload().length > 0;
+    }
+    return true;
+  }
+
+  private legajoStepControls(step: LegajoWizardStep): Array<FormControl<string>> {
+    switch (step) {
+      case 0:
+        return [
+          this.createLegajoForm.controls.profesionalId,
+          this.createLegajoForm.controls.fechaHora,
+        ];
+      case 1:
+        return [];
+      case 2:
+        return [];
+      case 3:
+        return [];
+      default:
+        return [];
+    }
   }
 
   private executeClearSelectedPatient(): void {
@@ -1236,6 +1525,8 @@ export class HistoriaClinicaPacientePage {
 
   private createAntecedenteGroup(item?: Partial<HistoriaClinicaAntecedenteItem>): FormGroup {
     return new FormGroup({
+      categoryCode: new FormControl(item?.categoryCode ?? '', { nonNullable: true }),
+      catalogItemCode: new FormControl(item?.catalogItemCode ?? '', { nonNullable: true }),
       label: new FormControl(item?.label ?? '', { nonNullable: true }),
       valueText: new FormControl(item?.valueText ?? '', { nonNullable: true }),
       critical: new FormControl(item?.critical ?? false, { nonNullable: true }),
@@ -1247,20 +1538,148 @@ export class HistoriaClinicaPacientePage {
     while (array.length) {
       array.removeAt(0);
     }
-    const seed = items.length ? items : [{ label: '', valueText: '', critical: false, notes: '' }];
-    seed.forEach((item) => array.push(this.createAntecedenteGroup(item)));
+    items.forEach((item) => array.push(this.createAntecedenteGroup(item)));
   }
 
   private buildAntecedentesPayload(array: FormArray): HistoriaClinicaAntecedenteItem[] {
     return array.controls
       .map((control) => control.getRawValue())
       .map((item) => ({
+        categoryCode: this.emptyToUndefined(item.categoryCode) ?? null,
+        catalogItemCode: this.emptyToUndefined(item.catalogItemCode) ?? null,
         label: (item.label ?? '').trim(),
         valueText: this.emptyToUndefined(item.valueText) ?? null,
         critical: !!item.critical,
         notes: this.emptyToUndefined(item.notes) ?? null,
       }))
       .filter((item) => !!item.label);
+  }
+
+  private createTratamientoGroup(item?: Partial<{
+    tratamientoId: string;
+    tratamientoNombre: string;
+    cantidadSesiones: number;
+    frecuenciaSugerida: string;
+    caracterCaso: PlanTratamientoCaracter;
+    fechaEstimadaInicio: string;
+    requiereAutorizacion: boolean;
+    observaciones: string;
+    observacionesAdministrativas: string;
+  }>): FormGroup {
+    return new FormGroup({
+      tratamientoId: new FormControl(item?.tratamientoId ?? '', { nonNullable: true, validators: [Validators.required] }),
+      tratamientoNombre: new FormControl(item?.tratamientoNombre ?? '', { nonNullable: true }),
+      cantidadSesiones: new FormControl(String(item?.cantidadSesiones ?? 10), {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+      frecuenciaSugerida: new FormControl(item?.frecuenciaSugerida ?? '', { nonNullable: true }),
+      caracterCaso: new FormControl<PlanTratamientoCaracter>(item?.caracterCaso ?? 'PARCIAL', {
+        nonNullable: true,
+        validators: [Validators.required],
+      }),
+      fechaEstimadaInicio: new FormControl(item?.fechaEstimadaInicio ?? this.todayForInput(), { nonNullable: true }),
+      requiereAutorizacion: new FormControl(item?.requiereAutorizacion ?? false, { nonNullable: true }),
+      observaciones: new FormControl(item?.observaciones ?? '', { nonNullable: true }),
+      observacionesAdministrativas: new FormControl(item?.observacionesAdministrativas ?? '', { nonNullable: true }),
+    });
+  }
+
+  private resetTratamientoArray(): void {
+    while (this.createLegajoTratamientos.length) {
+      this.createLegajoTratamientos.removeAt(0);
+    }
+  }
+
+  private buildTratamientosPayload() {
+    return this.createLegajoTratamientos.controls
+      .map((control) => control.getRawValue())
+      .map((item) => ({
+        tratamientoId: (item.tratamientoId ?? '').trim(),
+        cantidadSesiones: Number(item.cantidadSesiones ?? 0),
+        frecuenciaSugerida: this.emptyToUndefined(item.frecuenciaSugerida) ?? null,
+        caracterCaso: item.caracterCaso as PlanTratamientoCaracter,
+        fechaEstimadaInicio: this.emptyToUndefined(item.fechaEstimadaInicio) ?? null,
+        requiereAutorizacion: !!item.requiereAutorizacion,
+        observaciones: this.emptyToUndefined(item.observaciones) ?? null,
+        observacionesAdministrativas: this.emptyToUndefined(item.observacionesAdministrativas) ?? null,
+      }))
+      .filter((item) => !!item.tratamientoId && item.cantidadSesiones > 0 && !!item.caracterCaso);
+  }
+
+  private buildEvaluacionPayload(raw: ReturnType<FormGroup['getRawValue']>) {
+    const payload = {
+      peso: this.toNumberOrNull((raw as any).peso),
+      altura: this.toNumberOrNull((raw as any).altura),
+      imc: this.toNumberOrNull((raw as any).imc),
+      presionArterial: this.emptyToUndefined((raw as any).presionArterial) ?? null,
+      frecuenciaCardiaca: this.toIntOrNull((raw as any).frecuenciaCardiaca),
+      saturacion: this.toIntOrNull((raw as any).saturacion),
+      temperatura: this.toNumberOrNull((raw as any).temperatura),
+      observaciones: this.emptyToUndefined((raw as any).evaluacionObservaciones) ?? null,
+    };
+    return Object.values(payload).some((value) => value !== null && value !== undefined && value !== '')
+      ? payload
+      : null;
+  }
+
+  private finishCreateAtencionInicial(): void {
+    this.isSavingLegajo.set(false);
+    this.showLegajoCloseConfirm.set(false);
+    this.showLegajoModal.set(false);
+    this.createLegajoAdjuntos.set([]);
+    this.toast.success('Atencion inicial registrada.');
+    this.reloadSelectedPatient();
+  }
+
+  private loadAntecedenteCatalog(): void {
+    const consultorioId = this.consultorioCtx.selectedConsultorioId();
+    if (!consultorioId) {
+      return;
+    }
+    this.antecedenteCatalogSvc
+      .get(consultorioId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((catalog) => {
+        this.antecedenteCatalogCategories.set(catalog?.categories ?? []);
+      });
+  }
+
+  private loadTratamientoCatalog(): void {
+    const consultorioId = this.consultorioCtx.selectedConsultorioId();
+    if (!consultorioId) {
+      return;
+    }
+    this.tratamientoCatalogSvc
+      .get(consultorioId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((catalog) => {
+        this.treatmentCatalogItems.set(catalog?.items ?? []);
+      });
+  }
+
+  private normalizeSearch(value: string | null | undefined): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private toNumberOrNull(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private toIntOrNull(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const parsed = Number.parseInt(String(value), 10);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   private matchesTimelineType(event: HistoriaClinicaTimelineEvent): boolean {
@@ -1310,6 +1729,33 @@ export class HistoriaClinicaPacientePage {
   private emptyToUndefined(value?: string | null): string | undefined {
     const normalized = value?.trim() ?? '';
     return normalized || undefined;
+  }
+
+  private suggestedActionLabel(): string {
+    switch (this.screenState()) {
+      case 'no-history':
+        return 'Registrar atencion inicial';
+      case 'history-no-case':
+        return 'Abrir caso clinico';
+      case 'history-active-case':
+        return this.overview()?.ultimaSesion ? 'Nueva sesion' : 'Registrar sesion inicial';
+      default:
+        return 'Buscar paciente';
+    }
+  }
+
+  private formatDateTime(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return 'Sin sesiones';
+    }
+    return new Intl.DateTimeFormat('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
   }
 
   private nowForInput(): string {

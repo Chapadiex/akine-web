@@ -7,6 +7,7 @@ import { API } from '../../../core/api/api-endpoints';
 import {
   AdjuntoClinicoResponse,
   ClinicalDownload,
+  CreateAtencionInicialRequest,
   CreateHistoriaClinicaRequest,
   DiagnosticoClinicoEstadoRequest,
   DiagnosticoClinicoRequest,
@@ -53,6 +54,17 @@ export class HistoriaClinicaService {
   ): Observable<HistoriaClinicaOverview> {
     return this.api.post<HistoriaClinicaOverview>(
       API.historiaClinicaGlobal.legajo(consultorioId, pacienteId),
+      body,
+    );
+  }
+
+  createAtencionInicial(
+    consultorioId: string,
+    pacienteId: string,
+    body: CreateAtencionInicialRequest,
+  ): Observable<HistoriaClinicaOverview> {
+    return this.api.post<HistoriaClinicaOverview>(
+      API.historiaClinicaGlobal.atencionInicial(consultorioId, pacienteId),
       body,
     );
   }
@@ -200,6 +212,20 @@ export class HistoriaClinicaService {
     formData.append('file', file);
     return this.api.post<AdjuntoClinicoResponse>(
       API.historiaClinicaGlobal.adjuntos(consultorioId, pacienteId, sesionId),
+      formData,
+    );
+  }
+
+  uploadAtencionInicialAdjunto(
+    consultorioId: string,
+    pacienteId: string,
+    atencionInicialId: string,
+    file: File,
+  ): Observable<AdjuntoClinicoResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.api.post<AdjuntoClinicoResponse>(
+      API.historiaClinicaGlobal.atencionInicialAdjuntos(consultorioId, pacienteId, atencionInicialId),
       formData,
     );
   }

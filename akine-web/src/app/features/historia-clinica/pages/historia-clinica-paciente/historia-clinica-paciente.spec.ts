@@ -6,6 +6,8 @@ import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { AntecedenteCatalogService } from '../../../consultorios/services/antecedente-catalog.service';
+import { TratamientoCatalogService } from '../../../consultorios/services/tratamiento-catalog.service';
 import { PacienteService } from '../../../pacientes/services/paciente.service';
 import { HistoriaClinicaService } from '../../services/historia-clinica.service';
 import { HistoriaClinicaPacientePage } from './historia-clinica-paciente';
@@ -19,6 +21,8 @@ describe('HistoriaClinicaPacientePage', () => {
   let fixture: ComponentFixture<HistoriaClinicaPacientePage>;
   let historiaSvc: jasmine.SpyObj<HistoriaClinicaService>;
   let pacienteSvc: jasmine.SpyObj<PacienteService>;
+  let antecedenteCatalogSvc: jasmine.SpyObj<AntecedenteCatalogService>;
+  let tratamientoCatalogSvc: jasmine.SpyObj<TratamientoCatalogService>;
   let queryParams$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
@@ -29,7 +33,7 @@ describe('HistoriaClinicaPacientePage', () => {
       'getTimeline',
       'getAntecedentes',
       'getSesion',
-      'createLegajo',
+      'createAtencionInicial',
       'createSesion',
       'updateSesion',
       'closeSesion',
@@ -37,6 +41,7 @@ describe('HistoriaClinicaPacientePage', () => {
       'createDiagnostico',
       'resolveDiagnostico',
       'uploadAdjunto',
+      'uploadAtencionInicialAdjunto',
       'downloadAdjunto',
       'deleteAdjunto',
       'updateAntecedentes',
@@ -69,6 +74,26 @@ describe('HistoriaClinicaPacientePage', () => {
     );
     pacienteSvc = jasmine.createSpyObj<PacienteService>('PacienteService', ['search', 'createAdmin']);
     pacienteSvc.search.and.returnValue(of([]));
+    antecedenteCatalogSvc = jasmine.createSpyObj<AntecedenteCatalogService>('AntecedenteCatalogService', ['get']);
+    antecedenteCatalogSvc.get.and.returnValue(
+      of({
+        categories: [
+          {
+            code: 'personales',
+            name: 'Personales patologicos',
+            order: 10,
+            active: true,
+            items: [{ code: 'alergias', label: 'Alergias', valueType: 'BOOLEAN', active: true, order: 1 }],
+          },
+        ],
+      } as any),
+    );
+    tratamientoCatalogSvc = jasmine.createSpyObj<TratamientoCatalogService>('TratamientoCatalogService', ['get']);
+    tratamientoCatalogSvc.get.and.returnValue(
+      of({
+        items: [{ code: 'tm', label: 'Terapia manual', category: 'Kinesiologia', active: true, order: 1 }],
+      } as any),
+    );
 
     await TestBed.configureTestingModule({
       imports: [HistoriaClinicaPacientePage],
@@ -76,6 +101,8 @@ describe('HistoriaClinicaPacientePage', () => {
         provideRouter([]),
         { provide: HistoriaClinicaService, useValue: historiaSvc },
         { provide: PacienteService, useValue: pacienteSvc },
+        { provide: AntecedenteCatalogService, useValue: antecedenteCatalogSvc },
+        { provide: TratamientoCatalogService, useValue: tratamientoCatalogSvc },
         { provide: ConsultorioContextService, useClass: ConsultorioContextStub },
         { provide: AuthService, useValue: { currentUser: signal({ profesionalId: 'prof-1' }) } },
         {
@@ -163,7 +190,9 @@ describe('HistoriaClinicaPacientePage', () => {
     expect(historiaSvc.getTimeline).not.toHaveBeenCalled();
     expect(historiaSvc.getAntecedentes).not.toHaveBeenCalled();
     expect(historiaSvc.listDiagnosticos).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Donde estoy parado ahora');
+    expect(fixture.nativeElement.textContent).toContain('Estado actual');
+    expect(fixture.nativeElement.textContent).toContain('Caso principal');
+    expect(fixture.nativeElement.textContent).toContain('Ultimo evento');
   });
 
   it('loads cases and sessions lazily when entering the cases tab', () => {
@@ -203,7 +232,7 @@ describe('HistoriaClinicaPacientePage', () => {
     clickButton('Timeline');
 
     expect(historiaSvc.getTimeline).toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Que paso longitudinalmente');
+    expect(fixture.nativeElement.textContent).toContain('Timeline');
   });
 
   it('loads antecedentes and adjuntos lazily in the background tab', () => {
@@ -219,7 +248,7 @@ describe('HistoriaClinicaPacientePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Contexto base del paciente');
   });
 
-  it('shows create-clinical-history CTA when patient has no legajo', () => {
+  it('shows register-initial-attention CTA when patient has no legajo', () => {
     historiaSvc.getOverview.and.returnValue(
       of(
         patientOverview({
@@ -235,8 +264,99 @@ describe('HistoriaClinicaPacientePage', () => {
 
     createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Crear historia clinica');
+    expect(fixture.nativeElement.textContent).toContain('Registrar atencion inicial');
     expect(fixture.nativeElement.querySelector('.header-search')).toBeNull();
+  });
+
+  it('opens register-initial-attention as a 4-step wizard', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          legajo: { exists: false, legajoId: null, createdAt: null, updatedAt: null },
+          casosActivos: [],
+          ultimaSesion: null,
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Registrar atencion inicial');
+
+    expect(fixture.nativeElement.querySelectorAll('.wizard-step').length).toBe(4);
+    expect(fixture.nativeElement.textContent).toContain('Ingreso clinico');
+    expect(fixture.nativeElement.textContent).toContain('Paso 1');
+    expect(
+      fixture.nativeElement.querySelector('input[formControlName="fechaHora"]')?.value,
+    ).withContext('fecha/hora de atencion inicial precargada').toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Consulta particular');
+  });
+
+  it('validates the first wizard step before moving forward', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          legajo: { exists: false, legajoId: null, createdAt: null, updatedAt: null },
+          casosActivos: [],
+          ultimaSesion: null,
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Registrar atencion inicial');
+    fixture.componentInstance.createLegajoForm.controls.profesionalId.setValue('', { emitEvent: false });
+    fixture.componentInstance.createLegajoForm.controls.fechaHora.setValue('', { emitEvent: false });
+    fixture.componentInstance.createLegajoForm.controls.motivoConsultaBreve.setValue('', { emitEvent: false });
+
+    clickButton('Siguiente');
+
+    expect(fixture.componentInstance.createLegajoStep()).toBe(0);
+
+    fixture.componentInstance.createLegajoForm.controls.profesionalId.setValue('prof-1');
+    fixture.componentInstance.createLegajoForm.controls.fechaHora.setValue('2026-03-08T10:00');
+    fixture.componentInstance.createLegajoForm.controls.motivoConsultaBreve.setValue('Dolor lumbar');
+    fixture.detectChanges();
+
+    clickButton('Siguiente');
+
+    expect(fixture.componentInstance.createLegajoStep()).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Evaluacion clinica');
+  });
+
+  it('warns before closing the wizard with unsaved changes', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          legajo: { exists: false, legajoId: null, createdAt: null, updatedAt: null },
+          casosActivos: [],
+          ultimaSesion: null,
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Registrar atencion inicial');
+    fixture.componentInstance.createLegajoForm.controls.motivoConsultaBreve.setValue('Ingreso inicial');
+    fixture.componentInstance.createLegajoForm.controls.motivoConsultaBreve.markAsDirty();
+    fixture.componentInstance.createLegajoForm.markAsDirty();
+    fixture.detectChanges();
+
+    const closeButtons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    const closeButton = closeButtons.find((item) => item.textContent?.trim() === 'Cerrar');
+    expect(closeButton).toBeTruthy();
+    closeButton!.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Salir del registro de atencion inicial');
   });
 
   it('shows new-case CTA as primary action when patient has legajo but no active cases', () => {

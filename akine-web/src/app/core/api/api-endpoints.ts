@@ -78,6 +78,9 @@ export const API = {
     paciente: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}`,
     overview: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/overview`,
     legajo: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/legajo`,
+    atencionInicial: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/atencion-inicial`,
+    atencionInicialAdjuntos: (cid: string, pid: string, aid: string) =>
+      `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/atenciones-iniciales/${aid}/adjuntos`,
     antecedentes: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/antecedentes`,
     timeline: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/timeline`,
     sesiones: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones`,
@@ -117,6 +120,7 @@ export const API = {
     boxCapacidad:       (cid: string, boxId: string) => `/api/v1/consultorios/${cid}/boxes/${boxId}/capacidad`,
     antecedentesCatalogo: (cid: string) => `/api/v1/consultorios/${cid}/antecedentes-catalogo`,
     antecedentesRestoreDefaults: (cid: string) => `/api/v1/consultorios/${cid}/antecedentes-catalogo/defaults/restore`,
+    tratamientosCatalogo: (cid: string) => `/api/v1/consultorios/${cid}/tratamientos-catalogo`,
     especialidades: (cid: string) => `/api/v1/consultorios/${cid}/especialidades`,
     especialidadById: (cid: string, especialidadId: string) => `/api/v1/consultorios/${cid}/especialidades/${especialidadId}`,
     especialidadUpdate: (cid: string, especialidadId: string) => `/api/v1/consultorios/${cid}/especialidades/${especialidadId}`,

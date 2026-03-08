@@ -6,6 +6,8 @@ export type HistoriaClinicaTipoAtencion =
   | 'INTERCONSULTA'
   | 'OTRO';
 export type DiagnosticoClinicoEstado = 'ACTIVO' | 'RESUELTO' | 'DESCARTADO';
+export type AtencionInicialTipoIngreso = 'CON_PRESCRIPCION' | 'CONSULTA_PARTICULAR';
+export type PlanTratamientoCaracter = 'PARCIAL' | 'DEFINITIVO' | 'CRONICO';
 
 export interface HistoriaClinicaProfesionalOption {
   id: string;
@@ -99,7 +101,9 @@ export type HistoriaClinicaTimelineEventType =
   | 'CASO_OPENED'
   | 'CASO_CLOSED'
   | 'SESION'
-  | 'ADJUNTO';
+  | 'ADJUNTO'
+  | 'ATENCION_INICIAL'
+  | 'PLAN_TERAPEUTICO';
 
 export interface HistoriaClinicaTimelineEvent {
   eventId: string;
@@ -122,15 +126,74 @@ export interface HistoriaClinicaOverview {
   ultimaSesion?: HistoriaClinicaSesionSummary | null;
   adjuntosRecientes: AdjuntoClinicoResponse[];
   profesionalHabitual?: string | null;
+  atencionInicial?: AtencionInicialSummary | null;
+  evaluacionInicial?: AtencionInicialEvaluacionSummary | null;
+  planTerapeuticoActivo?: PlanTerapeuticoSummary | null;
 }
 
 export interface AdjuntoClinicoResponse {
   id: string;
-  sesionId: string;
+  sesionId?: string | null;
+  atencionInicialId?: string | null;
   originalFilename: string;
   contentType: string;
   sizeBytes: number;
   createdAt: string;
+}
+
+export interface AtencionInicialSummary {
+  id: string;
+  profesionalId: string;
+  profesionalNombre: string;
+  fechaHora: string;
+  tipoIngreso: AtencionInicialTipoIngreso;
+  motivoConsultaBreve?: string | null;
+  sintomasPrincipales?: string | null;
+  tiempoEvolucion?: string | null;
+  observaciones?: string | null;
+  especialidadDerivante?: string | null;
+  profesionalDerivante?: string | null;
+  fechaPrescripcion?: string | null;
+  diagnosticoTexto?: string | null;
+  observacionesPrescripcion?: string | null;
+  resumenClinicoInicial?: string | null;
+  hallazgosRelevantes?: string | null;
+}
+
+export interface AtencionInicialEvaluacionSummary {
+  id: string;
+  atencionInicialId: string;
+  peso?: number | null;
+  altura?: number | null;
+  imc?: number | null;
+  presionArterial?: string | null;
+  frecuenciaCardiaca?: number | null;
+  saturacion?: number | null;
+  temperatura?: number | null;
+  observaciones?: string | null;
+}
+
+export interface PlanTratamientoDetalleSummary {
+  id: string;
+  tratamientoId: string;
+  tratamientoNombre: string;
+  cantidadSesiones: number;
+  frecuenciaSugerida?: string | null;
+  caracterCaso: PlanTratamientoCaracter;
+  fechaEstimadaInicio?: string | null;
+  requiereAutorizacion: boolean;
+  observaciones?: string | null;
+  observacionesAdministrativas?: string | null;
+}
+
+export interface PlanTerapeuticoSummary {
+  id: string;
+  atencionInicialId: string;
+  profesionalId: string;
+  profesionalNombre: string;
+  estado: string;
+  observacionesGenerales?: string | null;
+  tratamientos: PlanTratamientoDetalleSummary[];
 }
 
 export interface SesionClinicaResponse {
@@ -216,6 +279,49 @@ export interface CreateHistoriaClinicaRequest {
   casoFechaInicio?: string | null;
   casoNotas?: string | null;
   antecedentes?: HistoriaClinicaAntecedenteItem[];
+}
+
+export interface AtencionInicialEvaluacionRequest {
+  peso?: number | null;
+  altura?: number | null;
+  imc?: number | null;
+  presionArterial?: string | null;
+  frecuenciaCardiaca?: number | null;
+  saturacion?: number | null;
+  temperatura?: number | null;
+  observaciones?: string | null;
+}
+
+export interface PlanTratamientoDetalleRequest {
+  tratamientoId: string;
+  cantidadSesiones: number;
+  frecuenciaSugerida?: string | null;
+  caracterCaso: PlanTratamientoCaracter;
+  fechaEstimadaInicio?: string | null;
+  requiereAutorizacion: boolean;
+  observaciones?: string | null;
+  observacionesAdministrativas?: string | null;
+}
+
+export interface CreateAtencionInicialRequest {
+  profesionalId: string;
+  fechaHora: string;
+  tipoIngreso: AtencionInicialTipoIngreso;
+  motivoConsultaBreve?: string | null;
+  sintomasPrincipales?: string | null;
+  tiempoEvolucion?: string | null;
+  observaciones?: string | null;
+  especialidadDerivante?: string | null;
+  profesionalDerivante?: string | null;
+  fechaPrescripcion?: string | null;
+  diagnosticoTexto?: string | null;
+  observacionesPrescripcion?: string | null;
+  evaluacion?: AtencionInicialEvaluacionRequest | null;
+  resumenClinicoInicial?: string | null;
+  hallazgosRelevantes?: string | null;
+  antecedentes?: HistoriaClinicaAntecedenteItem[];
+  planObservacionesGenerales?: string | null;
+  tratamientos: PlanTratamientoDetalleRequest[];
 }
 
 export interface HistoriaClinicaAntecedentesUpdateRequest {
