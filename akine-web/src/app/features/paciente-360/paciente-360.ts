@@ -679,6 +679,88 @@ interface TabDef {
       .tab { font-size: .82rem; width: auto; text-align: left; }
       .tab-active::after { bottom: -.14rem; }
     }
+    @media (max-width: 420px) {
+      .shell-card { border-radius: 14px; }
+      .top-block { padding: .7rem .75rem .65rem; }
+      .body-block { padding: .65rem .75rem .8rem; gap: .7rem; }
+      .top-row { gap: .7rem; margin-bottom: .55rem; }
+      .back-link { font-size: .74rem; margin-bottom: .3rem; }
+      .patient-row { gap: .5rem; }
+      .patient-icon svg { width: 24px; height: 24px; }
+      .patient-copy { gap: .2rem; }
+      .title {
+        font-size: 1.02rem;
+        line-height: 1.08;
+      }
+      .headline-row { gap: .42rem; }
+      .headline-main { gap: .3rem; }
+      .headline-chips { gap: .4rem; }
+      .identity-item strong { font-size: .72rem; }
+      .identity-label { font-size: .58rem; }
+      .status-chip,
+      .coverage-chip {
+        padding: .14rem .45rem;
+        font-size: .7rem;
+      }
+      .btn-edit,
+      .btn-secondary {
+        padding: .42rem .68rem;
+        font-size: .84rem;
+        border-radius: 8px;
+      }
+      .info-panel { border-radius: 14px; }
+      .info-toggle {
+        gap: .55rem;
+        padding: .48rem .6rem;
+      }
+      .info-toggle-kicker { font-size: .6rem; }
+      .info-toggle-trailing { font-size: .68rem; }
+      .info-toggle-chevron {
+        width: 1.45rem;
+        height: 1.45rem;
+      }
+      .info-strip {
+        padding: 0 .6rem .65rem;
+        row-gap: .38rem;
+      }
+      .info-item { gap: .42rem; }
+      .info-icon svg { width: 16px; height: 16px; }
+      .info-label { font-size: .62rem; }
+      .info-value { font-size: .74rem; }
+      .inactive-alert {
+        border-radius: 10px;
+        padding: .58rem .65rem;
+        font-size: .84rem;
+      }
+      .tabs {
+        gap: .12rem;
+        padding: .14rem;
+        border-radius: 12px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar { display: none; }
+      .tab {
+        flex: 0 0 auto;
+        font-size: .76rem;
+        padding: .32rem .56rem;
+      }
+      .content-shell { padding-top: 0; }
+    }
+    @media (max-width: 360px) {
+      .top-block { padding-inline: .65rem; }
+      .body-block { padding-inline: .65rem; }
+      .title { font-size: .96rem; }
+      .identity-item::after { margin: 0 .28rem; }
+      .status-chip,
+      .coverage-chip { font-size: .66rem; }
+      .btn-edit { font-size: .8rem; }
+      .tab {
+        font-size: .72rem;
+        padding-inline: .5rem;
+      }
+    }
   `],
 })
 export class Paciente360 {

@@ -3,6 +3,11 @@
   gap: .75rem;
 }
 
+.history-page,
+.history-page * {
+  min-width: 0;
+}
+
 .page-head {
   display: flex;
   align-items: center;
@@ -210,4 +215,180 @@
   .page-head-main { flex-direction: column; }
   .filters-card { grid-template-columns: minmax(0, 1fr); }
   .detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 420px) {
+  .history-page {
+    gap: .55rem;
+  }
+
+  .page-head {
+    gap: .55rem;
+  }
+
+  .page-head h2 {
+    font-size: .98rem;
+    line-height: 1.15;
+  }
+
+  .page-head p {
+    font-size: .78rem;
+    line-height: 1.35;
+  }
+
+  .page-head-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .btn-filters-toggle {
+    width: 2.45rem;
+    height: 2.45rem;
+    border-radius: 10px;
+  }
+
+  .btn-filters-link {
+    min-width: 0;
+    padding: 0 .7rem;
+    font-size: .75rem;
+  }
+
+  .filters-card,
+  .timeline,
+  .detail-card {
+    border-radius: 10px;
+    padding: .62rem;
+  }
+
+  .filters-card {
+    gap: .55rem;
+  }
+
+  .filters-card label {
+    gap: .22rem;
+    font-size: .68rem;
+  }
+
+  .filters-card input,
+  .filters-card select,
+  .btn-filter {
+    min-height: 2.25rem;
+    border-radius: 9px;
+    padding: .5rem .58rem;
+    font-size: .82rem;
+  }
+
+  .content-grid {
+    gap: .55rem;
+  }
+
+  .timeline {
+    gap: .45rem;
+  }
+
+  .timeline-item {
+    border-radius: 9px;
+    padding: .58rem;
+    gap: .22rem;
+  }
+
+  .timeline-date {
+    font-size: .64rem;
+    letter-spacing: .02em;
+  }
+
+  .timeline-copy strong {
+    font-size: .84rem;
+    line-height: 1.25;
+  }
+
+  .timeline-copy p,
+  .detail-meta,
+  .detail-body,
+  .state-empty p {
+    font-size: .78rem;
+    line-height: 1.38;
+  }
+
+  .detail-card {
+    gap: .48rem;
+  }
+
+  .detail-card h3 {
+    font-size: .95rem;
+    line-height: 1.2;
+  }
+
+  .detail-tag {
+    padding: .16rem .4rem;
+    font-size: .62rem;
+  }
+
+  .detail-grid {
+    gap: .45rem;
+  }
+
+  .detail-grid dt {
+    font-size: .64rem;
+  }
+
+  .detail-grid dd {
+    font-size: .8rem;
+    line-height: 1.35;
+  }
+
+  .state-empty {
+    border-radius: 9px;
+    padding: .7rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .history-page {
+    gap: .48rem;
+  }
+
+  .page-head h2 {
+    font-size: .92rem;
+  }
+
+  .page-head p {
+    font-size: .74rem;
+  }
+
+  .page-head-actions {
+    gap: .38rem;
+  }
+
+  .btn-filters-toggle {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .btn-filters-link {
+    padding-inline: .58rem;
+    font-size: .72rem;
+  }
+
+  .filters-card,
+  .timeline,
+  .detail-card {
+    padding: .55rem;
+  }
+
+  .timeline-item {
+    padding: .52rem;
+  }
+
+  .timeline-copy strong {
+    font-size: .8rem;
+  }
+
+  .timeline-copy p,
+  .detail-meta,
+  .detail-body,
+  .detail-grid dd,
+  .state-empty p {
+    font-size: .74rem;
+  }
 }

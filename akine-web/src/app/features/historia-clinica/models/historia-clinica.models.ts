@@ -53,6 +53,77 @@ export interface HistoriaClinicaPaciente {
   updatedAt: string;
 }
 
+export interface HistoriaClinicaLegajoStatus {
+  exists: boolean;
+  legajoId?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface HistoriaClinicaAntecedenteItem {
+  id?: string | null;
+  categoryCode?: string | null;
+  catalogItemCode?: string | null;
+  label: string;
+  valueText?: string | null;
+  critical: boolean;
+  notes?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface HistoriaClinicaActiveCaseSummary {
+  diagnosticoId: string;
+  profesionalId: string;
+  profesionalNombre: string;
+  codigo?: string | null;
+  descripcion: string;
+  estado: DiagnosticoClinicoEstado;
+  fechaInicio: string;
+  cantidadSesiones: number;
+  ultimaEvolucionResumen?: string | null;
+}
+
+export interface HistoriaClinicaSesionSummary {
+  sesionId: string;
+  profesionalId: string;
+  profesionalNombre: string;
+  fechaAtencion: string;
+  estado: HistoriaClinicaSesionEstado;
+  tipoAtencion: HistoriaClinicaTipoAtencion;
+  resumen: string;
+}
+
+export type HistoriaClinicaTimelineEventType =
+  | 'HC_CREATED'
+  | 'ANTECEDENTE_UPDATED'
+  | 'CASO_OPENED'
+  | 'CASO_CLOSED'
+  | 'SESION'
+  | 'ADJUNTO';
+
+export interface HistoriaClinicaTimelineEvent {
+  eventId: string;
+  type: HistoriaClinicaTimelineEventType;
+  occurredAt: string;
+  profesionalId?: string | null;
+  profesionalNombre?: string | null;
+  title: string;
+  summary: string;
+  statusLabel?: string | null;
+  relatedEntityId?: string | null;
+}
+
+export interface HistoriaClinicaOverview {
+  paciente: HistoriaClinicaPaciente;
+  legajo: HistoriaClinicaLegajoStatus;
+  alertasClinicas: string[];
+  antecedentesRelevantes: HistoriaClinicaAntecedenteItem[];
+  casosActivos: HistoriaClinicaActiveCaseSummary[];
+  ultimaSesion?: HistoriaClinicaSesionSummary | null;
+  adjuntosRecientes: AdjuntoClinicoResponse[];
+  profesionalHabitual?: string | null;
+}
+
 export interface AdjuntoClinicoResponse {
   id: string;
   sesionId: string;
@@ -129,6 +200,26 @@ export interface DiagnosticoClinicoRequest {
 
 export interface DiagnosticoClinicoEstadoRequest {
   fechaFin: string;
+}
+
+export interface CreateHistoriaClinicaRequest {
+  profesionalId?: string | null;
+  fechaAtencion?: string | null;
+  motivoConsulta?: string | null;
+  resumenClinico?: string | null;
+  subjetivo?: string | null;
+  objetivo?: string | null;
+  evaluacion?: string | null;
+  plan?: string | null;
+  casoCodigo?: string | null;
+  casoDescripcion?: string | null;
+  casoFechaInicio?: string | null;
+  casoNotas?: string | null;
+  antecedentes?: HistoriaClinicaAntecedenteItem[];
+}
+
+export interface HistoriaClinicaAntecedentesUpdateRequest {
+  antecedentes: HistoriaClinicaAntecedenteItem[];
 }
 
 export interface HistoriaClinicaWorkspaceQuery {

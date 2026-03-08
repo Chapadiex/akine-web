@@ -7,11 +7,16 @@ import { API } from '../../../core/api/api-endpoints';
 import {
   AdjuntoClinicoResponse,
   ClinicalDownload,
+  CreateHistoriaClinicaRequest,
   DiagnosticoClinicoEstadoRequest,
   DiagnosticoClinicoRequest,
   DiagnosticoClinicoResponse,
+  HistoriaClinicaAntecedenteItem,
+  HistoriaClinicaAntecedentesUpdateRequest,
+  HistoriaClinicaOverview,
   HistoriaClinicaPaciente,
   HistoriaClinicaSesionQuery,
+  HistoriaClinicaTimelineEvent,
   HistoriaClinicaWorkspace,
   HistoriaClinicaWorkspaceQuery,
   SesionClinicaRequest,
@@ -33,6 +38,52 @@ export class HistoriaClinicaService {
 
   getPaciente(consultorioId: string, pacienteId: string): Observable<HistoriaClinicaPaciente> {
     return this.api.get<HistoriaClinicaPaciente>(API.historiaClinicaGlobal.paciente(consultorioId, pacienteId));
+  }
+
+  getOverview(consultorioId: string, pacienteId: string): Observable<HistoriaClinicaOverview> {
+    return this.api.get<HistoriaClinicaOverview>(
+      API.historiaClinicaGlobal.overview(consultorioId, pacienteId),
+    );
+  }
+
+  createLegajo(
+    consultorioId: string,
+    pacienteId: string,
+    body: CreateHistoriaClinicaRequest,
+  ): Observable<HistoriaClinicaOverview> {
+    return this.api.post<HistoriaClinicaOverview>(
+      API.historiaClinicaGlobal.legajo(consultorioId, pacienteId),
+      body,
+    );
+  }
+
+  getAntecedentes(consultorioId: string, pacienteId: string): Observable<HistoriaClinicaAntecedenteItem[]> {
+    return this.api.get<HistoriaClinicaAntecedenteItem[]>(
+      API.historiaClinicaGlobal.antecedentes(consultorioId, pacienteId),
+    );
+  }
+
+  updateAntecedentes(
+    consultorioId: string,
+    pacienteId: string,
+    antecedentes: HistoriaClinicaAntecedenteItem[],
+  ): Observable<HistoriaClinicaAntecedenteItem[]> {
+    const body: HistoriaClinicaAntecedentesUpdateRequest = { antecedentes };
+    return this.api.put<HistoriaClinicaAntecedenteItem[]>(
+      API.historiaClinicaGlobal.antecedentes(consultorioId, pacienteId),
+      body,
+    );
+  }
+
+  getTimeline(
+    consultorioId: string,
+    pacienteId: string,
+    type = 'all',
+  ): Observable<HistoriaClinicaTimelineEvent[]> {
+    return this.api.get<HistoriaClinicaTimelineEvent[]>(
+      API.historiaClinicaGlobal.timeline(consultorioId, pacienteId),
+      this.cleanParams({ type }),
+    );
   }
 
   listSesiones(

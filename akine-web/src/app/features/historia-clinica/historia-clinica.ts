@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signa
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
-import { combineLatest, debounceTime, distinctUntilChanged, forkJoin, of, switchMap } from 'rxjs';
+import { catchError, combineLatest, debounceTime, distinctUntilChanged, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/auth/services/auth.service';
 import { ConsultorioContextService } from '../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../core/error/error-mapper.service';
@@ -718,9 +718,19 @@ export class HistoriaClinica {
   private searchPatients(term: string) {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const normalized = term.trim();
+    const normalizedDni = normalized.replace(/[.\s-]/g, '');
+    const isDniSearch = /^[0-9]{7,10}$/.test(normalizedDni);
     return !consultorioId || normalized.length < 2
       ? of([] as PacienteSearchResult[])
-      : this.pacienteSvc.search(consultorioId, undefined, normalized);
+      : this.pacienteSvc
+          .search(consultorioId, isDniSearch ? normalizedDni : undefined, isDniSearch ? undefined : normalized)
+          .pipe(
+            map((items) => items.filter((item) => item.linkedToConsultorio)),
+            catchError((err) => {
+              this.toast.error(this.errMap.toMessage(err));
+              return of([] as PacienteSearchResult[]);
+            }),
+          );
   }
 
   private navigateWithState(state: RouteState): void {

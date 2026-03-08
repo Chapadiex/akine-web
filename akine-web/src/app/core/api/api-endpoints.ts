@@ -76,6 +76,10 @@ export const API = {
   historiaClinicaGlobal: {
     workspace: (cid: string) => `/api/v1/consultorios/${cid}/historia-clinica/workspace`,
     paciente: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}`,
+    overview: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/overview`,
+    legajo: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/legajo`,
+    antecedentes: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/antecedentes`,
+    timeline: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/timeline`,
     sesiones: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones`,
     sesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}`,
     cerrarSesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}/cerrar`,

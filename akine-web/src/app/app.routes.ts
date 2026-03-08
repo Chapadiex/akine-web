@@ -136,9 +136,9 @@ export const routes: Routes = [
         path: 'historia-clinica',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL'] },
-        loadComponent: () =>
-          import('./features/historia-clinica/historia-clinica').then(
-            (m) => m.HistoriaClinica,
+        loadChildren: () =>
+          import('./features/historia-clinica/historia-clinica.routes').then(
+            (m) => m.HISTORIA_CLINICA_ROUTES,
           ),
       },
       {

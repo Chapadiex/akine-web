@@ -10,16 +10,22 @@ export const PACIENTE_360_ROUTES: Routes = [
   },
   {
     path: 'historia-clinica',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL'] },
     loadComponent: () =>
       import('./pages/historia-clinica/historia-clinica').then(m => m.HistoriaClinicaPage),
   },
   {
     path: 'diagnosticos',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL'] },
     loadComponent: () =>
       import('./pages/diagnosticos/diagnosticos').then(m => m.DiagnosticosPage),
   },
   {
     path: 'atenciones',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL'] },
     loadComponent: () =>
       import('./pages/atenciones/atenciones').then(m => m.AtencionesPage),
   },

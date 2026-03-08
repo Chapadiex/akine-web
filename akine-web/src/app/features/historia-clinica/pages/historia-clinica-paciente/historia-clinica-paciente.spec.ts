@@ -1,0 +1,293 @@
+import { computed, signal } from '@angular/core';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { BehaviorSubject, of } from 'rxjs';
+import { AuthService } from '../../../../core/auth/services/auth.service';
+import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
+import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
+import { ToastService } from '../../../../shared/ui/toast/toast.service';
+import { PacienteService } from '../../../pacientes/services/paciente.service';
+import { HistoriaClinicaService } from '../../services/historia-clinica.service';
+import { HistoriaClinicaPacientePage } from './historia-clinica-paciente';
+
+class ConsultorioContextStub {
+  readonly selectedConsultorioId = signal('consultorio-1');
+  readonly selectedConsultorio = computed(() => ({ id: 'consultorio-1', name: 'Kine Centro' }) as any);
+}
+
+describe('HistoriaClinicaPacientePage', () => {
+  let fixture: ComponentFixture<HistoriaClinicaPacientePage>;
+  let historiaSvc: jasmine.SpyObj<HistoriaClinicaService>;
+  let pacienteSvc: jasmine.SpyObj<PacienteService>;
+  let queryParams$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+
+  beforeEach(async () => {
+    queryParams$ = new BehaviorSubject(convertToParamMap({}));
+    historiaSvc = jasmine.createSpyObj<HistoriaClinicaService>('HistoriaClinicaService', [
+      'getWorkspace',
+      'getOverview',
+      'getTimeline',
+      'getAntecedentes',
+      'getSesion',
+      'createLegajo',
+      'createSesion',
+      'updateSesion',
+      'closeSesion',
+      'annulSesion',
+      'createDiagnostico',
+      'resolveDiagnostico',
+      'uploadAdjunto',
+      'downloadAdjunto',
+      'deleteAdjunto',
+      'updateAntecedentes',
+      'listDiagnosticos',
+      'listSesiones',
+    ]);
+    historiaSvc.getWorkspace.and.returnValue(
+      of({ profesionales: [{ id: 'prof-1', nombre: 'Dr. House' }], items: [], page: 0, size: 1, total: 4 }),
+    );
+    historiaSvc.getTimeline.and.returnValue(of([]));
+    historiaSvc.getAntecedentes.and.returnValue(of([]));
+    historiaSvc.listDiagnosticos.and.returnValue(of([]));
+    historiaSvc.listSesiones.and.returnValue(of([]));
+    historiaSvc.getSesion.and.returnValue(
+      of({
+        id: 'sesion-1',
+        consultorioId: 'consultorio-1',
+        pacienteId: 'paciente-1',
+        profesionalId: 'prof-1',
+        fechaAtencion: '2026-03-07T10:00:00',
+        estado: 'BORRADOR',
+        tipoAtencion: 'SEGUIMIENTO',
+        origenRegistro: 'MANUAL',
+        createdByUserId: 'user-1',
+        updatedByUserId: 'user-1',
+        createdAt: '2026-03-07T10:00:00Z',
+        updatedAt: '2026-03-07T10:00:00Z',
+        adjuntos: [],
+      } as any),
+    );
+    pacienteSvc = jasmine.createSpyObj<PacienteService>('PacienteService', ['search', 'createAdmin']);
+    pacienteSvc.search.and.returnValue(of([]));
+
+    await TestBed.configureTestingModule({
+      imports: [HistoriaClinicaPacientePage],
+      providers: [
+        provideRouter([]),
+        { provide: HistoriaClinicaService, useValue: historiaSvc },
+        { provide: PacienteService, useValue: pacienteSvc },
+        { provide: ConsultorioContextService, useClass: ConsultorioContextStub },
+        { provide: AuthService, useValue: { currentUser: signal({ profesionalId: 'prof-1' }) } },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: queryParams$.asObservable(),
+            snapshot: { queryParamMap: convertToParamMap({}) },
+          },
+        },
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'info']) },
+        { provide: ErrorMapperService, useValue: { toMessage: () => 'error-controlado' } },
+      ],
+    }).compileComponents();
+  });
+
+  function createComponent(): void {
+    fixture = TestBed.createComponent(HistoriaClinicaPacientePage);
+    fixture.detectChanges();
+  }
+
+  function clickButton(label: string): void {
+    const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    const button = buttons.find((item) => item.textContent?.includes(label));
+    expect(button).withContext(`button "${label}" not found`).toBeTruthy();
+    button!.click();
+    fixture.detectChanges();
+  }
+
+  function patientOverview(overrides: Record<string, unknown> = {}) {
+    return {
+      paciente: {
+        id: 'paciente-1',
+        consultorioId: 'consultorio-1',
+        dni: '30111222',
+        nombre: 'Ana',
+        apellido: 'Perez',
+        telefono: '1155555555',
+        activo: true,
+        diagnosticosActivos: 1,
+        updatedAt: '2026-03-07T10:00:00Z',
+      },
+      legajo: { exists: true, legajoId: 'legajo-1', createdAt: '2026-03-01T10:00:00Z', updatedAt: '2026-03-07T10:00:00Z' },
+      alertasClinicas: ['Alergia a diclofenac'],
+      antecedentesRelevantes: [{ label: 'Alergia', valueText: 'Diclofenac', critical: true }],
+      casosActivos: [{
+        diagnosticoId: 'diag-1',
+        profesionalId: 'prof-1',
+        profesionalNombre: 'Dr. House',
+        descripcion: 'Lumbalgia mecanica',
+        estado: 'ACTIVO',
+        fechaInicio: '2026-03-01',
+        cantidadSesiones: 3,
+        ultimaEvolucionResumen: 'Dolor en descenso.',
+      }],
+      ultimaSesion: {
+        sesionId: 'sesion-1',
+        profesionalId: 'prof-1',
+        profesionalNombre: 'Dr. House',
+        fechaAtencion: '2026-03-07T10:00:00',
+        estado: 'BORRADOR',
+        tipoAtencion: 'SEGUIMIENTO',
+        resumen: 'Control semanal',
+      },
+      adjuntosRecientes: [{ id: 'adj-1', originalFilename: 'eco.pdf', sizeBytes: 2048 }],
+      profesionalHabitual: 'Dr. House',
+      ...overrides,
+    } as any;
+  }
+
+  it('shows the patient selection empty state by default', () => {
+    createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Sin paciente seleccionado');
+    expect(fixture.nativeElement.querySelector('.header-search input[type="search"]')).toBeTruthy();
+    expect(historiaSvc.getWorkspace).toHaveBeenCalled();
+  });
+
+  it('keeps only overview eager and defers the rest until a tab is opened', () => {
+    historiaSvc.getOverview.and.returnValue(of(patientOverview()));
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+
+    expect(historiaSvc.getOverview).toHaveBeenCalled();
+    expect(historiaSvc.getTimeline).not.toHaveBeenCalled();
+    expect(historiaSvc.getAntecedentes).not.toHaveBeenCalled();
+    expect(historiaSvc.listDiagnosticos).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Donde estoy parado ahora');
+  });
+
+  it('loads cases and sessions lazily when entering the cases tab', () => {
+    historiaSvc.getOverview.and.returnValue(of(patientOverview()));
+    historiaSvc.listDiagnosticos.and.returnValue(of([{ id: 'diag-2', profesionalId: 'prof-1', descripcion: 'Cervicalgia', estado: 'RESUELTO', fechaInicio: '2026-02-01' }] as any));
+    historiaSvc.listSesiones.and.returnValue(of([{ id: 'sesion-1', profesionalId: 'prof-1', fechaAtencion: '2026-03-07T10:00:00', estado: 'BORRADOR', tipoAtencion: 'SEGUIMIENTO', resumenClinico: 'Control semanal' }] as any));
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Casos y sesiones');
+
+    expect(historiaSvc.listDiagnosticos).toHaveBeenCalled();
+    expect(historiaSvc.listSesiones).toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Tratamientos en curso');
+  });
+
+  it('loads timeline lazily and renders the load-more pattern', () => {
+    historiaSvc.getOverview.and.returnValue(of(patientOverview()));
+    historiaSvc.getTimeline.and.returnValue(
+      of([
+        {
+          eventId: 'timeline-1',
+          type: 'SESION',
+          occurredAt: '2026-03-07T10:00:00',
+          profesionalId: 'prof-1',
+          profesionalNombre: 'Dr. House',
+          title: 'Sesion de seguimiento',
+          summary: 'Control semanal',
+          statusLabel: 'BORRADOR',
+          relatedEntityId: 'sesion-1',
+        },
+      ] as any),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Timeline');
+
+    expect(historiaSvc.getTimeline).toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Que paso longitudinalmente');
+  });
+
+  it('loads antecedentes and adjuntos lazily in the background tab', () => {
+    historiaSvc.getOverview.and.returnValue(of(patientOverview()));
+    historiaSvc.getAntecedentes.and.returnValue(of([{ label: 'Alergia', valueText: 'Diclofenac', critical: true }] as any));
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Antecedentes y adjuntos');
+
+    expect(historiaSvc.getAntecedentes).toHaveBeenCalled();
+    expect(historiaSvc.getSesion).toHaveBeenCalledWith('consultorio-1', 'paciente-1', 'sesion-1');
+    expect(fixture.nativeElement.textContent).toContain('Contexto base del paciente');
+  });
+
+  it('shows create-clinical-history CTA when patient has no legajo', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          legajo: { exists: false, legajoId: null, createdAt: null, updatedAt: null },
+          casosActivos: [],
+          ultimaSesion: null,
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Crear historia clinica');
+    expect(fixture.nativeElement.querySelector('.header-search')).toBeNull();
+  });
+
+  it('shows new-case CTA as primary action when patient has legajo but no active cases', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          casosActivos: [],
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+
+    expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').toContain('Nuevo caso clinico');
+    expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').not.toContain('Nueva sesion');
+  });
+
+  it('searches by DNI using the patient service', fakeAsync(() => {
+    createComponent();
+
+    fixture.componentInstance.patientSearchControl.setValue('31.007.055');
+    tick(260);
+
+    expect(pacienteSvc.search).toHaveBeenCalledWith('consultorio-1', '31007055', undefined);
+  }));
+
+  it('opens the contextual new-patient modal', () => {
+    createComponent();
+    clickButton('Nuevo paciente');
+
+    expect(fixture.nativeElement.querySelector('app-paciente-form')).toBeTruthy();
+  });
+
+  it('asks for confirmation before clearing a patient with an unsaved draft', () => {
+    historiaSvc.getOverview.and.returnValue(of(patientOverview()));
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Nueva sesion');
+
+    fixture.componentInstance.sesionForm.controls.motivoConsulta.setValue('Borrador pendiente');
+    fixture.componentInstance.sesionForm.controls.motivoConsulta.markAsDirty();
+    fixture.componentInstance.sesionForm.markAsDirty();
+    fixture.detectChanges();
+
+    clickButton('Limpiar');
+
+    expect(fixture.nativeElement.querySelector('app-confirm-dialog')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Hay cambios sin guardar');
+  });
+});
