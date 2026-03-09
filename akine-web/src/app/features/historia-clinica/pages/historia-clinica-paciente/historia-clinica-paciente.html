@@ -2,1016 +2,583 @@
   <header class="clinical-header" [class.clinical-header--sticky]="hasPatientContext()">
     <div class="clinical-header__main">
       <div class="clinical-title">
-        <p class="eyebrow">Historia clinica</p>
-        @if (!hasPatientContext()) {
-          <h1>Historia clinica</h1>
-          <p>Busca por apellido, nombre o DNI para abrir un contexto clinico sin saturar la pantalla.</p>
-        } @else {
-          <div class="clinical-title__row">
-            <div>
-              <span class="clinical-title__overline">Paciente seleccionado</span>
-              <h1>{{ patientContextTitle() }}</h1>
-            </div>
-            @if (headerStatusBadge(); as badge) {
-              <span class="state-pill" [attr.data-tone]="badge.tone">{{ badge.label }}</span>
+        <p class="eyebrow">Historia Clinica Digital</p>
+        <h1>{{ patientContextTitle() }}</h1>
+      </div>
+
+      <div class="clinical-meta">
+        @if (hasPatientContext()) {
+          <p class="clinical-meta__info">{{ patientContextMeta() }}</p>
+          <div class="clinical-meta__tags">
+            @for (tag of headerTags(); track tag.label) {
+              <span class="clinical-badge clinical-badge--{{ tag.tone }}">{{ tag.label }}</span>
             }
           </div>
-          <p class="patient-meta">{{ patientContextMeta() }}</p>
-          @if (overview()?.alertasClinicas?.length) {
-            <div class="chip-row">
-              @for (alerta of overview()!.alertasClinicas; track alerta) {
-                <span class="alert-pill">{{ alerta }}</span>
-              }
-            </div>
-          }
         }
       </div>
-
-      @if (!hasPatientContext()) {
-        <div class="header-search">
-          <label class="field field--search">
-            <span>Buscar paciente</span>
-            <input
-              type="search"
-              [formControl]="patientSearchControl"
-              placeholder="Apellido, nombre o DNI"
-              aria-label="Buscar paciente por apellido, nombre o DNI"
-              autocomplete="off"
-            />
-          </label>
-
-          @if (patientMatches().length) {
-            <div class="search-dropdown">
-              <div class="search-dropdown__head">
-                <strong>Resultados rapidos</strong>
-                <span>{{ patientMatches().length }} encontrados</span>
-              </div>
-
-              <div class="result-list">
-                @for (match of patientMatches(); track match.id) {
-                  <button type="button" class="result-item" (click)="selectPatient(match)">
-                    <strong>{{ match.apellido }}, {{ match.nombre }}</strong>
-                    <span>{{ match.dni }}</span>
-                  </button>
-                }
-              </div>
-            </div>
-          }
-        </div>
-      }
     </div>
 
-    <div class="clinical-header__side">
-      <div class="header-meta">
-        <span class="meta-chip">{{ consultorioCtx.selectedConsultorio()?.name || 'Sin consultorio' }}</span>
-        @if (workspaceSnapshot(); as workspace) {
-          <span class="meta-chip meta-chip--soft">{{ workspace.total }} sesiones visibles</span>
-        }
-      </div>
-
-      <div class="header-actions">
-        @if (hasPatientContext()) {
-          @switch (screenState()) {
-            @case ('no-history') {
-              <button type="button" class="btn btn--primary" (click)="openLegajoModal()">{{ primaryActionLabel() }}</button>
-            }
-            @case ('history-no-case') {
-              <button type="button" class="btn btn--primary" (click)="openCasoDrawer()">{{ primaryActionLabel() }}</button>
-            }
-            @case ('history-active-case') {
-              <button type="button" class="btn btn--primary" (click)="openNuevaSesion()">{{ primaryActionLabel() }}</button>
-              <button type="button" class="btn btn--secondary" (click)="openCasoDrawer()">Nuevo caso clinico</button>
-            }
-          }
-
-          @if (selectedPatient()) {
-            <a
-              class="btn btn--secondary"
-              [routerLink]="['/app/pacientes', selectedPatient()!.id, 'historia-clinica']"
-              [queryParams]="patient360QueryParams()"
-            >
-              Paciente 360
-            </a>
-          }
-        }
-
-        <a class="btn btn--tertiary" routerLink="/app/historia-clinica/bandeja" [queryParams]="routeState()">
-          Ir a bandeja
-        </a>
-
-        @if (hasPatientContext()) {
-          <button type="button" class="btn btn--ghost" (click)="clearSelectedPatient()">Limpiar</button>
-        }
-      </div>
+    <div class="clinical-header__actions">
+      @if (hasPatientContext()) {
+        <button type="button" class="btn btn--ghost" (click)="clearSelectedPatient()">Cambiar paciente</button>
+      }
     </div>
   </header>
 
-  @if (!consultorioCtx.selectedConsultorioId()) {
-    <section class="empty-state">
-      <h2>Selecciona un consultorio activo</h2>
-      <p>La historia clinica necesita contexto de consultorio para buscar pacientes y cargar el legajo.</p>
-    </section>
-  } @else if (status() === 'loading' && hasPatientContext()) {
-    <section class="surface surface--loading">
-      <span class="spinner" aria-hidden="true"></span>
-      <p>Cargando contexto clinico...</p>
-    </section>
-  } @else if (status() === 'error' && hasPatientContext()) {
-    <section class="surface">
-      <div class="alert alert--error">{{ error() }}</div>
-    </section>
-  } @else if (!hasPatientContext()) {
-    <section class="empty-state empty-state--large">
-      <h2>Sin paciente seleccionado</h2>
-      <p>El buscador vive en la cabecera. Cuando selecciones un paciente, veras su estado clinico y el espacio de trabajo escalonado por tabs.</p>
-      <div class="empty-state__actions">
-        <button type="button" class="btn btn--secondary" (click)="showNuevoPaciente.set(true)">Nuevo paciente</button>
-      </div>
-    </section>
-  } @else if (selectedPatient(); as patient) {
-    <section class="status-band">
-      <div class="section-head">
-        <h2>Estado actual</h2>
-      </div>
-      <div class="status-band__grid">
-        @for (item of statusSummaryItems(); track item.label) {
-          <article class="status-kpi">
-            <span>{{ item.label }}</span>
-            <strong>{{ item.value }}</strong>
-          </article>
-        }
-      </div>
-    </section>
+  @if (hasPatientContext()) {
+    <div class="clinical-layout">
+      <aside class="clinical-sidebar">
+        @if (selectedPatient(); as patient) {
+          <div class="sidebar-patient-card">
+            <nav class="clinical-nav">
+              @for (tab of tabOptions; track tab.value) {
+                <button 
+                  type="button" 
+                  class="clinical-nav__item" 
+                  [class.is-active]="activeTab() === tab.value"
+                  (click)="setActiveTab(tab.value)"
+                >
+                  {{ tab.label }}
+                </button>
+              }
+            </nav>
 
-    <section class="tabs-shell">
-      <nav class="tabs-nav" aria-label="Navegacion historia clinica">
-        @for (tab of tabOptions; track trackByTab($index, tab)) {
-          <button
-            type="button"
-            class="tab-chip"
-            [class.tab-chip--active]="activeTab() === tab.value"
-            (click)="setActiveTab(tab.value)"
-          >
-            {{ tab.label }}
-          </button>
-        }
-      </nav>
-
-      @switch (activeTab()) {
-        @case ('summary') {
-          <div class="tab-stack">
-            @if (!hasLegajo()) {
-              <section class="empty-state empty-state--medium">
-                <h2>Este paciente aun no tiene una atencion inicial registrada en este consultorio</h2>
-                <p>Registra el ingreso clinico, deja una base minima util y define el plan terapeutico inicial sin completar toda la historia clinica.</p>
-                <div class="empty-state__actions">
-                  <button type="button" class="btn btn--primary" (click)="openLegajoModal()">Registrar atencion inicial</button>
-                  <a
-                    class="btn btn--secondary"
-                    [routerLink]="['/app/pacientes', patient.id, 'historia-clinica']"
-                    [queryParams]="patient360QueryParams()"
-                  >
-                    Paciente 360
-                  </a>
-                </div>
-              </section>
-            } @else {
-              <section class="summary-grid">
-                <article class="surface">
-                  <div class="section-head">
-                    <div>
-                      <h3>Caso principal</h3>
-                    </div>
-                    @if (summaryMainCase()) {
-                      <span class="state-pill" [attr.data-tone]="summaryMainCase()!.isActive ? 'success' : 'muted'">
-                        {{ summaryMainCase()!.estado }}
-                      </span>
-                    }
-                  </div>
-
-                  @if (summaryMainCase(); as mainCase) {
-                    <div class="summary-card">
-                      <strong>{{ mainCase.descripcion }}</strong>
-                      <p>{{ mainCase.profesionalNombre }} / {{ mainCase.cantidadSesiones }} sesiones</p>
-                      <small>{{ mainCase.ultimaEvolucionResumen || 'Sin evolucion resumida.' }}</small>
-                    </div>
-                    <div class="summary-actions">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaSesion(mainCase.profesionalId)">Nueva sesion</button>
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver casos y sesiones</button>
-                    </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>No hay caso clinico activo</strong>
-                      <p>La historia clinica existe, pero falta abrir el caso que ordena la operativa.</p>
-                    </div>
-                    <div class="summary-actions">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">Nuevo caso clinico</button>
-                    </div>
-                  }
-                </article>
-
-                <article class="surface">
-                  <div class="section-head">
-                    <h3>Ultimo evento</h3>
-                    @if (summaryLatestEvent()) {
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(summaryLatestEvent()!.sesionId)">Ver detalle</button>
-                    }
-                  </div>
-                  @if (summaryLatestEvent(); as latestEvent) {
-                    <div class="summary-card">
-                      <strong>{{ latestEvent.resumen || 'Sesion registrada' }}</strong>
-                      <p>{{ latestEvent.profesionalNombre }} / {{ latestEvent.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</p>
-                      <small>{{ latestEvent.tipoAtencion }} / {{ latestEvent.estado }}</small>
-                    </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>Sin sesiones registradas</strong>
-                      <p>Cuando se cargue la primera atencion, vas a verla resumida aca.</p>
-                    </div>
-                  }
-                </article>
-
-                <article class="surface">
-                  <div class="section-head">
-                    <h3>Antecedentes relevantes</h3>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('background')">Abrir tab</button>
-                  </div>
-                  @if (summaryAntecedentes().length) {
-                    <div class="summary-list">
-                      @for (antecedente of summaryAntecedentes(); track antecedente.label + antecedente.valueText) {
-                        <article class="summary-list__item">
-                          <div>
-                            <strong>{{ antecedente.label }}</strong>
-                            <p>{{ antecedente.valueText || 'Sin detalle cargado' }}</p>
-                          </div>
-                          @if (antecedente.critical) {
-                            <span class="state-pill" data-tone="warning">Critico</span>
-                          }
-                        </article>
-                      }
-                    </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>Sin antecedentes resumidos</strong>
-                      <p>Completa la vista documental cuando necesites dejar contexto base.</p>
-                    </div>
-                  }
-                </article>
-
-                <article class="surface">
-                  <div class="section-head">
-                    <h3>Adjuntos recientes</h3>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('background')">Ver documentos</button>
-                  </div>
-                  @if (summaryAdjuntos().length) {
-                    <div class="attachment-list">
-                      @for (adjunto of summaryAdjuntos(); track adjunto.id) {
-                        <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
-                          <strong>{{ adjunto.originalFilename }}</strong>
-                          <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
-                        </button>
-                      }
-                    </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>Sin adjuntos recientes</strong>
-                      <p>Los documentos clinicos van a aparecer aca apenas se carguen.</p>
-                    </div>
-                  }
-                </article>
-              </section>
-            }
+            <div class="sidebar-footer">
+              <div class="professional-link">
+                <span class="label">Profesional habitual:</span>
+                <span class="value">{{ currentProfessionalLabel() }}</span>
+              </div>
+            </div>
           </div>
         }
+      </aside>
 
-        @case ('cases') {
-          <div class="tab-stack">
-            @if (!hasLegajo()) {
-              <section class="empty-state empty-state--medium">
-                <h2>Primero hay que registrar la atencion inicial</h2>
-                <p>Casos y sesiones se habilitan una vez creada la base clinica inicial.</p>
-                <div class="empty-state__actions">
-                  <button type="button" class="btn btn--primary" (click)="openLegajoModal()">Registrar atencion inicial</button>
-                </div>
-              </section>
-            } @else if (casesStatus() === 'loading') {
-              <section class="surface surface--loading">
-                <span class="spinner" aria-hidden="true"></span>
-                <p>Cargando casos y sesiones...</p>
-              </section>
-            } @else if (casesStatus() === 'error') {
-              <section class="surface">
-                <div class="alert alert--error">{{ casesError() }}</div>
-              </section>
-            } @else {
-              <section class="cases-layout">
-                <article class="surface">
-                  <div class="section-head">
-                    <div>
-                      <p class="eyebrow">Casos clinicos</p>
-                      <h3>Tratamientos en curso</h3>
-                    </div>
-                    <div class="summary-actions">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaSesion(selectedCase()?.profesionalId)">Nueva sesion</button>
-                      <button type="button" class="btn btn--secondary btn--sm" (click)="openCasoDrawer()">Nuevo caso clinico</button>
-                    </div>
-                  </div>
-
-                  @if (activeCaseCards().length) {
-                    <div class="case-list">
-                      @for (caso of activeCaseCards(); track caso.id) {
-                        <button type="button" class="case-row" [class.case-row--active]="selectedCase()?.id === caso.id" (click)="selectCase(caso.id)">
-                          <div>
-                            <strong>{{ caso.descripcion }}</strong>
-                            <span>{{ caso.profesionalNombre }} / {{ caso.fechaInicio | date: 'dd/MM/yyyy' }}</span>
-                          </div>
-                          <span class="state-pill" data-tone="success">{{ caso.estado }}</span>
-                        </button>
-                      }
-                    </div>
-                  } @else {
-                    <div class="empty-inline">
-                      <p>No hay casos activos. La accion principal ahora es abrir un nuevo caso clinico.</p>
-                    </div>
-                  }
-
-                  @if (closedCaseCards().length) {
-                    <div class="subsection">
-                      <button type="button" class="link-btn" (click)="toggleClosedCases()">
-                        {{ showClosedCases() ? 'Ocultar casos cerrados' : 'Ver casos cerrados' }}
-                      </button>
-                      @if (showClosedCases()) {
-                        <div class="case-list case-list--closed">
-                          @for (caso of closedCaseCards(); track caso.id) {
-                            <button type="button" class="case-row" [class.case-row--active]="selectedCase()?.id === caso.id" (click)="selectCase(caso.id)">
-                              <div>
-                                <strong>{{ caso.descripcion }}</strong>
-                                <span>{{ caso.profesionalNombre }} / {{ caso.fechaInicio | date: 'dd/MM/yyyy' }}</span>
-                              </div>
-                              <span class="state-pill" data-tone="muted">{{ caso.estado }}</span>
-                            </button>
-                          }
-                        </div>
-                      }
-                    </div>
-                  }
-                </article>
-
-                <article class="surface">
-                  <div class="section-head section-head--stack">
-                    <div>
-                      <p class="eyebrow">Sesiones</p>
-                      <h3>{{ selectedCase()?.descripcion || 'Sesiones del paciente' }}</h3>
-                      <p class="muted-copy">Vista operativa con filtros minimos y livianos para continuar el tratamiento actual.</p>
-                    </div>
-                    <div class="chip-row">
-                      @for (filter of sessionListFilters; track filter.value) {
-                        <button type="button" class="filter-chip" [class.filter-chip--active]="sessionListFilter() === filter.value" (click)="sessionListFilter.set(filter.value)">
-                          {{ filter.label }}
-                        </button>
-                      }
-                    </div>
-                  </div>
-
-                  @if (relatedSessions().length) {
-                    <div class="session-list">
-                      @for (sesion of relatedSessions(); track sesion.id) {
-                        <article class="session-row">
-                          <div>
-                            <strong>{{ sesion.tipoAtencion }}</strong>
-                            <p>{{ sesion.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }} / {{ resolveProfessionalName(sesion.profesionalId) }}</p>
-                            <small>{{ sesion.resumenClinico || sesion.motivoConsulta || 'Sin resumen cargado.' }}</small>
-                          </div>
-                          <div class="summary-actions">
-                            <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(sesion.id)">Ver detalle</button>
-                            @if (selectedCase()?.isActive) {
-                              <button type="button" class="btn btn--danger btn--sm" (click)="closeCaso(selectedCase()!)">Cerrar caso</button>
-                            }
-                          </div>
-                        </article>
-                      }
-                    </div>
-                  } @else {
-                    <div class="empty-inline">
-                      <p>No hay sesiones visibles para el filtro actual.</p>
-                    </div>
-                  }
-                </article>
-              </section>
-            }
+      <main class="clinical-main">
+        @if (status() === 'loading') {
+          <div class="clinical-state clinical-state--loading">
+            <div class="spinner"></div>
+            <p>Cargando historia clinica...</p>
           </div>
-        }
-
-        @case ('timeline') {
-          <div class="tab-stack">
-            @if (!hasLegajo()) {
-              <section class="empty-state empty-state--medium">
-                <h2>Primero hay que registrar la atencion inicial</h2>
-                <p>El timeline longitudinal aparece cuando exista una base clinica inicial en este consultorio.</p>
-              </section>
-            } @else if (timelineStatus() === 'loading') {
-              <section class="surface surface--loading">
-                <span class="spinner" aria-hidden="true"></span>
-                <p>Cargando timeline clinico...</p>
-              </section>
-            } @else if (timelineStatus() === 'error') {
-              <section class="surface">
-                <div class="alert alert--error">{{ timelineError() }}</div>
-              </section>
-            } @else {
-              <section class="surface">
-                <div class="section-head section-head--stack">
-                  <div>
-                    <p class="eyebrow">Timeline</p>
-                    <h3>Que paso longitudinalmente</h3>
-                    <p class="muted-copy">El historial completo vive aca, no en la home por defecto.</p>
-                  </div>
-                  <div class="chip-row">
-                    @for (filter of timelineFilters; track filter.value) {
-                      <button type="button" class="filter-chip" [class.filter-chip--active]="timelineFilter() === filter.value" (click)="onTimelineFilterChange(filter.value)">
-                        {{ filter.label }}
-                      </button>
-                    }
-                  </div>
-                </div>
-
-                @if (compatibilityFilters().length) {
-                  <div class="chip-row">
-                    @for (tag of compatibilityFilters(); track tag) {
-                      <span class="meta-chip meta-chip--soft">{{ tag }}</span>
-                    }
-                  </div>
-                }
-
-                @if (visibleTimeline().length) {
-                  <div class="timeline-list">
-                    @for (event of visibleTimeline(); track event.eventId) {
-                      <article class="timeline-item">
-                        <div class="timeline-item__meta">
-                          <span class="timeline-dot" [attr.data-tone]="timelineTone(event)"></span>
-                          <span>{{ event.occurredAt | date: 'dd/MM/yyyy HH:mm' }}</span>
-                          <span class="state-pill" [attr.data-tone]="timelineTone(event)">{{ timelineTypeLabel(event) }}</span>
-                        </div>
-                        <div class="timeline-item__body">
-                          <div>
-                            <h4>{{ event.title }}</h4>
-                            <p>{{ event.summary }}</p>
-                            <small>{{ event.profesionalNombre || 'Sin profesional asociado' }}@if (event.statusLabel) { / {{ event.statusLabel }}}</small>
-                          </div>
-                          <button type="button" class="btn btn--ghost btn--sm" (click)="openTimelineItem(event)">Ver detalle</button>
-                        </div>
-                      </article>
-                    }
-                  </div>
-                  @if (canLoadMoreTimeline()) {
-                    <div class="load-more">
-                      <button type="button" class="btn btn--secondary" (click)="loadMoreTimeline()">Cargar mas</button>
-                    </div>
-                  }
-                } @else {
-                  <div class="empty-inline">
-                    <p>No hay eventos clinicos para el filtro actual.</p>
-                  </div>
-                }
-              </section>
-            }
+        } @else if (status() === 'error') {
+          <div class="clinical-state clinical-state--error">
+            <p>{{ error() }}</p>
+            <button type="button" class="btn btn--secondary" (click)="reloadSelectedPatient()">Reintentar</button>
           </div>
-        }
-
-        @case ('background') {
-          <div class="tab-stack">
-            @if (!hasLegajo()) {
-              <section class="empty-state empty-state--medium">
-                <h2>Primero hay que registrar la atencion inicial</h2>
-                <p>Antecedentes y adjuntos se habilitan una vez creada la atencion inicial.</p>
-              </section>
-            } @else if (backgroundStatus() === 'loading') {
-              <section class="surface surface--loading">
-                <span class="spinner" aria-hidden="true"></span>
-                <p>Cargando antecedentes y adjuntos...</p>
-              </section>
-            } @else if (backgroundStatus() === 'error') {
-              <section class="surface">
-                <div class="alert alert--error">{{ backgroundError() }}</div>
-              </section>
-            } @else {
-              <section class="summary-grid">
-                <article class="surface">
-                  <div class="section-head">
-                    <div>
-                      <p class="eyebrow">Antecedentes</p>
-                      <h3>Contexto base del paciente</h3>
-                    </div>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="openAntecedentesDrawer()">Editar</button>
-                  </div>
-                  @if (antecedentes().length) {
-                    <div class="background-list">
-                      @for (antecedente of antecedentes(); track antecedente.label + antecedente.valueText + antecedente.notes) {
-                        <article class="background-item">
-                          <div>
-                            <strong>{{ antecedente.label }}</strong>
-                            <p>{{ antecedente.valueText || 'Sin detalle' }}</p>
-                            @if (antecedente.notes) {
-                              <small>{{ antecedente.notes }}</small>
-                            }
-                          </div>
-                          @if (antecedente.critical) {
-                            <span class="state-pill" data-tone="warning">Critico</span>
-                          }
-                        </article>
+        } @else {
+          <div class="clinical-content">
+            @switch (activeTab()) {
+              @case ('summary') {
+                <div class="clinical-dashboard">
+                  <header class="dashboard-hero dashboard-hero--{{ screenState() }}">
+                    <div class="dashboard-hero__content">
+                      @if (headerStatusBadge(); as badge) {
+                        <span class="badge badge--{{ badge.tone }}">{{ badge.label }}</span>
                       }
+                      <h2>{{ primaryActionLabel() }}</h2>
+                      <p>{{ clinicalStatusDescription() }}</p>
                     </div>
-                  } @else {
-                    <p class="muted-copy">No hay antecedentes cargados.</p>
-                  }
-                </article>
-
-                <article class="surface">
-                  <div class="section-head">
-                    <div>
-                      <p class="eyebrow">Adjuntos</p>
-                      <h3>Documentos clinicos recientes</h3>
-                    </div>
-                    @if (backgroundLatestSesion()) {
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(backgroundLatestSesion()!.id)">Abrir sesion</button>
-                    }
-                  </div>
-                  @if (overview()?.adjuntosRecientes?.length) {
-                    <div class="attachment-list">
-                      @for (adjunto of overview()!.adjuntosRecientes; track adjunto.id) {
-                        <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
-                          <strong>{{ adjunto.originalFilename }}</strong>
-                          <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
-                        </button>
-                      }
-                    </div>
-                  } @else {
-                    <p class="muted-copy">No hay adjuntos recientes.</p>
-                  }
-
-                  @if (backgroundLatestSesion()?.adjuntos?.length) {
-                    <div class="subsection">
-                      <h4>Adjuntos de la ultima sesion</h4>
-                      <div class="attachment-list">
-                        @for (adjunto of backgroundLatestSesion()!.adjuntos; track adjunto.id) {
-                          <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
-                            <strong>{{ adjunto.originalFilename }}</strong>
-                            <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
+                    <div class="dashboard-hero__actions">
+                      @switch (screenState()) {
+                        @case ('no-history') {
+                          <button type="button" class="btn btn--brand btn--lg" (click)="openLegajoModal()">
+                            Comenzar registro
                           </button>
                         }
-                      </div>
+                        @case ('history-no-case') {
+                          <button type="button" class="btn btn--primary btn--lg" (click)="openCasoDrawer()">
+                            Nuevo caso clinico
+                          </button>
+                        }
+                        @case ('history-active-case') {
+                          <button type="button" class="btn btn--success btn--lg" (click)="openNuevaSesion()">
+                            Registrar sesion hoy
+                          </button>
+                        }
+                      }
                     </div>
-                  }
-                </article>
-              </section>
-            }
-          </div>
-        }
-      }
-    </section>
-  }
+                  </header>
 
-  @if (showNuevoPaciente()) {
-    <div class="overlay" (click)="showNuevoPaciente.set(false)">
-      <div class="modal-panel" (click)="$event.stopPropagation()">
-        <div class="drawer-head">
-          <h3>Nuevo paciente</h3>
-          <button type="button" class="btn btn--ghost btn--sm" (click)="showNuevoPaciente.set(false)">Cerrar</button>
-        </div>
-        <app-paciente-form (saved)="createPaciente($event)" (cancelled)="showNuevoPaciente.set(false)" />
-      </div>
-    </div>
-  }
-
-  @if (showLegajoModal()) {
-    <div class="overlay" (click)="dismissLegajoModal()">
-      <div class="modal-panel modal-panel--legajo" role="dialog" aria-modal="true" aria-labelledby="registrar-atencion-inicial-title" (click)="$event.stopPropagation()">
-        <section class="wizard-shell">
-          <header class="wizard-header">
-            <div>
-              <h3 id="registrar-atencion-inicial-title">Registrar atencion inicial</h3>
-              <p class="muted-copy">Deja operativo el ingreso clinico, la base documental y el plan terapeutico inicial.</p>
-            </div>
-            <button type="button" class="btn btn--ghost btn--sm" (click)="dismissLegajoModal()">Cerrar</button>
-          </header>
-
-          <nav
-            class="wizard-steps"
-            aria-label="Pasos registrar atencion inicial"
-            [style.gridTemplateColumns]="'repeat(' + legajoWizardSteps.length + ', minmax(0, 1fr))'"
-          >
-            @for (step of legajoWizardSteps; track step.step) {
-              <button
-                type="button"
-                class="wizard-step"
-                [class.wizard-step--active]="createLegajoStep() === step.step"
-                [class.wizard-step--done]="createLegajoStep() > step.step"
-                [class.wizard-step--disabled]="!canNavigateToLegajoStep(step.step)"
-                [disabled]="!canNavigateToLegajoStep(step.step)"
-                (click)="goToLegajoStep(step.step)"
-              >
-                <span class="wizard-step__index">{{ step.step + 1 }}</span>
-                <span class="wizard-step__copy">
-                  <strong>{{ step.title }}</strong>
-                  <small>{{ step.label }}</small>
-                </span>
-              </button>
-            }
-          </nav>
-
-          <section class="wizard-body">
-            <form class="drawer-form wizard-form" [formGroup]="createLegajoForm">
-              @switch (createLegajoStep()) {
-                @case (0) {
-                  <div class="wizard-panel">
-                    <div class="wizard-grid-initial">
-                      <label class="field field--wide">
-                        <span>Profesional responsable *</span>
-                        <select formControlName="profesionalId">
-                          <option value="">Seleccionar</option>
-                          @for (profesional of professionalOptions(); track profesional.id) {
-                            <option [value]="profesional.id">{{ profesional.nombre }}</option>
-                          }
-                        </select>
-                      </label>
-                      <label class="field">
-                        <span>Tipo de ingreso *</span>
-                        <select formControlName="tipoIngreso">
-                          @for (option of tipoIngresoOptions; track option.value) {
-                            <option [value]="option.value">{{ option.label }}</option>
-                          }
-                        </select>
-                      </label>
-                      <label class="field">
-                        <span>Fecha/hora de atencion inicial *</span>
-                        <input type="datetime-local" formControlName="fechaHora" />
-                      </label>
-                    </div>
-
-                    @if (createLegajoForm.controls.tipoIngreso.value === 'CON_PRESCRIPCION') {
-                      <section class="wizard-section">
-                        <div class="section-head section-head--stack">
-                          <div>
-                            <h4>Prescripcion y derivacion</h4>
-                          </div>
+                  <div class="dashboard-grid">
+                    <div class="dashboard-grid__main">
+                      <section class="panel-card">
+                        <div class="panel-card__head">
+                          <h3>Situacion Clinica Actual</h3>
                         </div>
-
-                        <div class="grid-two">
-                          <div class="wizard-section wizard-section--soft" style="align-content: start;">
-                            <div class="field">
-                              <span>Profesional derivante</span>
-                              <input type="text" formControlName="profesionalDerivante" placeholder="Nombre del profesional" />
+                        <div class="clinical-kpi-grid">
+                          @for (item of clinicalSummaryItems(); track item.label) {
+                            <div class="clinical-kpi">
+                              <span class="label">{{ item.label }}</span>
+                              <span class="value">{{ item.value }}</span>
+                              @if (item.detail) { <span class="detail">{{ item.detail }}</span> }
                             </div>
-                            <div class="field">
-                              <span>Fecha de prescripcion</span>
-                              <input type="date" formControlName="fechaPrescripcion" />
-                            </div>
-                          </div>
-
-                          <div class="wizard-section wizard-section--soft" style="align-self: stretch; display: grid; grid-template-rows: auto 1fr;">
-                            <div class="field">
-                              <span><strong>Diagnostico medico</strong></span>
-                              <app-diagnostico-medico-selector
-                                [diagnosticos]="diagnosticosMedicos()"
-                                [multiple]="true"
-                                placeholder="Buscar diagnostico medico..."
-                                [selectedCodes]="createLegajoDiagnosticoCodes()"
-                                (selectedCodesChange)="updateCreateLegajoDiagnosticos($event)"
-                              />
-                            </div>
-                          </div>
+                          }
                         </div>
+                      </section>
 
-                        <section class="wizard-section wizard-section--soft">
-                          <div class="section-head section-head--stack">
-                            <div>
-                              <h4>Adjuntos de prescripcion y estudios</h4>
-                            </div>
+                      <section class="panel-card">
+                        <div class="panel-card__head">
+                          <h3>Objetivo Terapeutico</h3>
+                        </div>
+                        <div class="clinical-objective">
+                          <p>{{ currentCaseObjective() }}</p>
+                        </div>
+                      </section>
+
+                      @if (latestEvolutionEntries().length > 0) {
+                        <section class="panel-card">
+                          <div class="panel-card__head">
+                            <h3>Ultima Evolucion</h3>
                           </div>
-                          <div style="display: grid; gap: 0.85rem;" [style.gridTemplateColumns]="createLegajoAdjuntos().length ? 'repeat(2, minmax(0, 1fr))' : '1fr'">
-                            <label class="upload-box">
-                              <span>Adjuntar archivo o tomar foto</span>
-                              <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
-                                <label style="display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;padding:0 0.9rem;border:1px solid var(--border);border-radius:10px;background:var(--white);color:var(--text);cursor:pointer;font-weight:600;">
-                                  <span>Adjuntar archivo</span>
-                                  <input style="display:none;" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" (change)="queueCreateAdjuntos($event)" />
-                                </label>
-                                <label style="display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;padding:0 0.9rem;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--white) 92%, var(--bg));color:var(--text);cursor:pointer;font-weight:600;">
-                                  <span>Tomar foto</span>
-                                  <input style="display:none;" type="file" accept="image/*" capture="environment" (change)="queueCreateAdjuntos($event)" />
-                                </label>
-                              </div>
-                            </label>
-
-                            @if (createLegajoAdjuntos().length) {
-                              <div class="summary-list">
-                                @for (file of createLegajoAdjuntos(); track file.name + '-' + $index) {
-                                  <article class="attachment-item attachment-item--static">
-                                    <div>
-                                      <strong>{{ file.name }}</strong>
-                                      <span>{{ humanFileSize(file.size) }}</span>
-                                    </div>
-                                    <button type="button" class="btn btn--ghost btn--sm" (click)="removeCreateAdjunto($index)">Quitar</button>
-                                  </article>
-                                }
+                          <div class="evolution-list">
+                            @for (entry of latestEvolutionEntries(); track entry.label) {
+                              <div class="evolution-item">
+                                <strong>{{ entry.label }}</strong>
+                                <p>{{ entry.value }}</p>
                               </div>
                             }
                           </div>
                         </section>
+                      }
+                    </div>
+
+                    <div class="dashboard-grid__aside">
+                      <section class="panel-card">
+                        <div class="panel-card__head">
+                          <h3>Alertas Clinicas</h3>
+                        </div>
+                        <div class="alert-list">
+                          @for (alert of clinicalAlertItems(); track alert) {
+                            <div class="alert-tag">
+                              <span class="icon">⚠️</span>
+                              {{ alert }}
+                            </div>
+                          } @empty {
+                            <p class="muted-copy">Sin alertas detectadas.</p>
+                          }
+                        </div>
                       </section>
-                    } @else {
-                      <section class="wizard-section">
-                        <div class="section-head section-head--stack">
-                          <div>
-                            <h4>Consulta particular</h4>
-                            <p class="muted-copy">Captura el motivo de ingreso y el contexto minimo para empezar a trabajar.</p>
+
+                      <section class="panel-card">
+                        <div class="panel-card__head">
+                          <h3>Antecedentes</h3>
+                          <button type="button" class="link-btn" (click)="setActiveTab('antecedents')">Ver todos</button>
+                        </div>
+                        <div class="mini-list">
+                          @for (item of summaryAntecedentes(); track item.catalogItemCode) {
+                            <div class="mini-item" [class.is-critical]="item.critical">
+                              <strong>{{ item.label }}</strong>
+                              <span>{{ item.valueText || 'Si' }}</span>
+                            </div>
+                          } @empty {
+                            <p class="muted-copy">Sin antecedentes.</p>
+                          }
+                        </div>
+                      </section>
+
+                      <section class="panel-card">
+                        <div class="panel-card__head">
+                          <h3>Cobertura</h3>
+                        </div>
+                        <div class="coverage-status">
+                          @for (item of coverageStatusItems(); track item.label) {
+                            <div class="coverage-item">
+                              <span class="label">{{ item.label }}</span>
+                              <span class="value text--{{ item.tone }}">{{ item.value }}</span>
+                            </div>
+                          }
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                </div>
+              }
+
+              @case ('sessions') {
+                <div class="clinical-workspace">
+                  <header class="tab-header">
+                    <div class="tab-header__main">
+                      <h2>Historial de Sesiones</h2>
+                      <div class="tab-header__filters">
+                        @for (f of sessionListFilters; track f.value) {
+                          <button 
+                            type="button" 
+                            class="filter-chip" 
+                            [class.is-active]="sessionListFilter() === f.value"
+                            (click)="sessionListFilter.set(f.value)"
+                          >
+                            {{ f.label }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn--brand btn--sm" [disabled]="!hasLegajo()" (click)="openNuevaSesion()">+ Nueva Sesion</button>
+                  </header>
+
+                  <div class="clinical-list">
+                    @for (sesion of relatedSessions(); track sesion.id) {
+                      <article class="clinical-item" [class.is-draft]="sesion.estado === 'BORRADOR'" (click)="openSesion(sesion.id)">
+                        <div class="clinical-item__date">
+                          <strong>{{ sesion.fechaAtencion | date: 'dd/MM' }}</strong>
+                          <span>{{ sesion.fechaAtencion | date: 'yyyy' }}</span>
+                        </div>
+                        <div class="clinical-item__main">
+                          <div class="clinical-item__head">
+                            <span class="type">{{ tipoLabel(sesion.tipoAtencion) }}</span>
+                            <span class="status status--{{ sesion.estado.toLowerCase() }}">{{ sesion.estado }}</span>
+                          </div>
+                          <p class="summary">{{ sesion.resumenClinico || 'Sin resumen registrado.' }}</p>
+                          <div class="meta">
+                            <span>{{ sesion.profesionalNombre }}</span>
+                            @if (sesion.adjuntos.length > 0) {
+                              <span class="attachment-pill">📎 {{ sesion.adjuntos.length }}</span>
+                            }
                           </div>
                         </div>
-
-                        <label class="field">
-                          <span>Motivo de consulta breve *</span>
-                          <textarea rows="3" formControlName="motivoConsultaBreve" placeholder="Ej. dolor lumbar, esguince de tobillo, cervicalgia"></textarea>
-                        </label>
-
-                        <label class="field">
-                          <span>Sintomas principales</span>
-                          <textarea rows="3" formControlName="sintomasPrincipales" placeholder="Dolor, limitacion funcional, contractura, rigidez"></textarea>
-                        </label>
-                      </section>
+                      </article>
+                    } @empty {
+                      <div class="state-box state-box--empty">
+                        <p>No se encontraron sesiones.</p>
+                      </div>
                     }
                   </div>
-                }
+                </div>
+              }
 
-                @case (1) {
-                  <div class="wizard-panel">
-                    <section class="wizard-section">
-                      <div class="section-head section-head--stack">
-                        <div>
-                          <h4>Evaluacion y antecedentes</h4>
-                        </div>
+              @case ('cases') {
+                <div class="clinical-workspace">
+                  <header class="tab-header">
+                    <h2>Casos Clinicos</h2>
+                    <button type="button" class="btn btn--primary btn--sm" [disabled]="!hasLegajo()" (click)="openCasoDrawer()">+ Nuevo Caso</button>
+                  </header>
+
+                  <div class="case-panels">
+                    <section class="case-section">
+                      <h3>Activos</h3>
+                      <div class="case-grid">
+                        @for (caso of activeCaseCards(); track caso.id) {
+                          <article class="case-panel case-panel--active" (click)="selectCase(caso.id)">
+                            <div class="case-panel__head">
+                              <span class="badge badge--success">Activo</span>
+                              <button type="button" class="btn btn--ghost btn--sm" (click)="closeCaso(caso); $event.stopPropagation()">Cerrar</button>
+                            </div>
+                            <h4>{{ caso.descripcion }}</h4>
+                            <div class="case-panel__meta">
+                              <span>{{ caso.profesionalNombre }}</span>
+                              <span>Desde {{ caso.fechaInicio | date: 'dd/MM/yyyy' }}</span>
+                            </div>
+                            <div class="case-panel__footer">
+                              <strong>{{ caso.cantidadSesiones }} sesiones</strong>
+                            </div>
+                          </article>
+                        }
                       </div>
+                    </section>
 
-                      <app-antecedente-selector
-                        [categories]="antecedenteCatalogCategories()"
-                        [formArray]="createLegajoAntecedentes"
-                        context="create"
-                        emptySelectionMessage="Puedes dejar este paso liviano y completar antecedentes mas tarde si hace falta."
-                      >
-                        <div selector-left-top class="grid-two grid-two--tight">
-                          <label class="field">
-                            <span>Peso</span>
-                            <input type="number" inputmode="decimal" formControlName="peso" placeholder="Ej. 29 kg" />
-                          </label>
-                          <label class="field">
-                            <span>Altura</span>
-                            <input type="number" inputmode="decimal" formControlName="altura" placeholder="Ej. 1.84 m" />
-                          </label>
-                        </div>
-                      </app-antecedente-selector>
+                    <section class="case-section">
+                      <h3>Historial (Cerrados)</h3>
+                      <div class="case-grid">
+                        @for (caso of closedCaseCards(); track caso.id) {
+                          <article class="case-panel case-panel--closed">
+                            <div class="case-panel__head">
+                              <span class="badge badge--muted">Resuelto</span>
+                            </div>
+                            <h4>{{ caso.descripcion }}</h4>
+                            <div class="case-panel__meta">
+                              <span>{{ caso.profesionalNombre }}</span>
+                              <span>{{ caso.fechaInicio | date: 'MM/yyyy' }}</span>
+                            </div>
+                          </article>
+                        }
+                      </div>
                     </section>
                   </div>
-                }
+                </div>
+              }
 
-                @case (2) {
-                  <div class="wizard-panel grid-two treatment-plan-layout">
-                    <section class="wizard-section treatment-plan-panel">
-                      <div class="section-head section-head--stack">
-                        <div>
-                          <h4>Tratamientos nomenclados</h4>
+              @case ('antecedents') {
+                <div class="clinical-workspace">
+                  <header class="tab-header">
+                    <h2>Antecedentes Médicos</h2>
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="openAntecedentesDrawer()">Gestionar</button>
+                  </header>
+                  <div class="antecedents-grid">
+                    @for (item of antecedentes(); track item.catalogItemCode) {
+                      <div class="antecedent-detail-card" [class.is-critical]="item.critical">
+                        <div class="card-header">
+                          <strong>{{ item.label }}</strong>
+                          @if (item.critical) { <span class="badge badge--danger">Critico</span> }
                         </div>
+                        <p class="value">{{ item.valueText || 'Si' }}</p>
+                        @if (item.notes) { <p class="notes">{{ item.notes }}</p> }
                       </div>
-
-                      <div class="field treatment-plan-selector">
-                        <span>Seleccionar tratamiento</span>
-                        <app-tratamiento-catalog-selector
-                          [tratamientos]="treatmentCatalogItems()"
-                          [categorias]="treatmentCatalogCategorias()"
-                          [tipos]="treatmentCatalogTipos()"
-                          [excludedCodes]="selectedTreatmentCodes()"
-                          [selectedCode]="selectedTreatmentCode()"
-                          (selectedCodeChange)="handleSelectedTreatment($event)"
-                          placeholder="Buscar tratamiento por nombre, codigo o categoria"
-                        />
+                    } @empty {
+                      <div class="state-box state-box--empty">
+                        <p>Sin antecedentes registrados.</p>
                       </div>
-
-                      @if (false) {
-                        <div class="result-list">
-                          @for (item of availableTreatmentItems(); track item.codigoInterno) {
-                            <button type="button" class="result-item" (click)="addTratamientoFromCatalog(item)">
-                              <div>
-                                <strong>{{ item.nombre }}</strong>
-                                <span>{{ resolveTreatmentCategoryName(item.categoriaCodigo) }} · {{ treatmentTypeLabel(item.tipo) }}</span>
-                              </div>
-                              <span>{{ item.duracionSugeridaMinutos }} min</span>
-                            </button>
-                          }
-                        </div>
-                      } @else {
-                        <div class="empty-inline">
-                          <p></p>
-                        </div>
-                      }
-                    </section>
-
-                    <section class="wizard-section treatment-plan-panel">
-                      <div class="section-head section-head--stack">
-                        <div>
-                          <h4>Plan terapeutico</h4>
-                        </div>
-                      </div>
-
-                      @if (createLegajoTratamientos.length) {
-                        <div class="summary-list treatment-plan-list">
-                          @for (group of createLegajoTratamientos.controls; track $index) {
-                            <article class="summary-card treatment-plan-card" [formGroup]="$any(group)">
-                              <div class="section-head section-head--compact">
-                                <div>
-                                  <strong>{{ $any(group).controls.tratamientoNombre.value || $any(group).controls.tratamientoId.value }}</strong>
-                                  <p class="muted-copy">
-                                    {{ $any(group).controls.tratamientoId.value }}
-                                    @if (resolveTreatmentCatalogItem($any(group).controls.tratamientoId.value); as catalogItem) {
-                                      / {{ resolveTreatmentCategoryName(catalogItem.categoriaCodigo) }} / {{ treatmentTypeLabel(catalogItem.tipo) }}
-                                    }
-                                  </p>
-                                </div>
-                                <button type="button" class="btn btn--ghost btn--sm" (click)="removeTratamiento($index)">Quitar</button>
-                              </div>
-
-                            </article>
-                          }
-                        </div>
-                      } @else {
-                        <div class="empty-inline treatment-plan-empty"></div>
-                      }
-
-                    </section>
-
-                    <section class="wizard-section treatment-plan-panel treatment-plan-panel--full">
-                      <div class="grid-two grid-two--tight treatment-plan-form">
-                        <label class="field">
-                          <span>Cantidad de sesiones *</span>
-                          <input type="number" min="1" inputmode="numeric" formControlName="planCantidadSesiones" />
-                        </label>
-                        <label class="field">
-                          <span>Caracter del tratamiento *</span>
-                          <select formControlName="planCaracterCaso">
-                            @for (option of caracterCasoOptions; track option.value) {
-                              <option [value]="option.value">{{ option.label }}</option>
-                            }
-                          </select>
-                        </label>
-                      </div>
-
-                      <label class="field">
-                        <span>Observaciones</span>
-                        <textarea rows="3" formControlName="planObservacionesGenerales" placeholder="Observaciones generales para todos los tratamientos del plan"></textarea>
-                      </label>
-                    </section>
+                    }
                   </div>
-                }
+                </div>
               }
-            </form>
-          </section>
 
-          <footer class="wizard-footer">
-            <button type="button" class="btn btn--ghost" (click)="dismissLegajoModal()">Cancelar</button>
-            <div class="wizard-footer__actions">
-              @if (createLegajoStep() > 0) {
-                <button type="button" class="btn btn--secondary" (click)="previousLegajoStep()">Volver</button>
+              @case ('attachments') {
+                <div class="clinical-workspace">
+                  <header class="tab-header">
+                    <h2>Archivos y Estudios</h2>
+                  </header>
+                  <p class="muted-copy">Modulo consolidado en desarrollo.</p>
+                </div>
               }
-              @if (createLegajoStep() < 2) {
-                <button type="button" class="btn btn--primary" (click)="nextLegajoStep()">Siguiente</button>
-              } @else {
-                <button type="button" class="btn btn--primary" [disabled]="isSavingLegajo()" (click)="saveLegajo()">Registrar atencion inicial</button>
+
+              @case ('timeline') {
+                <div class="clinical-workspace">
+                  <header class="tab-header">
+                    <div class="tab-header__main">
+                      <h2>Linea de Tiempo</h2>
+                      <div class="tab-header__filters">
+                        @for (f of timelineFilters; track f.value) {
+                          <button type="button" class="filter-chip" [class.is-active]="timelineFilter() === f.value" (click)="onTimelineFilterChange(f.value)">{{ f.label }}</button>
+                        }
+                      </div>
+                    </div>
+                  </header>
+
+                  <div class="timeline-events">
+                    @for (event of visibleTimeline(); track event.eventId) {
+                      <div class="timeline-item" (click)="openTimelineItem(event)">
+                        <div class="timeline-item__dot" [class]="'is-' + timelineTone(event)"></div>
+                        <div class="timeline-item__date">{{ event.occurredAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                        <div class="timeline-item__card">
+                          <div class="card-head">
+                            <span class="type">{{ timelineTypeLabel(event) }}</span>
+                          </div>
+                          <h4>{{ event.title }}</h4>
+                          <p>{{ event.summary }}</p>
+                          <small>{{ event.profesionalNombre }}</small>
+                        </div>
+                      </div>
+                    }
+                    @if (canLoadMoreTimeline()) {
+                      <button type="button" class="btn btn--ghost btn--full" (click)="loadMoreTimeline()">Cargar mas</button>
+                    }
+                  </div>
+                </div>
               }
-            </div>
-          </footer>
-        </section>
+            }
+          </div>
+        }
+      </main>
+    </div>
+  } @else {
+    <div class="clinical-state clinical-state--empty">
+      <div class="empty-hero">
+        <div class="icon">📂</div>
+        <h1>Historia Clinica Digital</h1>
+        <p>Busca un paciente para abrir su ficha clinica.</p>
+        <div class="search-box">
+          <input type="text" [formControl]="patientSearchControl" placeholder="Buscar por DNI o Apellido..." />
+          @if (patientMatches().length > 0) {
+            <ul class="search-matches">
+              @for (match of patientMatches(); track match.id) {
+                <li (click)="selectPatient(match)">
+                  <strong>{{ match.apellido }}, {{ match.nombre }}</strong>
+                  <small>{{ match.dni }}</small>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+        <button type="button" class="btn btn--secondary" (click)="showNuevoPaciente.set(true)">+ Nuevo Paciente</button>
       </div>
     </div>
   }
 
   @if (showSesionDrawer()) {
     <div class="drawer-backdrop" (click)="dismissSesionDrawer()"></div>
-    <aside class="drawer drawer--wide">
-      <div class="drawer-head">
-        <h3>{{ selectedSesion() ? 'Sesion clinica' : 'Nueva sesion' }}</h3>
+    <aside class="drawer drawer--wide clinical-drawer">
+      <div class="drawer-head clinical-drawer__head">
+        <div>
+          <p class="eyebrow">{{ isFullEvaluation() ? 'Evaluacion Completa' : 'Sesion de Seguimiento' }}</p>
+          <h3>{{ selectedSesion() ? 'Registro de Sesion' : 'Nueva Sesion' }}</h3>
+        </div>
         <button type="button" class="btn btn--ghost btn--sm" (click)="dismissSesionDrawer()">Cerrar</button>
       </div>
-      <form class="drawer-form" [formGroup]="sesionForm">
-        <div class="grid-two">
-          <label class="field"><span>Profesional</span><select formControlName="profesionalId"><option value="">Seleccionar</option>@for (profesional of professionalOptions(); track profesional.id) {<option [value]="profesional.id">{{ profesional.nombre }}</option>}</select></label>
-          <label class="field"><span>Fecha atencion</span><input type="datetime-local" formControlName="fechaAtencion" /></label>
-        </div>
-        <label class="field"><span>Tipo</span><select formControlName="tipoAtencion">@for (tipo of tipoAtencionOptions; track tipo.value) {<option [value]="tipo.value">{{ tipo.label }}</option>}</select></label>
-        <label class="field"><span>Motivo de consulta</span><textarea rows="3" formControlName="motivoConsulta"></textarea></label>
-        <label class="field"><span>Resumen clinico</span><textarea rows="3" formControlName="resumenClinico"></textarea></label>
-        <div class="grid-two">
-          <label class="field"><span>Subjetivo</span><textarea rows="4" formControlName="subjetivo"></textarea></label>
-          <label class="field"><span>Objetivo</span><textarea rows="4" formControlName="objetivo"></textarea></label>
-        </div>
-        <div class="grid-two">
-          <label class="field"><span>Evaluacion</span><textarea rows="4" formControlName="evaluacion"></textarea></label>
-          <label class="field"><span>Plan</span><textarea rows="4" formControlName="plan"></textarea></label>
-        </div>
-      </form>
-      @if (selectedSesion()) {
-        <section class="subsection">
-          <div class="section-head"><h4>Adjuntos</h4></div>
-          @if (selectedSesion()!.adjuntos.length) {
-            <div class="attachment-list">
-              @for (adjunto of selectedSesion()!.adjuntos; track adjunto.id) {
-                <div class="attachment-item attachment-item--static">
-                  <button type="button" class="link-btn" (click)="downloadAdjunto(adjunto.id)">{{ adjunto.originalFilename }}</button>
-                  <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
-                  @if (selectedSesion()!.estado === 'BORRADOR') {
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="deleteAdjunto(adjunto.id)">Eliminar</button>
+
+      <div class="clinical-drawer__body">
+        <form class="drawer-form session-form-structured" [formGroup]="sesionForm">
+          <fieldset class="form-section" formGroupName="evaluacionEstructurada">
+            <legend>Evaluacion Clinica Base</legend>
+            <div class="field">
+              <span>Intensidad del Dolor (0-10)</span>
+              <div class="pain-scale">
+                @for (val of dolorOptions; track val) {
+                  <button 
+                    type="button" 
+                    class="pain-btn" 
+                    [class.pain-btn--active]="sesionForm.value.evaluacionEstructurada?.dolorIntensidad === val"
+                    (click)="sesionForm.get('evaluacionEstructurada.dolorIntensidad')?.setValue(val)"
+                    [disabled]="selectedSesion()?.estado === 'CERRADA'"
+                  >
+                    {{ val }}
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="grid-two">
+              <label class="field">
+                <span>Zona del dolor</span>
+                <input type="text" formControlName="dolorZona" />
+              </label>
+              <label class="field">
+                <span>Evolucion</span>
+                <div class="chip-group">
+                  @for (opt of evolucionOptions; track opt.value) {
+                    <button 
+                      type="button" 
+                      class="chip-btn" 
+                      [class.chip-btn--active]="sesionForm.value.evaluacionEstructurada?.evolucionEstado === opt.value"
+                      (click)="sesionForm.get('evaluacionEstructurada.evolucionEstado')?.setValue(opt.value)"
+                      [disabled]="selectedSesion()?.estado === 'CERRADA'"
+                    >
+                      {{ opt.label }}
+                    </button>
                   }
+                </div>
+              </label>
+            </div>
+            <label class="field"><span>Limitacion funcional</span><input type="text" formControlName="limitacionFuncional" /></label>
+          </fieldset>
+
+          <details class="form-section-details" [attr.open]="isFullEvaluation() ? true : null">
+            <summary class="form-section-summary">Examen Fisico Objetivado</summary>
+            <div class="form-section-content" formGroupName="examenFisico">
+              <div class="grid-two">
+                <label class="field"><span>Rangos (ROM)</span><textarea formControlName="rangoMovimientoJson" rows="2"></textarea></label>
+                <label class="field"><span>Fuerza</span><textarea formControlName="fuerzaMuscularJson" rows="2"></textarea></label>
+              </div>
+            </div>
+          </details>
+
+          <fieldset class="form-section">
+            <legend>Tratamiento Aplicado</legend>
+            <div class="intervention-list" formArrayName="intervenciones">
+              @for (item of intervencionesArray.controls; track $index; let i = $index) {
+                <div class="intervention-item" [formGroupName]="i">
+                  <div class="intervention-row">
+                    <label class="field field--grow"><span>Practica</span><input type="text" formControlName="tratamientoNombre" /></label>
+                    <label class="field"><span>Parametros</span><input type="text" formControlName="técnica" /></label>
+                    <button type="button" class="btn btn--danger btn--sm" (click)="removeIntervencion(i)" [disabled]="selectedSesion()?.estado === 'CERRADA'">&times;</button>
+                  </div>
                 </div>
               }
             </div>
-          } @else {
-            <p class="muted-copy">No hay adjuntos en esta sesion.</p>
-          }
-          @if (selectedSesion()!.estado === 'BORRADOR') {
-            <label class="upload-box"><span>Adjuntar archivo</span><input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="uploadAdjunto($event)" /></label>
-          }
-        </section>
-      }
-      <div class="drawer-actions">
-        <button type="button" class="btn btn--primary" [disabled]="isSavingSesion()" (click)="saveSesion()">Guardar sesion</button>
+            <button type="button" class="btn btn--ghost btn--sm btn--full" (click)="addIntervencion()" [disabled]="selectedSesion()?.estado === 'CERRADA'">+ Agregar practica</button>
+          </fieldset>
+
+          <fieldset class="form-section" formGroupName="evaluacionEstructurada">
+            <legend>Resultado</legend>
+            <div class="grid-two">
+              <label class="field">
+                <span>Respuesta</span>
+                <select formControlName="respuestaPaciente">
+                  <option value="">Seleccionar</option>
+                  @for (opt of respuestaOptions; track opt.value) { <option [value]="opt.value">{{ opt.label }}</option> }
+                </select>
+              </label>
+              <label class="field">
+                <span>Proxima conducta</span>
+                <select formControlName="proximaConducta">
+                  <option value="">Seleccionar</option>
+                  @for (opt of conductaOptions; track opt.value) { <option [value]="opt.value">{{ opt.label }}</option> }
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
+          <details class="admin-details">
+            <summary>Datos administrativos</summary>
+            <div class="admin-content">
+              <div class="grid-two">
+                <label class="field"><span>Profesional</span>
+                  <select formControlName="profesionalId">
+                    @for (prof of professionalOptions(); track prof.id) { <option [value]="prof.id">{{ prof.nombre }}</option> }
+                  </select>
+                </label>
+                <label class="field"><span>Fecha</span><input type="datetime-local" formControlName="fechaAtencion" /></label>
+              </div>
+              <label class="field"><span>Resumen SOAP Legacy</span><textarea formControlName="resumenClinico" rows="2"></textarea></label>
+            </div>
+          </details>
+        </form>
+
+        @if (selectedSesion(); as sesion) {
+          <section class="subsection">
+            <h4>Adjuntos</h4>
+            <div class="attachment-list">
+              @for (adjunto of sesion.adjuntos; track adjunto.id) {
+                <div class="attachment-item attachment-item--static">
+                  <button type="button" class="link-btn" (click)="downloadAdjunto(adjunto.id)">{{ adjunto.originalFilename }}</button>
+                  @if (sesion.estado === 'BORRADOR') { <button type="button" class="btn btn--ghost btn--sm" (click)="deleteAdjunto(adjunto.id)">Eliminar</button> }
+                </div>
+              }
+            </div>
+            @if (sesion.estado === 'BORRADOR') {
+              <label class="upload-box"><span>Adjuntar archivo</span><input type="file" (change)="uploadAdjunto($event)" /></label>
+            }
+          </section>
+        }
+      </div>
+
+      <div class="drawer-actions clinical-drawer__footer">
+        <button type="button" class="btn btn--primary" [disabled]="isSavingSesion() || selectedSesion()?.estado === 'CERRADA'" (click)="saveSesion()">Guardar borrador</button>
         @if (selectedSesion()?.estado === 'BORRADOR') {
-          <button type="button" class="btn btn--secondary" [disabled]="isSavingSesion()" (click)="closeSesion()">Cerrar sesion</button>
+          <button type="button" class="btn btn--warning" [disabled]="isSavingSesion()" (click)="closeSesion()">Cerrar sesion</button>
           <button type="button" class="btn btn--danger" [disabled]="isSavingSesion()" (click)="annulSesion()">Anular</button>
         }
       </div>
     </aside>
   }
 
-  @if (showCasoDrawer()) {
-    <div class="drawer-backdrop" (click)="showCasoDrawer.set(false)"></div>
-    <aside class="drawer">
-      <div class="drawer-head">
-        <h3>Nuevo caso clinico</h3>
-        <button type="button" class="btn btn--ghost btn--sm" (click)="showCasoDrawer.set(false)">Cerrar</button>
+  @if (showLegajoModal()) {
+    <div class="modal-backdrop" (click)="dismissLegajoModal()"></div>
+    <div class="clinical-modal clinical-modal--lg">
+      <div class="modal-head">
+        <h2>{{ legajoWizardSteps[createLegajoStep()].title }}</h2>
+        <button type="button" class="btn btn--ghost" (click)="dismissLegajoModal()">&times;</button>
       </div>
-      <form class="drawer-form" [formGroup]="casoForm">
-        <label class="field"><span>Profesional</span><select formControlName="profesionalId"><option value="">Seleccionar</option>@for (profesional of professionalOptions(); track profesional.id) {<option [value]="profesional.id">{{ profesional.nombre }}</option>}</select></label>
-        <div class="field">
-          <span>Diagnostico medico</span>
-          <app-diagnostico-medico-selector
-            [diagnosticos]="diagnosticosMedicos()"
-            [selectedCode]="casoForm.controls.diagnosticoCodigo.value"
-            (selectedCodeChange)="casoForm.controls.diagnosticoCodigo.setValue($event)"
-          />
+      <div class="clinical-modal__body">
+        <div class="clinical-stepper">
+          @for (s of legajoWizardSteps; track s.step) {
+            <div class="stepper-item" [class.is-active]="createLegajoStep() === s.step" (click)="goToLegajoStep(s.step)">{{ s.label }}</div>
+          }
         </div>
-        <label class="field"><span>Fecha inicio</span><input type="date" formControlName="fechaInicio" /></label>
-        <label class="field"><span>Notas</span><textarea rows="4" formControlName="notas"></textarea></label>
-      </form>
-      <div class="drawer-actions">
-        <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">Crear caso clinico</button>
+        @switch (createLegajoStep()) {
+          @case (0) {
+            <form [formGroup]="createLegajoForm" class="wizard-form">
+              <label class="field"><span>Motivo breve</span><input type="text" formControlName="motivoConsultaBreve" /></label>
+            </form>
+          }
+          @case (1) { <p>Pasos de evaluacion en desarrollo.</p> }
+          @case (2) { <p>Pasos de plan en desarrollo.</p> }
+        }
       </div>
-    </aside>
+      <div class="modal-footer">
+        <button type="button" class="btn btn--ghost" (click)="dismissLegajoModal()">Cancelar</button>
+        <button type="button" class="btn btn--primary" (click)="nextLegajoStep()">Siguiente</button>
+      </div>
+    </div>
   }
 
-  @if (showAntecedentesDrawer()) {
-    <div class="drawer-backdrop" (click)="showAntecedentesDrawer.set(false)"></div>
-    <aside class="drawer drawer--wide drawer--antecedentes">
-      <div class="drawer-head">
-        <h3>Antecedentes del paciente</h3>
-        <button type="button" class="btn btn--ghost btn--sm" (click)="showAntecedentesDrawer.set(false)">Cerrar</button>
+  @if (showNuevoPaciente()) {
+    <div class="modal-backdrop" (click)="showNuevoPaciente.set(false)"></div>
+    <div class="clinical-modal">
+      <div class="modal-head"><h2>Nuevo Paciente</h2></div>
+      <div class="clinical-modal__body">
+        <app-paciente-form (save)="createPaciente($any($event))" (cancel)="showNuevoPaciente.set(false)" />
       </div>
-      <app-antecedente-selector
-        [categories]="antecedenteCatalogCategories()"
-        [formArray]="antecedentesItems"
-        context="edit"
-        emptySelectionMessage="Todavia no hay antecedentes guardados para este paciente."
-      />
-      <div class="drawer-actions">
-        <button type="button" class="btn btn--primary" [disabled]="isSavingAntecedentes()" (click)="saveAntecedentes()">Guardar antecedentes</button>
-      </div>
-    </aside>
+    </div>
   }
 
   @if (showClearPatientConfirm()) {
-    <app-confirm-dialog
-      title="Hay cambios sin guardar"
-      message="Si limpias el paciente ahora, perderas el borrador clinico abierto. Confirma solo si quieres descartarlo."
-      confirmLabel="Limpiar igual"
-      variant="warning"
-      (cancelled)="cancelClearSelectedPatient()"
-      (confirmed)="clearSelectedPatient(true)"
-    />
-  }
-
-  @if (showLegajoCloseConfirm()) {
-    <app-confirm-dialog
-      title="Salir del registro de atencion inicial"
-      message="Hay datos cargados en este flujo. Si sales ahora, se perdera el progreso no guardado."
-      confirmLabel="Salir sin guardar"
-      variant="warning"
-      (cancelled)="cancelDismissLegajoModal()"
-      (confirmed)="confirmDismissLegajoModal()"
-    />
+    <app-confirm-dialog title="Salir" message="¿Salir sin guardar?" (confirmed)="clearSelectedPatient(true)" (cancelled)="showClearPatientConfirm.set(false)" />
   }
 </section>

@@ -208,19 +208,21 @@ describe('HistoriaClinicaPacientePage', () => {
     expect(historiaSvc.getWorkspace).toHaveBeenCalled();
   });
 
-  it('keeps only overview eager and defers the rest until a tab is opened', () => {
+  it('renders the clinical summary home and preloads timeline and background context', () => {
     historiaSvc.getOverview.and.returnValue(of(patientOverview()));
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
 
     expect(historiaSvc.getOverview).toHaveBeenCalled();
-    expect(historiaSvc.getTimeline).not.toHaveBeenCalled();
-    expect(historiaSvc.getAntecedentes).not.toHaveBeenCalled();
+    expect(historiaSvc.getTimeline).toHaveBeenCalled();
+    expect(historiaSvc.getAntecedentes).toHaveBeenCalled();
+    expect(historiaSvc.getSesion).toHaveBeenCalledWith('consultorio-1', 'paciente-1', 'sesion-1');
     expect(historiaSvc.listDiagnosticos).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Estado actual');
-    expect(fixture.nativeElement.textContent).toContain('Caso principal');
-    expect(fixture.nativeElement.textContent).toContain('Ultimo evento');
+    expect(fixture.nativeElement.textContent).toContain('Resumen clinico');
+    expect(fixture.nativeElement.textContent).toContain('Caso activo principal');
+    expect(fixture.nativeElement.textContent).toContain('Ultima evolucion');
+    expect(fixture.nativeElement.textContent).toContain('Timeline clinico reciente');
   });
 
   it('loads cases and sessions lazily when entering the cases tab', () => {
@@ -230,14 +232,14 @@ describe('HistoriaClinicaPacientePage', () => {
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
-    clickButton('Casos y sesiones');
+    clickButton('Casos clinicos');
 
     expect(historiaSvc.listDiagnosticos).toHaveBeenCalled();
     expect(historiaSvc.listSesiones).toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Tratamientos en curso');
+    expect(fixture.nativeElement.textContent).toContain('Casos clinicos');
   });
 
-  it('loads timeline lazily and renders the load-more pattern', () => {
+  it('opens the timeline tab with the longitudinal view', () => {
     historiaSvc.getOverview.and.returnValue(of(patientOverview()));
     historiaSvc.getTimeline.and.returnValue(
       of([
@@ -260,16 +262,16 @@ describe('HistoriaClinicaPacientePage', () => {
     clickButton('Timeline');
 
     expect(historiaSvc.getTimeline).toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Timeline');
+    expect(fixture.nativeElement.textContent).toContain('Timeline clinico');
   });
 
-  it('loads antecedentes and adjuntos lazily in the background tab', () => {
+  it('opens the antecedentes tab with the patient background context', () => {
     historiaSvc.getOverview.and.returnValue(of(patientOverview()));
     historiaSvc.getAntecedentes.and.returnValue(of([{ label: 'Alergia', valueText: 'Diclofenac', critical: true }] as any));
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
-    clickButton('Antecedentes y adjuntos');
+    clickButton('Antecedentes');
 
     expect(historiaSvc.getAntecedentes).toHaveBeenCalled();
     expect(historiaSvc.getSesion).toHaveBeenCalledWith('consultorio-1', 'paciente-1', 'sesion-1');
@@ -462,6 +464,10 @@ describe('HistoriaClinicaPacientePage', () => {
     fixture.componentInstance.sesionForm.markAsDirty();
     fixture.detectChanges();
 
+    const moreMenu = fixture.nativeElement.querySelector('.actions-menu summary') as HTMLElement | null;
+    expect(moreMenu).toBeTruthy();
+    moreMenu!.click();
+    fixture.detectChanges();
     clickButton('Limpiar');
 
     expect(fixture.nativeElement.querySelector('app-confirm-dialog')).toBeTruthy();

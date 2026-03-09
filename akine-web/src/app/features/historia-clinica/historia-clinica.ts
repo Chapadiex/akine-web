@@ -1,7 +1,7 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { catchError, combineLatest, debounceTime, distinctUntilChanged, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/auth/services/auth.service';
@@ -25,6 +25,8 @@ import {
   HistoriaClinicaWorkspace,
   HistoriaClinicaWorkspaceItem,
   SesionClinicaResponse,
+  SesionClinicaRequest,
+  SesionIntervencionDTO,
 } from './models/historia-clinica.models';
 import { HistoriaClinicaService } from './services/historia-clinica.service';
 
@@ -109,6 +111,37 @@ export class HistoriaClinica {
     objetivo: new FormControl('', { nonNullable: true }),
     evaluacion: new FormControl('', { nonNullable: true }),
     plan: new FormControl('', { nonNullable: true }),
+    
+    // Bloque B y E
+    evaluacionEstructurada: new FormGroup({
+      dolorIntensidad: new FormControl<number | null>(null),
+      dolorZona: new FormControl('', { nonNullable: true }),
+      dolorLateralidad: new FormControl('', { nonNullable: true }),
+      dolorTipo: new FormControl('', { nonNullable: true }),
+      dolorComportamiento: new FormControl('', { nonNullable: true }),
+      evolucionEstado: new FormControl('', { nonNullable: true }),
+      evolucionNota: new FormControl('', { nonNullable: true }),
+      objetivoSesion: new FormControl('', { nonNullable: true }),
+      limitacionFuncional: new FormControl('', { nonNullable: true }),
+      respuestaPaciente: new FormControl('', { nonNullable: true }),
+      tolerancia: new FormControl('', { nonNullable: true }),
+      indicacionesDomiciliarias: new FormControl('', { nonNullable: true }),
+      proximaConducta: new FormControl('', { nonNullable: true }),
+    }),
+
+    // Bloque C
+    examenFisico: new FormGroup({
+      rangoMovimientoJson: new FormControl('', { nonNullable: true }),
+      fuerzaMuscularJson: new FormControl('', { nonNullable: true }),
+      funcionalidadNota: new FormControl('', { nonNullable: true }),
+      marchaBalanceNota: new FormControl('', { nonNullable: true }),
+      signosInflamatorios: new FormControl('', { nonNullable: true }),
+      observacionesNeuroResp: new FormControl('', { nonNullable: true }),
+      testsMedidasJson: new FormControl('', { nonNullable: true }),
+    }),
+
+    // Bloque D
+    intervenciones: new FormArray<FormGroup>([]),
   });
 
   readonly diagnosticoForm = new FormGroup({
@@ -122,7 +155,7 @@ export class HistoriaClinica {
   });
 
   readonly tipoAtencionOptions: ReadonlyArray<{ value: HistoriaClinicaTipoAtencion; label: string }> = [
-    { value: 'EVALUACION', label: 'Evaluacion' },
+    { value: 'EVALUACION', label: 'Evaluacion Inicial' },
     { value: 'SEGUIMIENTO', label: 'Seguimiento' },
     { value: 'TRATAMIENTO', label: 'Tratamiento' },
     { value: 'INTERCONSULTA', label: 'Interconsulta' },
@@ -134,6 +167,41 @@ export class HistoriaClinica {
     { value: 'CERRADA', label: 'Cerrada' },
     { value: 'ANULADA', label: 'Anulada' },
   ];
+
+  readonly dolorOptions: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  readonly evolucionOptions = [
+    { value: 'MEJOR', label: 'Mejor' },
+    { value: 'IGUAL', label: 'Igual' },
+    { value: 'PEOR', label: 'Peor' },
+  ];
+  readonly respuestaOptions = [
+    { value: 'FAVORABLE', label: 'Favorable' },
+    { value: 'SIN_CAMBIOS', label: 'Sin cambios' },
+    { value: 'REGULAR', label: 'Regular' },
+    { value: 'EMPEORA', label: 'Empeora' },
+    { value: 'PARCIAL', label: 'Parcial' },
+  ];
+  readonly toleranciaOptions = [
+    { value: 'BUENA', label: 'Buena' },
+    { value: 'REGULAR', label: 'Regular' },
+    { value: 'MALA', label: 'Mala' },
+  ];
+  readonly conductaOptions = [
+    { value: 'CONTINUAR', label: 'Continuar igual' },
+    { value: 'AJUSTAR', label: 'Ajustar plan' },
+    { value: 'REEVALUAR', label: 'Re-evaluar' },
+    { value: 'ALTA', label: 'Alta' },
+    { value: 'DERIVAR', label: 'Derivar' },
+    { value: 'ESTUDIO', label: 'Solicitar estudio' },
+    { value: 'SUSPENDER', label: 'Suspender' },
+  ];
+
+  readonly isFullEvaluation = computed(() => {
+    const tipo = this.sesionForm.controls.tipoAtencion.value;
+    return tipo === 'EVALUACION';
+  });
+
+  readonly intervencionesArray = this.sesionForm.controls.intervenciones;
 
   readonly canEditSesion = computed(() => {
     const patient = this.selectedPatient();
@@ -253,6 +321,7 @@ export class HistoriaClinica {
       },
       { emitEvent: false },
     );
+    this.intervencionesArray.clear();
     this.syncSessionFormState();
     if (pushQuery) {
       this.navigateWithState({ ...this.routeState(), sesionId: undefined });
@@ -326,6 +395,25 @@ export class HistoriaClinica {
     if (window.confirm('Esta accion marcara la sesion como anulada.')) {
       this.changeSesionState('annul');
     }
+  }
+
+  addIntervencion(): void {
+    const group = new FormGroup({
+      tratamientoId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      tratamientoNombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      técnica: new FormControl('', { nonNullable: true }),
+      zona: new FormControl('', { nonNullable: true }),
+      parametrosJson: new FormControl('', { nonNullable: true }),
+      duracionMinutos: new FormControl<number | null>(null),
+      profesionalId: new FormControl(this.defaultProfesionalId()),
+      observaciones: new FormControl('', { nonNullable: true }),
+      orderIndex: new FormControl(this.intervencionesArray.length),
+    });
+    this.intervencionesArray.push(group);
+  }
+
+  removeIntervencion(index: number): void {
+    this.intervencionesArray.removeAt(index);
   }
 
   createDiagnostico(): void {
@@ -659,6 +747,45 @@ export class HistoriaClinica {
       },
       { emitEvent: false },
     );
+
+    if (sesion.evaluacionEstructurada) {
+      const evalData = { ...sesion.evaluacionEstructurada };
+      Object.keys(evalData).forEach(key => {
+        if ((evalData as any)[key] === null) (evalData as any)[key] = '';
+      });
+      this.sesionForm.controls.evaluacionEstructurada.patchValue(evalData as any, { emitEvent: false });
+    } else {
+      this.sesionForm.controls.evaluacionEstructurada.reset({}, { emitEvent: false });
+    }
+
+    if (sesion.examenFisico) {
+      const examData = { ...sesion.examenFisico };
+      Object.keys(examData).forEach(key => {
+        if ((examData as any)[key] === null) (examData as any)[key] = '';
+      });
+      this.sesionForm.controls.examenFisico.patchValue(examData as any, { emitEvent: false });
+    } else {
+      this.sesionForm.controls.examenFisico.reset({}, { emitEvent: false });
+    }
+
+    this.intervencionesArray.clear();
+    if (sesion.intervenciones?.length) {
+      sesion.intervenciones.forEach((intervencion) => {
+        this.intervencionesArray.push(
+          new FormGroup({
+            tratamientoId: new FormControl(intervencion.tratamientoId, { nonNullable: true, validators: [Validators.required] }),
+            tratamientoNombre: new FormControl(intervencion.tratamientoNombre, { nonNullable: true, validators: [Validators.required] }),
+            técnica: new FormControl(intervencion.técnica ?? '', { nonNullable: true }),
+            zona: new FormControl(intervencion.zona ?? '', { nonNullable: true }),
+            parametrosJson: new FormControl(intervencion.parametrosJson ?? '', { nonNullable: true }),
+            duracionMinutos: new FormControl<number | null>(intervencion.duracionMinutos ?? null),
+            profesionalId: new FormControl(intervencion.profesionalId ?? this.defaultProfesionalId()),
+            observaciones: new FormControl(intervencion.observaciones ?? '', { nonNullable: true }),
+            orderIndex: new FormControl(intervencion.orderIndex),
+          })
+        );
+      });
+    }
   }
 
   private syncSessionFormState(): void {
@@ -667,7 +794,7 @@ export class HistoriaClinica {
       : this.sesionForm.disable({ emitEvent: false });
   }
 
-  private buildSesionRequest() {
+  private buildSesionRequest(): SesionClinicaRequest | null {
     const raw = this.sesionForm.getRawValue();
     if (!raw.profesionalId || !raw.fechaAtencion || !raw.tipoAtencion) return null;
     return {
@@ -682,6 +809,54 @@ export class HistoriaClinica {
       objetivo: this.emptyToUndefined(raw.objetivo) ?? null,
       evaluacion: this.emptyToUndefined(raw.evaluacion) ?? null,
       plan: this.emptyToUndefined(raw.plan) ?? null,
+      evaluacionEstructurada: this.cleanEvaluacion(raw.evaluacionEstructurada),
+      examenFisico: this.cleanExamen(raw.examenFisico),
+      intervenciones: raw.intervenciones.length 
+        ? raw.intervenciones.map((i: any) => ({
+            tratamientoId: i.tratamientoId,
+            tratamientoNombre: i.tratamientoNombre,
+            técnica: this.emptyToUndefined(i.técnica) ?? null,
+            zona: this.emptyToUndefined(i.zona) ?? null,
+            parametrosJson: this.emptyToUndefined(i.parametrosJson) ?? null,
+            duracionMinutos: i.duracionMinutos ?? null,
+            profesionalId: i.profesionalId ?? null,
+            observaciones: this.emptyToUndefined(i.observaciones) ?? null,
+            orderIndex: i.orderIndex
+          }))
+        : null,
+    };
+  }
+
+  private cleanEvaluacion(raw: any) {
+    if (!raw.dolorIntensidad && !raw.evolucionEstado && !raw.respuestaPaciente) return null;
+    return {
+      ...raw,
+      dolorIntensidad: raw.dolorIntensidad ?? null,
+      dolorZona: this.emptyToUndefined(raw.dolorZona) ?? null,
+      dolorLateralidad: this.emptyToUndefined(raw.dolorLateralidad) ?? null,
+      dolorTipo: this.emptyToUndefined(raw.dolorTipo) ?? null,
+      dolorComportamiento: this.emptyToUndefined(raw.dolorComportamiento) ?? null,
+      evolucionEstado: this.emptyToUndefined(raw.evolucionEstado) ?? null,
+      evolucionNota: this.emptyToUndefined(raw.evolucionNota) ?? null,
+      objetivoSesion: this.emptyToUndefined(raw.objetivoSesion) ?? null,
+      limitacionFuncional: this.emptyToUndefined(raw.limitacionFuncional) ?? null,
+      respuestaPaciente: this.emptyToUndefined(raw.respuestaPaciente) ?? null,
+      tolerancia: this.emptyToUndefined(raw.tolerancia) ?? null,
+      indicacionesDomiciliarias: this.emptyToUndefined(raw.indicacionesDomiciliarias) ?? null,
+      proximaConducta: this.emptyToUndefined(raw.proximaConducta) ?? null,
+    };
+  }
+
+  private cleanExamen(raw: any) {
+    if (!raw.rangoMovimientoJson && !raw.fuerzaMuscularJson && !raw.funcionalidadNota) return null;
+    return {
+      rangoMovimientoJson: this.emptyToUndefined(raw.rangoMovimientoJson) ?? null,
+      fuerzaMuscularJson: this.emptyToUndefined(raw.fuerzaMuscularJson) ?? null,
+      funcionalidadNota: this.emptyToUndefined(raw.funcionalidadNota) ?? null,
+      marchaBalanceNota: this.emptyToUndefined(raw.marchaBalanceNota) ?? null,
+      signosInflamatorios: this.emptyToUndefined(raw.signosInflamatorios) ?? null,
+      observacionesNeuroResp: this.emptyToUndefined(raw.observacionesNeuroResp) ?? null,
+      testsMedidasJson: this.emptyToUndefined(raw.testsMedidasJson) ?? null,
     };
   }
 
@@ -709,6 +884,7 @@ export class HistoriaClinica {
       },
       { emitEvent: false },
     );
+    this.intervencionesArray.clear();
     this.resetDiagnosticoForm();
   }
 
@@ -810,3 +986,4 @@ export class HistoriaClinica {
     return value.slice(0, 16);
   }
 }
+
