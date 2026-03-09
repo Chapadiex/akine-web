@@ -269,16 +269,15 @@
                     </label>
                   </div>
 
-                  <div class="mini-grid">
-                    <label class="field">
-                      <span>Codigo</span>
-                      <input type="text" formControlName="codigo" placeholder="Opcional" />
-                    </label>
-
-                    <label class="field">
-                      <span>Descripcion</span>
-                      <input type="text" formControlName="descripcion" placeholder="Diagnostico clinico" />
-                    </label>
+                  <div class="field">
+                    <span>Diagnostico medico</span>
+                    <app-diagnostico-medico-selector
+                      [diagnosticos]="diagnosticosMedicos()"
+                      [categorias]="diagnosticosMedicosCategorias()"
+                      [tipos]="diagnosticosMedicosTipos()"
+                      [selectedCode]="diagnosticoForm.controls.diagnosticoCodigo.value"
+                      (selectedCodeChange)="diagnosticoForm.controls.diagnosticoCodigo.setValue($event)"
+                    />
                   </div>
 
                   <label class="field">

@@ -196,6 +196,18 @@ export const NAV_SECTIONS: NavSection[] = [
             icon: 'clipboard-list',
             roles: STAFF_WITH_ADMIN,
           },
+          {
+            path: '/app/consultorios/:consultorioId/configuracion/diagnosticos-medicos',
+            label: 'Diagnosticos medicos',
+            icon: 'clipboard-pulse',
+            roles: STAFF_WITH_ADMIN,
+          },
+          {
+            path: '/app/consultorios/:consultorioId/configuracion/tratamientos',
+            label: 'Tratamientos',
+            icon: 'activity',
+            roles: STAFF_WITH_ADMIN,
+          },
         ],
       },
     ],

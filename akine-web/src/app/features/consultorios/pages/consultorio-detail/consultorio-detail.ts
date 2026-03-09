@@ -839,6 +839,8 @@ export class ConsultorioDetailPage implements OnInit {
     { label: 'Especialidades', path: 'configuracion/especialidades' },
     { label: 'Cargos del personal', path: 'configuracion/cargos-personal' },
     { label: 'Plantillas de antecedentes', path: 'configuracion/plantillas-antecedentes' },
+    { label: 'Diagnosticos medicos', path: 'configuracion/diagnosticos-medicos' },
+    { label: 'Tratamientos', path: 'configuracion/tratamientos' },
   ];
 
   readonly isAdmin = computed(() => this.auth.hasRole('ADMIN'));

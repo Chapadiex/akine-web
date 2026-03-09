@@ -154,7 +154,14 @@ export interface AtencionInicialSummary {
   especialidadDerivante?: string | null;
   profesionalDerivante?: string | null;
   fechaPrescripcion?: string | null;
-  diagnosticoTexto?: string | null;
+  diagnosticoCodigo?: string | null;
+  diagnosticoNombre?: string | null;
+  diagnosticoTipo?: string | null;
+  diagnosticoCategoriaCodigo?: string | null;
+  diagnosticoCategoriaNombre?: string | null;
+  diagnosticoSubcategoria?: string | null;
+  diagnosticoRegionAnatomica?: string | null;
+  diagnosticoObservacion?: string | null;
   observacionesPrescripcion?: string | null;
   resumenClinicoInicial?: string | null;
   hallazgosRelevantes?: string | null;
@@ -177,6 +184,12 @@ export interface PlanTratamientoDetalleSummary {
   id: string;
   tratamientoId: string;
   tratamientoNombre: string;
+  tratamientoCategoriaCodigo?: string | null;
+  tratamientoCategoriaNombre?: string | null;
+  tratamientoTipo?: string | null;
+  tratamientoRequiereAutorizacion: boolean;
+  tratamientoRequierePrescripcionMedica: boolean;
+  tratamientoDuracionSugeridaMinutos?: number | null;
   cantidadSesiones: number;
   frecuenciaSugerida?: string | null;
   caracterCaso: PlanTratamientoCaracter;
@@ -244,6 +257,11 @@ export interface DiagnosticoClinicoResponse {
   sesionId?: string | null;
   codigo?: string | null;
   descripcion: string;
+  diagnosticoTipo?: string | null;
+  diagnosticoCategoriaCodigo?: string | null;
+  diagnosticoCategoriaNombre?: string | null;
+  diagnosticoSubcategoria?: string | null;
+  diagnosticoRegionAnatomica?: string | null;
   estado: DiagnosticoClinicoEstado;
   fechaInicio: string;
   fechaFin?: string | null;
@@ -255,8 +273,7 @@ export interface DiagnosticoClinicoResponse {
 export interface DiagnosticoClinicoRequest {
   profesionalId: string;
   sesionId?: string | null;
-  codigo?: string | null;
-  descripcion: string;
+  diagnosticoCodigo: string;
   fechaInicio: string;
   notas?: string | null;
 }
@@ -314,7 +331,8 @@ export interface CreateAtencionInicialRequest {
   especialidadDerivante?: string | null;
   profesionalDerivante?: string | null;
   fechaPrescripcion?: string | null;
-  diagnosticoTexto?: string | null;
+  diagnosticoCodigo?: string | null;
+  diagnosticoObservacion?: string | null;
   observacionesPrescripcion?: string | null;
   evaluacion?: AtencionInicialEvaluacionRequest | null;
   resumenClinicoInicial?: string | null;

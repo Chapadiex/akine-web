@@ -7,6 +7,7 @@ import { ConsultorioContextService } from '../../../../core/consultorio/consulto
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { AntecedenteCatalogService } from '../../../consultorios/services/antecedente-catalog.service';
+import { DiagnosticosMedicosService } from '../../../consultorios/services/diagnosticos-medicos.service';
 import { TratamientoCatalogService } from '../../../consultorios/services/tratamiento-catalog.service';
 import { PacienteService } from '../../../pacientes/services/paciente.service';
 import { HistoriaClinicaService } from '../../services/historia-clinica.service';
@@ -22,6 +23,7 @@ describe('HistoriaClinicaPacientePage', () => {
   let historiaSvc: jasmine.SpyObj<HistoriaClinicaService>;
   let pacienteSvc: jasmine.SpyObj<PacienteService>;
   let antecedenteCatalogSvc: jasmine.SpyObj<AntecedenteCatalogService>;
+  let diagnosticosMedicosSvc: jasmine.SpyObj<DiagnosticosMedicosService>;
   let tratamientoCatalogSvc: jasmine.SpyObj<TratamientoCatalogService>;
   let queryParams$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
@@ -91,7 +93,32 @@ describe('HistoriaClinicaPacientePage', () => {
     tratamientoCatalogSvc = jasmine.createSpyObj<TratamientoCatalogService>('TratamientoCatalogService', ['get']);
     tratamientoCatalogSvc.get.and.returnValue(
       of({
-        items: [{ code: 'tm', label: 'Terapia manual', category: 'Kinesiologia', active: true, order: 1 }],
+        tipos: ['PRINCIPAL', 'TECNICA'],
+        categorias: [{ id: 'cat-1', codigo: 'TERAPIA_MANUAL', nombre: 'Terapia manual' }],
+        tratamientos: [{
+          id: 'tr-1',
+          codigoInterno: 'TMN001',
+          nombre: 'Terapia manual',
+          categoriaCodigo: 'TERAPIA_MANUAL',
+          tipo: 'TECNICA',
+          descripcion: 'Tecnicas manuales',
+          facturable: false,
+          requierePrescripcionMedica: false,
+          requiereAutorizacion: true,
+          duracionSugeridaMinutos: 20,
+          modalidades: ['CONSULTORIO'],
+          activo: true,
+          precioReferencia: null,
+          codigosFinanciador: [],
+        }],
+      } as any),
+    );
+    diagnosticosMedicosSvc = jasmine.createSpyObj<DiagnosticosMedicosService>('DiagnosticosMedicosService', ['get']);
+    diagnosticosMedicosSvc.get.and.returnValue(
+      of({
+        diagnosticos: [],
+        categorias: [],
+        tipos: [],
       } as any),
     );
 
@@ -102,6 +129,7 @@ describe('HistoriaClinicaPacientePage', () => {
         { provide: HistoriaClinicaService, useValue: historiaSvc },
         { provide: PacienteService, useValue: pacienteSvc },
         { provide: AntecedenteCatalogService, useValue: antecedenteCatalogSvc },
+        { provide: DiagnosticosMedicosService, useValue: diagnosticosMedicosSvc },
         { provide: TratamientoCatalogService, useValue: tratamientoCatalogSvc },
         { provide: ConsultorioContextService, useClass: ConsultorioContextStub },
         { provide: AuthService, useValue: { currentUser: signal({ profesionalId: 'prof-1' }) } },
@@ -268,7 +296,7 @@ describe('HistoriaClinicaPacientePage', () => {
     expect(fixture.nativeElement.querySelector('.header-search')).toBeNull();
   });
 
-  it('opens register-initial-attention as a 4-step wizard', () => {
+  it('opens register-initial-attention as a 3-step wizard', () => {
     historiaSvc.getOverview.and.returnValue(
       of(
         patientOverview({
@@ -285,7 +313,7 @@ describe('HistoriaClinicaPacientePage', () => {
     createComponent();
     clickButton('Registrar atencion inicial');
 
-    expect(fixture.nativeElement.querySelectorAll('.wizard-step').length).toBe(4);
+    expect(fixture.nativeElement.querySelectorAll('.wizard-step').length).toBe(3);
     expect(fixture.nativeElement.textContent).toContain('Ingreso clinico');
     expect(fixture.nativeElement.textContent).toContain('Paso 1');
     expect(
@@ -326,7 +354,36 @@ describe('HistoriaClinicaPacientePage', () => {
     clickButton('Siguiente');
 
     expect(fixture.componentInstance.createLegajoStep()).toBe(1);
-    expect(fixture.nativeElement.textContent).toContain('Evaluacion clinica');
+    expect(fixture.nativeElement.textContent).toContain('Evaluacion y antecedentes');
+  });
+
+  it('adds treatments from the selector with 10 default sessions and observations field', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          legajo: { exists: false, legajoId: null, createdAt: null, updatedAt: null },
+          casosActivos: [],
+          ultimaSesion: null,
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Registrar atencion inicial');
+    fixture.componentInstance.handleSelectedTreatment('TMN001');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.createLegajoTratamientos.length).toBe(1);
+    expect(fixture.componentInstance.createLegajoForm.controls.planCantidadSesiones.value).toBe('10');
+    expect(fixture.componentInstance.createLegajoForm.controls.planCaracterCaso.value).toBe('PARCIAL');
+    expect(fixture.componentInstance.createLegajoForm.controls.planObservacionesGenerales.value).toBe('');
+
+    fixture.componentInstance.handleSelectedTreatment('TMN001');
+
+    expect(fixture.componentInstance.createLegajoTratamientos.length).toBe(1);
   });
 
   it('warns before closing the wizard with unsaved changes', () => {

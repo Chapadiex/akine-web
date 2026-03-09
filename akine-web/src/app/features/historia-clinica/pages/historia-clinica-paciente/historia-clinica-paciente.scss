@@ -520,7 +520,6 @@ textarea:focus {
 .modal-panel {
   z-index: 1001;
   width: min(760px, 100%);
-  overflow-y: auto;
   padding: 1.3rem;
 }
 
@@ -543,16 +542,20 @@ textarea:focus {
   position: relative;
   max-height: min(92vh, 980px);
   width: min(980px, calc(100% - 2rem));
+  overflow: hidden;
 }
 
 .modal-panel--legajo {
-  width: min(1120px, calc(100% - 2rem));
+  width: min(1120px, calc(100vw - 2rem));
+  height: min(820px, calc(100vh - 1rem));
 }
 
 .wizard-shell {
   gap: 0.8rem;
+  height: 100%;
   min-height: 0;
   grid-template-rows: auto auto 1fr auto;
+  overflow: hidden;
 }
 
 .wizard-header,
@@ -576,20 +579,29 @@ textarea:focus {
 }
 
 .wizard-steps {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.55rem;
+  align-items: stretch;
 }
 
 .wizard-step {
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 0.6rem;
+  min-width: 0;
   min-height: 3.5rem;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--white) 94%, var(--bg));
   text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wizard-step:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+  background: var(--white);
 }
 
 .wizard-step__index {
@@ -609,12 +621,14 @@ textarea:focus {
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.15;
+  white-space: nowrap;
 }
 
 .wizard-step__copy small {
   color: var(--text-muted);
   font-size: 0.76rem;
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .wizard-step--active {
@@ -633,9 +647,16 @@ textarea:focus {
   border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
 }
 
+.wizard-step--disabled,
+.wizard-step:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .wizard-body {
   min-height: 0;
   padding: 0.1rem 0 0;
+  overflow-y: auto;
 }
 
 .wizard-panel {
@@ -651,16 +672,23 @@ textarea:focus {
   background: color-mix(in srgb, var(--white) 96%, var(--bg));
 }
 
+.treatment-plan-layout{gap:.8rem}
+.treatment-plan-panel{gap:.65rem;padding:.85rem}
+.treatment-plan-panel--full{grid-column:1/-1}
+.treatment-plan-selector{gap:.3rem}
+.treatment-plan-panel:first-child>.empty-inline{display:none}
+.treatment-plan-list{gap:.55rem}
+.treatment-plan-card{gap:.55rem;padding:.75rem .8rem}
+.treatment-plan-card .muted-copy{font-size:.8rem;line-height:1.3}
+.treatment-plan-form{gap:.7rem}
+.treatment-plan-form input,.treatment-plan-form select,.treatment-plan-form textarea{padding:.64rem .75rem}
+.treatment-plan-form textarea{min-height:88px}
+
 .wizard-grid-initial {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(220px, 0.95fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
   align-items: start;
-}
-
-.field--date {
-  justify-self: end;
-  width: 100%;
 }
 
 .wizard-footer {
@@ -682,6 +710,7 @@ textarea:focus {
 
 .grid-two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
 }
 
 .check {

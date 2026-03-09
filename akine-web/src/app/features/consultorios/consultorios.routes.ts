@@ -89,6 +89,20 @@ export const CONSULTORIO_ROUTES: Routes = [
                 (m) => m.AntecedentesCatalogoPage,
               ),
           },
+          {
+            path: 'diagnosticos-medicos',
+            loadComponent: () =>
+              import('./pages/diagnosticos-medicos/diagnosticos-medicos').then(
+                (m) => m.DiagnosticosMedicosPage,
+              ),
+          },
+          {
+            path: 'tratamientos',
+            loadComponent: () =>
+              import('./pages/tratamientos-catalogo/tratamientos-catalogo').then(
+                (m) => m.TratamientosCatalogoPage,
+              ),
+          },
         ],
       },
 
@@ -104,6 +118,16 @@ export const CONSULTORIO_ROUTES: Routes = [
       {
         path: 'antecedentes-catalogo',
         redirectTo: 'configuracion/plantillas-antecedentes',
+        pathMatch: 'full',
+      },
+      {
+        path: 'diagnosticos-medicos',
+        redirectTo: 'configuracion/diagnosticos-medicos',
+        pathMatch: 'full',
+      },
+      {
+        path: 'tratamientos',
+        redirectTo: 'configuracion/tratamientos',
         pathMatch: 'full',
       },
       {

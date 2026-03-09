@@ -8,8 +8,15 @@ import { AuthService } from '../../core/auth/services/auth.service';
 import { ConsultorioContextService } from '../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../core/error/error-mapper.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import {
+  DiagnosticoMedicoCategoria,
+  DiagnosticoMedicoItem,
+  DiagnosticoMedicoTipo,
+} from '../consultorios/models/diagnosticos-medicos.models';
+import { DiagnosticosMedicosService } from '../consultorios/services/diagnosticos-medicos.service';
 import { PacienteSearchResult } from '../pacientes/models/paciente.models';
 import { PacienteService } from '../pacientes/services/paciente.service';
+import { DiagnosticoMedicoSelectorComponent } from './components/diagnostico-medico-selector/diagnostico-medico-selector';
 import {
   DiagnosticoClinicoResponse,
   HistoriaClinicaPaciente,
@@ -39,7 +46,7 @@ const TIMELINE_PAGE_SIZE = 100;
 @Component({
   selector: 'app-historia-clinica',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, DatePipe, DiagnosticoMedicoSelectorComponent],
   templateUrl: './historia-clinica.html',
   styleUrl: './historia-clinica.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,6 +59,7 @@ export class HistoriaClinica {
   readonly consultorioCtx = inject(ConsultorioContextService);
   private readonly pacienteSvc = inject(PacienteService);
   private readonly historiaSvc = inject(HistoriaClinicaService);
+  private readonly diagnosticosMedicosSvc = inject(DiagnosticosMedicosService);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
 
@@ -64,6 +72,9 @@ export class HistoriaClinica {
   readonly selectedSesion = signal<SesionClinicaResponse | null>(null);
   readonly sesiones = signal<SesionClinicaResponse[]>([]);
   readonly diagnosticos = signal<DiagnosticoClinicoResponse[]>([]);
+  readonly diagnosticosMedicos = signal<DiagnosticoMedicoItem[]>([]);
+  readonly diagnosticosMedicosCategorias = signal<DiagnosticoMedicoCategoria[]>([]);
+  readonly diagnosticosMedicosTipos = signal<DiagnosticoMedicoTipo[]>([]);
   readonly detailStatus = signal<ViewState>('idle');
   readonly detailError = signal<string | null>(null);
 
@@ -102,8 +113,7 @@ export class HistoriaClinica {
 
   readonly diagnosticoForm = new FormGroup({
     profesionalId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    codigo: new FormControl('', { nonNullable: true }),
-    descripcion: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    diagnosticoCodigo: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     fechaInicio: new FormControl(this.todayForInput(), {
       nonNullable: true,
       validators: [Validators.required],
@@ -333,8 +343,7 @@ export class HistoriaClinica {
       .createDiagnostico(consultorioId, pacienteId, {
         profesionalId: raw.profesionalId,
         sesionId: this.selectedSesion()?.id ?? null,
-        codigo: this.emptyToUndefined(raw.codigo) ?? null,
-        descripcion: raw.descripcion.trim(),
+        diagnosticoCodigo: raw.diagnosticoCodigo,
         fechaInicio: raw.fechaInicio,
         notas: this.emptyToUndefined(raw.notas) ?? null,
       })
@@ -487,6 +496,7 @@ export class HistoriaClinica {
       return;
     }
 
+    this.loadDiagnosticosMedicos(consultorioId);
     this.loadWorkspace(consultorioId, nextState, 0);
     nextState.pacienteId ? this.loadPatientContext(consultorioId, nextState) : this.resetPatientContext();
   }
@@ -706,8 +716,7 @@ export class HistoriaClinica {
     this.diagnosticoForm.reset(
       {
         profesionalId: this.defaultProfesionalId(),
-        codigo: '',
-        descripcion: '',
+        diagnosticoCodigo: '',
         fechaInicio: this.todayForInput(),
         notas: '',
       },
@@ -770,6 +779,18 @@ export class HistoriaClinica {
     if (!profesionalId) return;
     this.sesionForm.controls.profesionalId.setValue(profesionalId, { emitEvent: false });
     this.diagnosticoForm.controls.profesionalId.setValue(profesionalId, { emitEvent: false });
+  }
+
+  private loadDiagnosticosMedicos(consultorioId: string | null | undefined): void {
+    if (!consultorioId) return;
+    this.diagnosticosMedicosSvc
+      .get(consultorioId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((maestro) => {
+        this.diagnosticosMedicos.set(maestro?.diagnosticos ?? []);
+        this.diagnosticosMedicosCategorias.set(maestro?.categorias ?? []);
+        this.diagnosticosMedicosTipos.set(maestro?.tipos ?? []);
+      });
   }
 
   private emptyToUndefined(value?: string | null): string | undefined {

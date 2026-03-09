@@ -3,6 +3,8 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  HostListener,
   computed,
   effect,
   inject,
@@ -20,14 +22,17 @@ import {
 import { HistoriaClinicaAntecedenteItem } from '../../models/historia-clinica.models';
 
 type WorkspaceContext = 'create' | 'edit';
-type WorkspaceFilter = 'all' | 'frequent' | 'selected' | 'critical';
 type AntecedenteUxMode = 'simple' | 'detail' | 'form';
 type AntecedenteEditorSchema = 'detail' | 'allergy' | 'medication' | 'surgery' | 'uncatalogued';
 type AntecedenteCardState = 'selected' | 'requires_complete' | 'complete';
 
-type WorkspaceCategoryView = AntecedenteCatalogCategory & {
-  selectedCount: number;
-  items: AntecedenteCatalogItem[];
+type CatalogResultRow = {
+  categoryCode: string;
+  categoryName: string;
+  item: AntecedenteCatalogItem;
+  selected: boolean;
+  pending: boolean;
+  critical: boolean;
 };
 
 type SelectedAntecedenteCard = {
@@ -59,19 +64,6 @@ type EditorState = {
   isNew: boolean;
 };
 
-const FREQUENT_ITEM_CODES = new Set([
-  'APP_HTA',
-  'APP_DIABETES',
-  'APP_OSTEOPOROSIS',
-  'MED_GRUPOS',
-  'TRAU_FRACTURAS',
-  'HAB_ACT_FISICA',
-  'HAB_SEDENTARISMO',
-  'HAB_TABACO',
-  'HAB_ALCOHOL',
-  'ALG_TIPOS',
-]);
-
 const CRITICAL_ITEM_CODES = new Set([
   'APP_HTA',
   'APP_DIABETES',
@@ -84,15 +76,16 @@ const CRITICAL_ITEM_CODES = new Set([
 ]);
 
 @Component({
-  selector: 'app-antecedentes-workspace',
+  selector: 'app-antecedente-selector',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './antecedentes-workspace.html',
   styleUrl: './antecedentes-workspace.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AntecedentesWorkspaceComponent {
+export class AntecedenteSelectorComponent {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly context = input<WorkspaceContext>('edit');
   readonly categories = input<AntecedenteCatalogCategory[]>([]);
@@ -100,9 +93,8 @@ export class AntecedentesWorkspaceComponent {
   readonly emptySelectionMessage = input('No hay antecedentes cargados todavia.');
 
   readonly searchControl = new FormControl('', { nonNullable: true });
-  readonly quickFilter = signal<WorkspaceFilter>('all');
-  readonly activeCategoryCode = signal('');
-  readonly showSelectedPanel = signal(true);
+  readonly activeSelectedIndex = signal<number | null>(null);
+  readonly dropdownOpen = signal(false);
   readonly editor = signal<EditorState | null>(null);
 
   readonly editorForm = new FormGroup({
@@ -127,69 +119,31 @@ export class AntecedentesWorkspaceComponent {
   private readonly formVersion = signal(0);
   private readonly editorVersion = signal(0);
 
-  readonly filterOptions = computed(() => {
-    this.formVersion();
-    const selectedCount = this.selectedCards().length;
-    const criticalCount = this.selectedCards().filter((card) => card.critical).length;
-    const frequentCount = this.visibleCatalogItemCount('frequent');
-    const criticalCatalogCount = this.visibleCatalogItemCount('critical');
-    return [
-      { value: 'all' as const, label: 'Todos', count: this.visibleCatalogItemCount('all') },
-      { value: 'frequent' as const, label: 'Frecuentes', count: frequentCount },
-      { value: 'selected' as const, label: 'Seleccionados', count: selectedCount },
-      { value: 'critical' as const, label: 'Criticos', count: Math.max(criticalCount, criticalCatalogCount) },
-    ];
-  });
-
-  readonly visibleCategories = computed<WorkspaceCategoryView[]>(() => {
+  readonly hasSearchQuery = computed(() => this.normalize(this.searchTerm()).length > 0);
+  readonly dropdownRows = computed<CatalogResultRow[]>(() => {
     this.formVersion();
     const query = this.normalize(this.searchTerm());
-    const filter = this.quickFilter();
-    const selectedKeys = this.selectedKeySet();
-    const criticalLabels = new Set(
-      this.selectedCards()
-        .filter((card) => card.critical)
-        .map((card) => this.normalize(card.label)),
-    );
-
-    return [...this.categories()]
+    const rows = [...this.categories()]
       .filter((category) => category.active)
       .sort((a, b) => a.order - b.order)
-      .map((category) => {
-        const items = [...category.items]
-          .filter((item) => item.active)
-          .sort((a, b) => a.order - b.order)
-          .filter((item) => {
-            const haystack = `${item.label} ${category.name}`;
-            if (query && !this.normalize(haystack).includes(query)) {
-              return false;
-            }
-            if (filter === 'frequent') {
-              return FREQUENT_ITEM_CODES.has(item.code);
-            }
-            if (filter === 'selected') {
-              return selectedKeys.has(this.catalogKey(category.code, item.code));
-            }
-            if (filter === 'critical') {
-              return CRITICAL_ITEM_CODES.has(item.code) || criticalLabels.has(this.normalize(item.label));
-            }
-            return true;
-          });
+      .flatMap((category) =>
+      category.items
+        .filter((item) => item.active)
+        .sort((a, b) => a.order - b.order)
+        .filter((item) => !query || this.normalize(`${item.label} ${category.name}`).includes(query))
+        .map((item) => ({
+          categoryCode: category.code,
+          categoryName: category.name,
+          item,
+          selected: this.isCategoryItemSelected(category.code, item.code),
+          pending: this.isCategoryItemPending(category.code, item.code),
+          critical: CRITICAL_ITEM_CODES.has(item.code),
+        })),
+    );
 
-        return {
-          ...category,
-          items,
-          selectedCount: this.selectedCards().filter((card) => card.categoryName === category.name).length,
-        };
-      })
-      .filter((category) => category.items.length || category.selectedCount > 0);
+    return rows.slice(0, 8);
   });
-
-  readonly activeCategory = computed<WorkspaceCategoryView | null>(() => {
-    const categories = this.visibleCategories();
-    const current = this.activeCategoryCode();
-    return categories.find((category) => category.code === current) ?? categories[0] ?? null;
-  });
+  readonly catalogRows = this.dropdownRows;
 
   readonly selectedCards = computed<SelectedAntecedenteCard[]>(() => {
     this.formVersion();
@@ -246,31 +200,6 @@ export class AntecedentesWorkspaceComponent {
       onCleanup(() => subscription.unsubscribe());
     });
 
-    effect(() => {
-      const categories = this.visibleCategories();
-      const current = this.activeCategoryCode();
-      if (!categories.length) {
-        if (current) {
-          this.activeCategoryCode.set('');
-        }
-        return;
-      }
-      if (!categories.some((category) => category.code === current)) {
-        this.activeCategoryCode.set(categories[0].code);
-      }
-    });
-  }
-
-  setQuickFilter(filter: WorkspaceFilter): void {
-    this.quickFilter.set(filter);
-  }
-
-  selectCategory(categoryCode: string): void {
-    this.activeCategoryCode.set(categoryCode);
-  }
-
-  toggleSelectedPanel(): void {
-    this.showSelectedPanel.update((value) => !value);
   }
 
   onCatalogItemClick(category: AntecedenteCatalogCategory, item: AntecedenteCatalogItem): void {
@@ -282,7 +211,7 @@ export class AntecedentesWorkspaceComponent {
     });
 
     if (existingIndex >= 0) {
-      this.openEditor(existingIndex, category, item, false);
+      this.focusSelected(existingIndex);
       return;
     }
 
@@ -298,10 +227,34 @@ export class AntecedentesWorkspaceComponent {
     this.bumpFormVersion();
 
     const createdIndex = this.formArray().length - 1;
+    this.focusSelected(createdIndex);
     if (descriptor.mode === 'simple') {
       return;
     }
     this.openEditor(createdIndex, category, item, true);
+  }
+
+  onCatalogResultClick(row: CatalogResultRow): void {
+    const category = this.categories().find((entry) => entry.code === row.categoryCode);
+    if (!category) {
+      return;
+    }
+    this.onCatalogItemClick(category, row.item);
+  }
+
+  onSearchFocus(): void {
+    this.dropdownOpen.set(true);
+  }
+
+  closeDropdown(): void {
+    this.dropdownOpen.set(false);
+  }
+
+  selectCatalogRow(row: CatalogResultRow, event?: Event): void {
+    event?.preventDefault();
+    this.onCatalogResultClick(row);
+    this.searchControl.setValue('');
+    this.dropdownOpen.set(false);
   }
 
   addFreeAntecedente(): void {
@@ -316,7 +269,9 @@ export class AntecedentesWorkspaceComponent {
       }),
     );
     this.bumpFormVersion();
-    this.openEditor(this.formArray().length - 1, null, null, true);
+    const createdIndex = this.formArray().length - 1;
+    this.focusSelected(createdIndex);
+    this.openEditor(createdIndex, null, null, true);
   }
 
   editSelected(index: number): void {
@@ -324,14 +279,33 @@ export class AntecedentesWorkspaceComponent {
     if (!item) {
       return;
     }
+    this.focusSelected(index);
     const catalogEntry = this.findCatalogEntry(item.categoryCode ?? '', item.catalogItemCode ?? '');
     this.openEditor(index, catalogEntry?.category ?? null, catalogEntry?.item ?? null, false);
+  }
+
+  focusSelected(index: number): void {
+    this.activeSelectedIndex.set(index);
+  }
+
+  @HostListener('document:click', ['$event'])
+  handleDocumentClick(event: MouseEvent): void {
+    const target = event.target as Node | null;
+    if (target && !this.host.nativeElement.contains(target)) {
+      this.dropdownOpen.set(false);
+    }
   }
 
   removeSelected(index: number): void {
     this.formArray().removeAt(index);
     const editor = this.editor();
+    const activeIndex = this.activeSelectedIndex();
     if (!editor) {
+      if (activeIndex === index) {
+        this.activeSelectedIndex.set(null);
+      } else if (activeIndex !== null && activeIndex > index) {
+        this.activeSelectedIndex.set(activeIndex - 1);
+      }
       this.bumpFormVersion();
       return;
     }
@@ -339,6 +313,11 @@ export class AntecedentesWorkspaceComponent {
       this.closeEditor();
     } else if (editor.index > index) {
       this.editor.set({ ...editor, index: editor.index - 1 });
+    }
+    if (activeIndex === index) {
+      this.activeSelectedIndex.set(null);
+    } else if (activeIndex !== null && activeIndex > index) {
+      this.activeSelectedIndex.set(activeIndex - 1);
     }
     this.bumpFormVersion();
   }
@@ -506,21 +485,6 @@ export class AntecedentesWorkspaceComponent {
     this.closeEditor();
   }
 
-  actionLabelForCategoryItem(categoryCode: string, itemCode: string): string {
-    const index = this.findSelectedIndex(categoryCode, itemCode);
-    if (index < 0) {
-      const category = this.categories().find((entry) => entry.code === categoryCode) ?? null;
-      const item = category?.items.find((entry) => entry.code === itemCode) ?? null;
-      const descriptor = this.describeAntecedente(item, {
-        categoryCode,
-        catalogItemCode: itemCode,
-        label: item?.label ?? '',
-      });
-      return descriptor.mode === 'simple' ? 'Agregar' : 'Completar';
-    }
-    return 'Editar';
-  }
-
   isCategoryItemSelected(categoryCode: string, itemCode: string): boolean {
     return this.findSelectedIndex(categoryCode, itemCode) >= 0;
   }
@@ -574,8 +538,8 @@ export class AntecedentesWorkspaceComponent {
       { emitEvent: false },
     );
     this.editor.set({ index, category, item, descriptor, isNew });
+    this.activeSelectedIndex.set(index);
     this.editorVersion.update((version) => version + 1);
-    this.showSelectedPanel.set(true);
   }
 
   private findSelectedIndex(categoryCode: string, itemCode: string): number {
@@ -583,52 +547,6 @@ export class AntecedentesWorkspaceComponent {
       const value = control.getRawValue() as HistoriaClinicaAntecedenteItem;
       return value.categoryCode === categoryCode && value.catalogItemCode === itemCode;
     });
-  }
-
-  private visibleCatalogItemCount(filter: WorkspaceFilter): number {
-    const query = this.normalize(this.searchTerm());
-    const selectedKeys = this.selectedKeySet();
-    const criticalLabels = new Set(
-      this.selectedCards()
-        .filter((card) => card.critical)
-        .map((card) => this.normalize(card.label)),
-    );
-
-    return this.categories()
-      .filter((category) => category.active)
-      .flatMap((category) =>
-        category.items
-          .filter((item) => item.active)
-          .filter((item) => {
-            const haystack = `${item.label} ${category.name}`;
-            if (query && !this.normalize(haystack).includes(query)) {
-              return false;
-            }
-            if (filter === 'frequent') {
-              return FREQUENT_ITEM_CODES.has(item.code);
-            }
-            if (filter === 'critical') {
-              return CRITICAL_ITEM_CODES.has(item.code) || criticalLabels.has(this.normalize(item.label));
-            }
-            if (filter === 'selected') {
-              return selectedKeys.has(this.catalogKey(category.code, item.code));
-            }
-            return true;
-          }),
-      ).length;
-  }
-
-  private selectedKeySet(): Set<string> {
-    return new Set(
-      this.formArray().controls
-        .map((control) => control.getRawValue() as HistoriaClinicaAntecedenteItem)
-        .filter((item) => !!item.categoryCode && !!item.catalogItemCode)
-        .map((item) => this.catalogKey(item.categoryCode!, item.catalogItemCode!)),
-    );
-  }
-
-  private catalogKey(categoryCode: string, itemCode: string): string {
-    return `${categoryCode}::${itemCode}`;
   }
 
   private findCatalogEntry(

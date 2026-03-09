@@ -7,6 +7,7 @@ import { AuthService } from '../../core/auth/services/auth.service';
 import { ConsultorioContextService } from '../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../core/error/error-mapper.service';
 import { ToastService } from '../../shared/ui/toast/toast.service';
+import { DiagnosticosMedicosService } from '../consultorios/services/diagnosticos-medicos.service';
 import { PacienteService } from '../pacientes/services/paciente.service';
 import { HistoriaClinica } from './historia-clinica';
 import { HistoriaClinicaService } from './services/historia-clinica.service';
@@ -21,6 +22,7 @@ describe('HistoriaClinica page', () => {
   let component: HistoriaClinica;
   let historiaSvc: jasmine.SpyObj<HistoriaClinicaService>;
   let pacienteSvc: jasmine.SpyObj<PacienteService>;
+  let diagnosticosMedicosSvc: jasmine.SpyObj<DiagnosticosMedicosService>;
   let routeQueryParams$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   let router: Router;
 
@@ -80,6 +82,14 @@ describe('HistoriaClinica page', () => {
     );
     pacienteSvc = jasmine.createSpyObj<PacienteService>('PacienteService', ['search']);
     pacienteSvc.search.and.returnValue(of([]));
+    diagnosticosMedicosSvc = jasmine.createSpyObj<DiagnosticosMedicosService>('DiagnosticosMedicosService', ['get']);
+    diagnosticosMedicosSvc.get.and.returnValue(
+      of({
+        diagnosticos: [],
+        categorias: [],
+        tipos: [],
+      } as any),
+    );
 
     await TestBed.configureTestingModule({
       imports: [HistoriaClinica],
@@ -88,6 +98,7 @@ describe('HistoriaClinica page', () => {
         { provide: HistoriaClinicaService, useValue: historiaSvc },
         { provide: ConsultorioContextService, useClass: ConsultorioContextStub },
         { provide: PacienteService, useValue: pacienteSvc },
+        { provide: DiagnosticosMedicosService, useValue: diagnosticosMedicosSvc },
         { provide: AuthService, useValue: { currentUser: signal({ profesionalId: 'profesional-1' }) } },
         {
           provide: ActivatedRoute,

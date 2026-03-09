@@ -595,13 +595,20 @@
             <button type="button" class="btn btn--ghost btn--sm" (click)="dismissLegajoModal()">Cerrar</button>
           </header>
 
-          <nav class="wizard-steps" aria-label="Pasos registrar atencion inicial">
+          <nav
+            class="wizard-steps"
+            aria-label="Pasos registrar atencion inicial"
+            [style.gridTemplateColumns]="'repeat(' + legajoWizardSteps.length + ', minmax(0, 1fr))'"
+          >
             @for (step of legajoWizardSteps; track step.step) {
               <button
                 type="button"
                 class="wizard-step"
                 [class.wizard-step--active]="createLegajoStep() === step.step"
                 [class.wizard-step--done]="createLegajoStep() > step.step"
+                [class.wizard-step--disabled]="!canNavigateToLegajoStep(step.step)"
+                [disabled]="!canNavigateToLegajoStep(step.step)"
+                (click)="goToLegajoStep(step.step)"
               >
                 <span class="wizard-step__index">{{ step.step + 1 }}</span>
                 <span class="wizard-step__copy">
@@ -627,81 +634,89 @@
                           }
                         </select>
                       </label>
-                      <label class="field field--date">
+                      <label class="field">
+                        <span>Tipo de ingreso *</span>
+                        <select formControlName="tipoIngreso">
+                          @for (option of tipoIngresoOptions; track option.value) {
+                            <option [value]="option.value">{{ option.label }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="field">
                         <span>Fecha/hora de atencion inicial *</span>
                         <input type="datetime-local" formControlName="fechaHora" />
                       </label>
                     </div>
-
-                    <label class="field">
-                      <span>Tipo de ingreso *</span>
-                      <select formControlName="tipoIngreso">
-                        @for (option of tipoIngresoOptions; track option.value) {
-                          <option [value]="option.value">{{ option.label }}</option>
-                        }
-                      </select>
-                    </label>
 
                     @if (createLegajoForm.controls.tipoIngreso.value === 'CON_PRESCRIPCION') {
                       <section class="wizard-section">
                         <div class="section-head section-head--stack">
                           <div>
                             <h4>Prescripcion y derivacion</h4>
-                            <p class="muted-copy">Transcribe solo lo util. Si la orden no esta completa o no es legible, el adjunto alcanza para seguir.</p>
                           </div>
                         </div>
 
                         <div class="grid-two">
-                          <label class="field">
-                            <span>Especialidad derivante</span>
-                            <input type="text" formControlName="especialidadDerivante" placeholder="Ej. traumatologia" />
-                          </label>
-                          <label class="field">
-                            <span>Profesional derivante</span>
-                            <input type="text" formControlName="profesionalDerivante" placeholder="Nombre del profesional" />
-                          </label>
-                        </div>
+                          <div class="wizard-section wizard-section--soft" style="align-content: start;">
+                            <div class="field">
+                              <span>Profesional derivante</span>
+                              <input type="text" formControlName="profesionalDerivante" placeholder="Nombre del profesional" />
+                            </div>
+                            <div class="field">
+                              <span>Fecha de prescripcion</span>
+                              <input type="date" formControlName="fechaPrescripcion" />
+                            </div>
+                          </div>
 
-                        <div class="grid-two">
-                          <label class="field">
-                            <span>Fecha de prescripcion</span>
-                            <input type="date" formControlName="fechaPrescripcion" />
-                          </label>
-                          <label class="field">
-                            <span>Diagnostico o motivo indicado</span>
-                            <input type="text" formControlName="diagnosticoTexto" placeholder="Texto breve de la orden" />
-                          </label>
+                          <div class="wizard-section wizard-section--soft" style="align-self: stretch; display: grid; grid-template-rows: auto 1fr;">
+                            <div class="field">
+                              <span><strong>Diagnostico medico</strong></span>
+                              <app-diagnostico-medico-selector
+                                [diagnosticos]="diagnosticosMedicos()"
+                                [multiple]="true"
+                                placeholder="Buscar diagnostico medico..."
+                                [selectedCodes]="createLegajoDiagnosticoCodes()"
+                                (selectedCodesChange)="updateCreateLegajoDiagnosticos($event)"
+                              />
+                            </div>
+                          </div>
                         </div>
-
-                        <label class="field">
-                          <span>Observaciones de la orden</span>
-                          <textarea rows="3" formControlName="observacionesPrescripcion" placeholder="Notas breves sobre la orden o estudios adjuntos"></textarea>
-                        </label>
 
                         <section class="wizard-section wizard-section--soft">
                           <div class="section-head section-head--stack">
                             <div>
                               <h4>Adjuntos de prescripcion y estudios</h4>
-                              <p class="muted-copy">Puedes cargar orden, estudios, informes o imagenes. Se suben despues de crear la cabecera.</p>
                             </div>
                           </div>
-                          <label class="upload-box">
-                            <span>Adjuntar imagen o PDF</span>
-                            <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png" (change)="queueCreateAdjuntos($event)" />
-                          </label>
-                          @if (createLegajoAdjuntos().length) {
-                            <div class="summary-list">
-                              @for (file of createLegajoAdjuntos(); track file.name + '-' + $index) {
-                                <article class="attachment-item attachment-item--static">
-                                  <div>
-                                    <strong>{{ file.name }}</strong>
-                                    <span>{{ humanFileSize(file.size) }}</span>
-                                  </div>
-                                  <button type="button" class="btn btn--ghost btn--sm" (click)="removeCreateAdjunto($index)">Quitar</button>
-                                </article>
-                              }
-                            </div>
-                          }
+                          <div style="display: grid; gap: 0.85rem;" [style.gridTemplateColumns]="createLegajoAdjuntos().length ? 'repeat(2, minmax(0, 1fr))' : '1fr'">
+                            <label class="upload-box">
+                              <span>Adjuntar archivo o tomar foto</span>
+                              <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+                                <label style="display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;padding:0 0.9rem;border:1px solid var(--border);border-radius:10px;background:var(--white);color:var(--text);cursor:pointer;font-weight:600;">
+                                  <span>Adjuntar archivo</span>
+                                  <input style="display:none;" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" (change)="queueCreateAdjuntos($event)" />
+                                </label>
+                                <label style="display:inline-flex;align-items:center;justify-content:center;min-height:2.5rem;padding:0 0.9rem;border:1px solid var(--border);border-radius:10px;background:color-mix(in srgb, var(--white) 92%, var(--bg));color:var(--text);cursor:pointer;font-weight:600;">
+                                  <span>Tomar foto</span>
+                                  <input style="display:none;" type="file" accept="image/*" capture="environment" (change)="queueCreateAdjuntos($event)" />
+                                </label>
+                              </div>
+                            </label>
+
+                            @if (createLegajoAdjuntos().length) {
+                              <div class="summary-list">
+                                @for (file of createLegajoAdjuntos(); track file.name + '-' + $index) {
+                                  <article class="attachment-item attachment-item--static">
+                                    <div>
+                                      <strong>{{ file.name }}</strong>
+                                      <span>{{ humanFileSize(file.size) }}</span>
+                                    </div>
+                                    <button type="button" class="btn btn--ghost btn--sm" (click)="removeCreateAdjunto($index)">Quitar</button>
+                                  </article>
+                                }
+                              </div>
+                            }
+                          </div>
                         </section>
                       </section>
                     } @else {
@@ -718,20 +733,9 @@
                           <textarea rows="3" formControlName="motivoConsultaBreve" placeholder="Ej. dolor lumbar, esguince de tobillo, cervicalgia"></textarea>
                         </label>
 
-                        <div class="grid-two">
-                          <label class="field">
-                            <span>Sintomas principales</span>
-                            <textarea rows="3" formControlName="sintomasPrincipales" placeholder="Dolor, limitacion funcional, contractura, rigidez"></textarea>
-                          </label>
-                          <label class="field">
-                            <span>Tiempo de evolucion</span>
-                            <input type="text" formControlName="tiempoEvolucion" placeholder="Ej. 2 semanas / 48 horas / cronico" />
-                          </label>
-                        </div>
-
                         <label class="field">
-                          <span>Observaciones iniciales</span>
-                          <textarea rows="3" formControlName="observaciones" placeholder="Detalle libre opcional para el ingreso"></textarea>
+                          <span>Sintomas principales</span>
+                          <textarea rows="3" formControlName="sintomasPrincipales" placeholder="Dolor, limitacion funcional, contractura, rigidez"></textarea>
                         </label>
                       </section>
                     }
@@ -743,191 +747,124 @@
                     <section class="wizard-section">
                       <div class="section-head section-head--stack">
                         <div>
-                          <h4>Evaluacion basica</h4>
-                          <p class="muted-copy">Este paso existe siempre, pero no bloquea el plan terapeutico si solo quieres dejar una base minima.</p>
-                        </div>
-                      </div>
-                      <div class="grid-two grid-two--tight">
-                        <label class="field">
-                          <span>Peso</span>
-                          <input type="number" inputmode="decimal" formControlName="peso" placeholder="kg" />
-                        </label>
-                        <label class="field">
-                          <span>Altura</span>
-                          <input type="number" inputmode="decimal" formControlName="altura" placeholder="m o cm" />
-                        </label>
-                        <label class="field">
-                          <span>IMC</span>
-                          <input type="number" inputmode="decimal" formControlName="imc" placeholder="Calculado o manual" />
-                        </label>
-                        <label class="field">
-                          <span>Presion arterial</span>
-                          <input type="text" formControlName="presionArterial" placeholder="Ej. 120/80" />
-                        </label>
-                        <label class="field">
-                          <span>Frecuencia cardiaca</span>
-                          <input type="number" inputmode="numeric" formControlName="frecuenciaCardiaca" placeholder="lpm" />
-                        </label>
-                        <label class="field">
-                          <span>Saturacion</span>
-                          <input type="number" inputmode="numeric" formControlName="saturacion" placeholder="%" />
-                        </label>
-                        <label class="field">
-                          <span>Temperatura</span>
-                          <input type="number" inputmode="decimal" formControlName="temperatura" placeholder="°C" />
-                        </label>
-                        <label class="field field--wide">
-                          <span>Observaciones generales</span>
-                          <textarea rows="3" formControlName="evaluacionObservaciones" placeholder="Chequeo general, condicion funcional o notas breves"></textarea>
-                        </label>
-                      </div>
-                    </section>
-
-                    <section class="wizard-section">
-                      <div class="section-head section-head--stack">
-                        <div>
-                          <h4>Resumen y hallazgos</h4>
-                        </div>
-                      </div>
-                      <div class="grid-two">
-                        <label class="field">
-                          <span>Resumen clinico inicial</span>
-                          <textarea rows="4" formControlName="resumenClinicoInicial" placeholder="Sintesis del punto de partida clinico"></textarea>
-                        </label>
-                        <label class="field">
-                          <span>Hallazgos relevantes</span>
-                          <textarea rows="4" formControlName="hallazgosRelevantes" placeholder="Hallazgos, evaluacion inicial o consideraciones de examen"></textarea>
-                        </label>
-                      </div>
-                    </section>
-
-                  </div>
-                }
-
-                @case (2) {
-                  <div class="wizard-panel">
-                    <section class="wizard-section">
-                      <div class="section-head section-head--stack">
-                        <div>
-                          <h4>Antecedentes clinicos</h4>
-                          <p class="muted-copy">Catalogo a la izquierda, resumen cargado a la derecha y detalle solo cuando el antecedente lo necesita.</p>
+                          <h4>Evaluacion y antecedentes</h4>
                         </div>
                       </div>
 
-                      <app-antecedentes-workspace
+                      <app-antecedente-selector
                         [categories]="antecedenteCatalogCategories()"
                         [formArray]="createLegajoAntecedentes"
                         context="create"
                         emptySelectionMessage="Puedes dejar este paso liviano y completar antecedentes mas tarde si hace falta."
-                      />
+                      >
+                        <div selector-left-top class="grid-two grid-two--tight">
+                          <label class="field">
+                            <span>Peso</span>
+                            <input type="number" inputmode="decimal" formControlName="peso" placeholder="Ej. 29 kg" />
+                          </label>
+                          <label class="field">
+                            <span>Altura</span>
+                            <input type="number" inputmode="decimal" formControlName="altura" placeholder="Ej. 1.84 m" />
+                          </label>
+                        </div>
+                      </app-antecedente-selector>
                     </section>
                   </div>
                 }
 
-                @case (3) {
-                  <div class="wizard-panel">
-                    <section class="wizard-section">
+                @case (2) {
+                  <div class="wizard-panel grid-two treatment-plan-layout">
+                    <section class="wizard-section treatment-plan-panel">
                       <div class="section-head section-head--stack">
                         <div>
                           <h4>Tratamientos nomenclados</h4>
-                          <p class="muted-copy">Selecciona uno o varios tratamientos del catalogo y define sus parametros operativos.</p>
                         </div>
                       </div>
 
-                      <label class="field">
-                        <span>Buscar tratamiento</span>
-                        <input type="search" [formControl]="treatmentSearchControl" placeholder="Ej. terapia manual, RPG, electroterapia" />
-                      </label>
+                      <div class="field treatment-plan-selector">
+                        <span>Seleccionar tratamiento</span>
+                        <app-tratamiento-catalog-selector
+                          [tratamientos]="treatmentCatalogItems()"
+                          [categorias]="treatmentCatalogCategorias()"
+                          [tipos]="treatmentCatalogTipos()"
+                          [excludedCodes]="selectedTreatmentCodes()"
+                          [selectedCode]="selectedTreatmentCode()"
+                          (selectedCodeChange)="handleSelectedTreatment($event)"
+                          placeholder="Buscar tratamiento por nombre, codigo o categoria"
+                        />
+                      </div>
 
-                      @if (availableTreatmentItems().length) {
+                      @if (false) {
                         <div class="result-list">
-                          @for (item of availableTreatmentItems(); track item.code) {
+                          @for (item of availableTreatmentItems(); track item.codigoInterno) {
                             <button type="button" class="result-item" (click)="addTratamientoFromCatalog(item)">
                               <div>
-                                <strong>{{ item.label }}</strong>
-                                <span>{{ item.category || 'Tratamiento' }}</span>
+                                <strong>{{ item.nombre }}</strong>
+                                <span>{{ resolveTreatmentCategoryName(item.categoriaCodigo) }} · {{ treatmentTypeLabel(item.tipo) }}</span>
                               </div>
-                              <span>Agregar</span>
+                              <span>{{ item.duracionSugeridaMinutos }} min</span>
                             </button>
                           }
                         </div>
                       } @else {
                         <div class="empty-inline">
-                          <p>No hay tratamientos disponibles o ya seleccionaste todos los del filtro actual.</p>
+                          <p></p>
                         </div>
                       }
                     </section>
 
-                    <section class="wizard-section">
+                    <section class="wizard-section treatment-plan-panel">
                       <div class="section-head section-head--stack">
                         <div>
                           <h4>Plan terapeutico</h4>
-                          <p class="muted-copy">Este paso es obligatorio: al menos un tratamiento con sesiones, caracter y datos operativos.</p>
                         </div>
                       </div>
 
                       @if (createLegajoTratamientos.length) {
-                        <div class="summary-list">
+                        <div class="summary-list treatment-plan-list">
                           @for (group of createLegajoTratamientos.controls; track $index) {
-                            <article class="summary-card" [formGroup]="$any(group)">
+                            <article class="summary-card treatment-plan-card" [formGroup]="$any(group)">
                               <div class="section-head section-head--compact">
                                 <div>
                                   <strong>{{ $any(group).controls.tratamientoNombre.value || $any(group).controls.tratamientoId.value }}</strong>
-                                  <p class="muted-copy">{{ $any(group).controls.tratamientoId.value }}</p>
+                                  <p class="muted-copy">
+                                    {{ $any(group).controls.tratamientoId.value }}
+                                    @if (resolveTreatmentCatalogItem($any(group).controls.tratamientoId.value); as catalogItem) {
+                                      / {{ resolveTreatmentCategoryName(catalogItem.categoriaCodigo) }} / {{ treatmentTypeLabel(catalogItem.tipo) }}
+                                    }
+                                  </p>
                                 </div>
                                 <button type="button" class="btn btn--ghost btn--sm" (click)="removeTratamiento($index)">Quitar</button>
                               </div>
 
-                              <div class="grid-two grid-two--tight">
-                                <label class="field">
-                                  <span>Cantidad de sesiones *</span>
-                                  <input type="number" min="1" inputmode="numeric" formControlName="cantidadSesiones" />
-                                </label>
-                                <label class="field">
-                                  <span>Frecuencia sugerida</span>
-                                  <input type="text" formControlName="frecuenciaSugerida" placeholder="Ej. 2 veces por semana" />
-                                </label>
-                                <label class="field">
-                                  <span>Caracter del tratamiento *</span>
-                                  <select formControlName="caracterCaso">
-                                    @for (option of caracterCasoOptions; track option.value) {
-                                      <option [value]="option.value">{{ option.label }}</option>
-                                    }
-                                  </select>
-                                </label>
-                                <label class="field">
-                                  <span>Fecha estimada de inicio</span>
-                                  <input type="date" formControlName="fechaEstimadaInicio" />
-                                </label>
-                              </div>
-
-                              <div class="grid-two">
-                                <label class="field">
-                                  <span>Observaciones</span>
-                                  <textarea rows="3" formControlName="observaciones" placeholder="Indicaciones clinicas o notas del plan"></textarea>
-                                </label>
-                                <label class="field">
-                                  <span>Observaciones administrativas</span>
-                                  <textarea rows="3" formControlName="observacionesAdministrativas" placeholder="Notas para autorizacion, agenda o cobro"></textarea>
-                                </label>
-                              </div>
-
-                              <label class="check">
-                                <input type="checkbox" formControlName="requiereAutorizacion" />
-                                Requiere autorizacion
-                              </label>
                             </article>
                           }
                         </div>
                       } @else {
-                        <div class="empty-inline">
-                          <p>Agrega al menos un tratamiento para poder registrar la atencion inicial.</p>
-                        </div>
+                        <div class="empty-inline treatment-plan-empty"></div>
                       }
 
+                    </section>
+
+                    <section class="wizard-section treatment-plan-panel treatment-plan-panel--full">
+                      <div class="grid-two grid-two--tight treatment-plan-form">
+                        <label class="field">
+                          <span>Cantidad de sesiones *</span>
+                          <input type="number" min="1" inputmode="numeric" formControlName="planCantidadSesiones" />
+                        </label>
+                        <label class="field">
+                          <span>Caracter del tratamiento *</span>
+                          <select formControlName="planCaracterCaso">
+                            @for (option of caracterCasoOptions; track option.value) {
+                              <option [value]="option.value">{{ option.label }}</option>
+                            }
+                          </select>
+                        </label>
+                      </div>
+
                       <label class="field">
-                        <span>Observaciones generales del plan</span>
-                        <textarea rows="3" formControlName="planObservacionesGenerales" placeholder="Resumen general del plan terapeutico inicial"></textarea>
+                        <span>Observaciones</span>
+                        <textarea rows="3" formControlName="planObservacionesGenerales" placeholder="Observaciones generales para todos los tratamientos del plan"></textarea>
                       </label>
                     </section>
                   </div>
@@ -942,7 +879,7 @@
               @if (createLegajoStep() > 0) {
                 <button type="button" class="btn btn--secondary" (click)="previousLegajoStep()">Volver</button>
               }
-              @if (createLegajoStep() < 3) {
+              @if (createLegajoStep() < 2) {
                 <button type="button" class="btn btn--primary" (click)="nextLegajoStep()">Siguiente</button>
               } @else {
                 <button type="button" class="btn btn--primary" [disabled]="isSavingLegajo()" (click)="saveLegajo()">Registrar atencion inicial</button>
@@ -1020,11 +957,15 @@
       </div>
       <form class="drawer-form" [formGroup]="casoForm">
         <label class="field"><span>Profesional</span><select formControlName="profesionalId"><option value="">Seleccionar</option>@for (profesional of professionalOptions(); track profesional.id) {<option [value]="profesional.id">{{ profesional.nombre }}</option>}</select></label>
-        <label class="field"><span>Descripcion</span><input type="text" formControlName="descripcion" placeholder="Problema en tratamiento" /></label>
-        <div class="grid-two">
-          <label class="field"><span>Codigo</span><input type="text" formControlName="codigo" /></label>
-          <label class="field"><span>Fecha inicio</span><input type="date" formControlName="fechaInicio" /></label>
+        <div class="field">
+          <span>Diagnostico medico</span>
+          <app-diagnostico-medico-selector
+            [diagnosticos]="diagnosticosMedicos()"
+            [selectedCode]="casoForm.controls.diagnosticoCodigo.value"
+            (selectedCodeChange)="casoForm.controls.diagnosticoCodigo.setValue($event)"
+          />
         </div>
+        <label class="field"><span>Fecha inicio</span><input type="date" formControlName="fechaInicio" /></label>
         <label class="field"><span>Notas</span><textarea rows="4" formControlName="notas"></textarea></label>
       </form>
       <div class="drawer-actions">
@@ -1040,7 +981,7 @@
         <h3>Antecedentes del paciente</h3>
         <button type="button" class="btn btn--ghost btn--sm" (click)="showAntecedentesDrawer.set(false)">Cerrar</button>
       </div>
-      <app-antecedentes-workspace
+      <app-antecedente-selector
         [categories]="antecedenteCatalogCategories()"
         [formArray]="antecedentesItems"
         context="edit"
