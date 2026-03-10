@@ -48,14 +48,13 @@ import {
   HistoriaClinicaTipoAtencion,
   HistoriaClinicaWorkspace,
   SesionClinicaResponse,
-  SesionClinicaRequest,
 } from '../../models/historia-clinica.models';
 import { HistoriaClinicaService } from '../../services/historia-clinica.service';
 
 type ViewState = 'idle' | 'loading' | 'success' | 'error';
 type TimelineFilter = 'all' | 'sessions' | 'cases' | 'antecedents' | 'attachments';
 type SessionListFilter = 'all' | HistoriaClinicaSesionEstado;
-type ClinicalTab = 'summary' | 'sessions' | 'cases' | 'antecedents' | 'attachments' | 'timeline';
+type ClinicalTab = 'summary' | 'cases' | 'timeline' | 'background';
 type ClinicalScreenState = 'no-patient' | 'no-history' | 'history-no-case' | 'history-active-case';
 type LegajoWizardStep = 0 | 1 | 2;
 
@@ -81,21 +80,9 @@ type CasePanelItem = {
   isActive: boolean;
 };
 
-type ClinicalSummaryItem = {
+type StatusSummaryItem = {
   label: string;
   value: string;
-  detail?: string | null;
-};
-
-type HeaderTagItem = {
-  label: string;
-  tone: 'info' | 'warning' | 'success' | 'muted';
-};
-
-type CoverageStatusItem = {
-  label: string;
-  value: string;
-  tone?: 'info' | 'warning' | 'success' | 'muted';
 };
 
 const TIMELINE_BATCH_SIZE = 12;
@@ -224,7 +211,10 @@ export class HistoriaClinicaPacientePage {
     profesionalId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     turnoId: new FormControl('', { nonNullable: true }),
     boxId: new FormControl('', { nonNullable: true }),
-    fechaAtencion: new FormControl(this.nowForInput(), { nonNullable: true, validators: [Validators.required] }),
+    fechaAtencion: new FormControl(this.nowForInput(), {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
     tipoAtencion: new FormControl<HistoriaClinicaTipoAtencion>('SEGUIMIENTO', {
       nonNullable: true,
       validators: [Validators.required],
@@ -235,37 +225,6 @@ export class HistoriaClinicaPacientePage {
     objetivo: new FormControl('', { nonNullable: true }),
     evaluacion: new FormControl('', { nonNullable: true }),
     plan: new FormControl('', { nonNullable: true }),
-
-    // Bloque B y E
-    evaluacionEstructurada: new FormGroup({
-      dolorIntensidad: new FormControl<number | null>(null),
-      dolorZona: new FormControl('', { nonNullable: true }),
-      dolorLateralidad: new FormControl('', { nonNullable: true }),
-      dolorTipo: new FormControl('', { nonNullable: true }),
-      dolorComportamiento: new FormControl('', { nonNullable: true }),
-      evolucionEstado: new FormControl('', { nonNullable: true }),
-      evolucionNota: new FormControl('', { nonNullable: true }),
-      objetivoSesion: new FormControl('', { nonNullable: true }),
-      limitacionFuncional: new FormControl('', { nonNullable: true }),
-      respuestaPaciente: new FormControl('', { nonNullable: true }),
-      tolerancia: new FormControl('', { nonNullable: true }),
-      indicacionesDomiciliarias: new FormControl('', { nonNullable: true }),
-      proximaConducta: new FormControl('', { nonNullable: true }),
-    }),
-
-    // Bloque C
-    examenFisico: new FormGroup({
-      rangoMovimientoJson: new FormControl('', { nonNullable: true }),
-      fuerzaMuscularJson: new FormControl('', { nonNullable: true }),
-      funcionalidadNota: new FormControl('', { nonNullable: true }),
-      marchaBalanceNota: new FormControl('', { nonNullable: true }),
-      signosInflamatorios: new FormControl('', { nonNullable: true }),
-      observacionesNeuroResp: new FormControl('', { nonNullable: true }),
-      testsMedidasJson: new FormControl('', { nonNullable: true }),
-    }),
-
-    // Bloque D
-    intervenciones: new FormArray<FormGroup>([]),
   });
 
   readonly casoForm = new FormGroup({
@@ -281,42 +240,6 @@ export class HistoriaClinicaPacientePage {
   readonly antecedentesForm = new FormGroup({
     items: new FormArray([this.createAntecedenteGroup()]),
   });
-
-  readonly dolorOptions: number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-  readonly evolucionOptions = [
-    { value: 'MEJOR', label: 'Mejor' },
-    { value: 'IGUAL', label: 'Igual' },
-    { value: 'PEOR', label: 'Peor' },
-  ];
-  readonly respuestaOptions = [
-    { value: 'FAVORABLE', label: 'Favorable' },
-    { value: 'SIN_CAMBIOS', label: 'Sin cambios' },
-    { value: 'REGULAR', label: 'Regular' },
-    { value: 'EMPEORA', label: 'Empeora' },
-    { value: 'PARCIAL', label: 'Parcial' },
-  ];
-  readonly toleranciaOptions = [
-    { value: 'BUENA', label: 'Buena' },
-    { value: 'REGULAR', label: 'Regular' },
-    { value: 'MALA', label: 'Mala' },
-  ];
-  readonly conductaOptions = [
-    { value: 'CONTINUAR', label: 'Continuar igual' },
-    { value: 'AJUSTAR', label: 'Ajustar plan' },
-    { value: 'REEVALUAR', label: 'Re-evaluar' },
-    { value: 'ALTA', label: 'Alta' },
-    { value: 'DERIVAR', label: 'Derivar' },
-    { value: 'ESTUDIO', label: 'Solicitar estudio' },
-    { value: 'SUSPENDER', label: 'Suspender' },
-  ];
-
-  readonly isFullEvaluation = computed(() => {
-    const tipo = this.sesionForm.controls.tipoAtencion.value;
-    return tipo === 'EVALUACION';
-  });
-
-  readonly intervencionesArray = this.sesionForm.controls.intervenciones;
-
   readonly tipoIngresoOptions: ReadonlyArray<{ value: AtencionInicialTipoIngreso; label: string }> = [
     { value: 'CON_PRESCRIPCION', label: 'Con prescripcion medica' },
     { value: 'CONSULTA_PARTICULAR', label: 'Consulta particular' },
@@ -329,11 +252,9 @@ export class HistoriaClinicaPacientePage {
 
   readonly tabOptions: ReadonlyArray<{ value: ClinicalTab; label: string }> = [
     { value: 'summary', label: 'Resumen' },
-    { value: 'sessions', label: 'Sesiones' },
-    { value: 'cases', label: 'Casos clinicos' },
-    { value: 'antecedents', label: 'Antecedentes' },
-    { value: 'attachments', label: 'Adjuntos' },
+    { value: 'cases', label: 'Casos y sesiones' },
     { value: 'timeline', label: 'Timeline' },
+    { value: 'background', label: 'Antecedentes y adjuntos' },
   ];
 
   readonly timelineFilters: ReadonlyArray<{ value: TimelineFilter; label: string }> = [
@@ -361,14 +282,13 @@ export class HistoriaClinicaPacientePage {
 
   readonly selectedPatient = computed(() => this.overview()?.paciente ?? null);
   readonly hasPatientContext = computed(() => !!this.routeState().pacienteId);
-  readonly hasLegajo = computed(() => !!this.overview()?.legajo?.exists);
-  readonly hasActiveCases = computed(() => (this.overview()?.casosActivos?.length ?? 0) > 0);
+  readonly hasLegajo = computed(() => !!this.overview()?.legajo.exists);
+  readonly hasActiveCases = computed(() => (this.overview()?.casosActivos.length ?? 0) > 0);
   readonly professionalOptions = computed(() => this.workspaceSnapshot()?.profesionales ?? []);
   readonly screenState = computed<ClinicalScreenState>(() => {
     if (!this.hasPatientContext()) return 'no-patient';
-    const overview = this.overview();
-    if (!overview || !overview.legajo?.exists) return 'no-history';
-    if (!overview.casosActivos || overview.casosActivos.length === 0) return 'history-no-case';
+    if (!this.hasLegajo()) return 'no-history';
+    if (!this.hasActiveCases()) return 'history-no-case';
     return 'history-active-case';
   });
   readonly patientContextTitle = computed(() => {
@@ -380,11 +300,7 @@ export class HistoriaClinicaPacientePage {
   readonly patientContextMeta = computed(() => {
     const patient = this.selectedPatient();
     if (!patient) return 'Cargando contexto clinico...';
-    const parts = [patient.dni, this.patientAge(), this.patientCoverage()];
-    if (patient.telefono?.trim()) {
-      parts.push(`Tel. ${patient.telefono.trim()}`);
-    }
-    return parts.join(' / ');
+    return `${patient.dni} / ${this.patientAge()} / ${this.patientCoverage()}`;
   });
   readonly headerStatusBadge = computed(() => {
     switch (this.screenState()) {
@@ -423,12 +339,24 @@ export class HistoriaClinicaPacientePage {
     }
   });
   readonly currentProfessionalLabel = computed(
-    () =>
-      this.summaryMainCase()?.profesionalNombre ||
-      this.overview()?.ultimaSesion?.profesionalNombre ||
-      this.overview()?.profesionalHabitual ||
-      'Sin registro',
+    () => this.overview()?.ultimaSesion?.profesionalNombre || this.overview()?.profesionalHabitual || 'Sin registro',
   );
+  readonly statusSummaryItems = computed<StatusSummaryItem[]>(() => [
+    { label: 'HC', value: this.hasLegajo() ? 'Creada' : 'Pendiente' },
+    { label: 'Casos activos', value: String(this.overview()?.casosActivos?.length ?? 0) },
+    {
+      label: 'Ultima atencion',
+      value: this.overview()?.ultimaSesion?.fechaAtencion
+        ? this.formatDateTime(this.overview()!.ultimaSesion!.fechaAtencion)
+        : 'Sin sesiones',
+    },
+    {
+      label: 'Alertas',
+      value: String(this.overview()?.alertasClinicas?.length ?? this.recentCriticalAntecedentes().length ?? 0),
+    },
+    { label: 'Profesional actual/habitual', value: this.currentProfessionalLabel() },
+    { label: 'Accion sugerida', value: this.suggestedActionLabel() },
+  ]);
   readonly compatibilityFilters = computed(() => {
     const state = this.routeState();
     return [
@@ -503,160 +431,12 @@ export class HistoriaClinicaPacientePage {
   readonly recentCriticalAntecedentes = computed(() =>
     this.backgroundStatus() === 'success'
       ? this.antecedentes().filter((item) => item.critical).slice(0, 4)
-      : this.overview()?.antecedentesRelevantes?.filter((item) => item.critical).slice(0, 4) ?? [],
+      : this.overview()?.antecedentesRelevantes.filter((item) => item.critical).slice(0, 4) ?? [],
   );
   readonly summaryMainCase = computed(() => this.activeCaseCards()[0] ?? null);
   readonly summaryLatestEvent = computed(() => this.overview()?.ultimaSesion ?? null);
-  readonly summaryAntecedentes = computed(() =>
-    (this.backgroundStatus() === 'success' ? this.antecedentes() : this.overview()?.antecedentesRelevantes ?? []).slice(0, 3),
-  );
+  readonly summaryAntecedentes = computed(() => this.overview()?.antecedentesRelevantes?.slice(0, 4) ?? []);
   readonly summaryAdjuntos = computed(() => this.overview()?.adjuntosRecientes?.slice(0, 4) ?? []);
-  readonly plannedSessions = computed(() => {
-    const treatments = (this.overview()?.planTerapeuticoActivo?.tratamientos as any[]) ?? [];
-    if (!treatments.length) {
-      return null;
-    }
-    return Math.max(...treatments.map((item: any) => item.cantidadSesiones as number));
-  });
-  readonly nextSession = computed(() => {
-    const patientId = this.selectedPatient()?.id;
-    if (!patientId) {
-      return null;
-    }
-    const now = Date.now();
-    return (
-      this.workspaceSnapshot()
-        ?.items.filter((item) => item.pacienteId === patientId)
-        .filter((item) => new Date(item.fechaAtencion).getTime() > now)
-        .sort((left, right) => new Date(left.fechaAtencion).getTime() - new Date(right.fechaAtencion).getTime())[0] ?? null
-    );
-  });
-  readonly clinicalAlertItems = computed(() => {
-    const alerts = [...(this.overview()?.alertasClinicas ?? [])];
-    const antecedentes = this.backgroundStatus() === 'success' ? this.antecedentes() : this.overview()?.antecedentesRelevantes ?? [];
-    if (!antecedentes.length) {
-      alerts.push('Sin antecedentes cargados');
-    }
-    if (!(this.overview()?.adjuntosRecientes?.length ?? 0)) {
-      alerts.push('Sin estudios adjuntos');
-    }
-    if (
-      this.overview()?.atencionInicial?.tipoIngreso === 'CON_PRESCRIPCION' &&
-      !this.overview()?.atencionInicial?.fechaPrescripcion &&
-      !(this.overview()?.adjuntosRecientes?.length ?? 0)
-    ) {
-      alerts.push('Falta pedido medico');
-    }
-    return [...new Set(alerts)].slice(0, 4);
-  });
-  readonly headerTags = computed<HeaderTagItem[]>(() => {
-    const tags: HeaderTagItem[] = [];
-    tags.push({
-      label: this.selectedPatient()?.obraSocialNombre ? 'OS' : 'Particular',
-      tone: this.selectedPatient()?.obraSocialNombre ? 'info' : 'muted',
-    });
-    const treatments = (this.overview()?.planTerapeuticoActivo?.tratamientos as any[]) ?? [];
-    if (treatments.some((item: any) => item.caracterCaso === 'CRONICO')) {
-      tags.push({ label: 'Cronico', tone: 'warning' });
-    }
-    if (this.clinicalAlertItems().length) {
-      tags.push({ label: 'Alta prioridad', tone: 'warning' });
-    }
-    if (this.screenState() === 'history-active-case') {
-      tags.push({ label: 'Seguimiento activo', tone: 'success' });
-    }
-    return tags;
-  });
-  readonly clinicalSummaryItems = computed<ClinicalSummaryItem[]>(() => [
-    {
-      label: 'Caso activo',
-      value: this.summaryMainCase()?.descripcion || 'Sin caso clinico activo',
-      detail: this.currentClinicalReason(),
-    },
-    {
-      label: 'Sesiones',
-      value: this.sessionProgressLabel(),
-      detail: this.overview()?.planTerapeuticoActivo?.tratamientos?.length
-        ? `${this.overview()!.planTerapeuticoActivo!.tratamientos.length} tratamiento(s) en plan`
-        : null,
-    },
-    {
-      label: 'Sesion clinica',
-      value: `Ultima: ${this.latestSessionLabel()} | Proxima: ${this.nextSessionLabel()}`,
-      detail: null,
-    },
-  ]);
-  readonly currentClinicalReason = computed(() => {
-    const atencionInicial = this.overview()?.atencionInicial;
-    const mainCase = this.summaryMainCase();
-    return (
-      atencionInicial?.diagnosticoNombre ||
-      atencionInicial?.motivoConsultaBreve ||
-      mainCase?.descripcion ||
-      'Sin diagnostico ni motivo actual cargado'
-    );
-  });
-  readonly currentCaseObjective = computed(() => {
-    const overview = this.overview();
-    return (
-      overview?.planTerapeuticoActivo?.observacionesGenerales ||
-      overview?.atencionInicial?.hallazgosRelevantes ||
-      overview?.atencionInicial?.resumenClinicoInicial ||
-      this.summaryMainCase()?.ultimaEvolucionResumen ||
-      'Sin objetivo terapeutico resumido.'
-    );
-  });
-  readonly latestEvolutionEntries = computed(() => {
-    const latest = this.backgroundLatestSesion();
-    if (!latest) {
-      return [];
-    }
-    return [
-      latest.resumenClinico ? { label: 'Resumen', value: latest.resumenClinico } : null,
-      latest.objetivo ? { label: 'Practicas / objetivo', value: latest.objetivo } : null,
-      latest.evaluacion ? { label: 'Observaciones', value: latest.evaluacion } : null,
-      latest.plan ? { label: 'Plan inmediato', value: latest.plan } : null,
-    ].filter((item): item is { label: string; value: string } => !!item);
-  });
-  readonly summaryTimelineEvents = computed(() => this.timeline().slice(0, 3));
-  readonly coverageStatusItems = computed<CoverageStatusItem[]>(() => {
-    const patient = this.selectedPatient();
-    const atencionInicial = this.overview()?.atencionInicial;
-    const treatments = (this.overview()?.planTerapeuticoActivo?.tratamientos as any[]) ?? [];
-    const requiresAuth = treatments.some((item: any) => item.requiereAutorizacion);
-    return [
-      {
-        label: 'Cobertura',
-        value: patient?.obraSocialNombre ? this.patientCoverage() : 'Particular',
-        tone: patient?.obraSocialNombre ? 'info' : 'muted',
-      },
-      {
-        label: 'Afiliado',
-        value: patient?.obraSocialNroAfiliado || 'No informado',
-        tone: patient?.obraSocialNroAfiliado ? 'success' : 'warning',
-      },
-      {
-        label: 'Orden medica',
-        value:
-          atencionInicial?.tipoIngreso === 'CONSULTA_PARTICULAR'
-            ? 'No aplica'
-            : atencionInicial?.fechaPrescripcion || (this.overview()?.adjuntosRecientes?.length ?? 0)
-              ? 'Informada'
-              : 'Pendiente',
-        tone:
-          atencionInicial?.tipoIngreso === 'CONSULTA_PARTICULAR'
-            ? 'muted'
-            : atencionInicial?.fechaPrescripcion || (this.overview()?.adjuntosRecientes?.length ?? 0)
-              ? 'success'
-              : 'warning',
-      },
-      {
-        label: 'Autorizacion',
-        value: requiresAuth ? 'Requerida' : 'No requerida',
-        tone: requiresAuth ? 'warning' : 'success',
-      },
-    ];
-  });
   readonly availableTreatmentItems = computed(() => [] as TratamientoCatalogItem[]);
   readonly legajoWizardSteps: ReadonlyArray<{
     step: LegajoWizardStep;
@@ -1078,25 +858,6 @@ export class HistoriaClinicaPacientePage {
     });
   }
 
-  addIntervencion(): void {
-    const group = new FormGroup({
-      tratamientoId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      tratamientoNombre: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-      técnica: new FormControl('', { nonNullable: true }),
-      zona: new FormControl('', { nonNullable: true }),
-      parametrosJson: new FormControl('', { nonNullable: true }),
-      duracionMinutos: new FormControl<number | null>(null),
-      profesionalId: new FormControl(this.defaultProfesionalId()),
-      observaciones: new FormControl('', { nonNullable: true }),
-      orderIndex: new FormControl(this.intervencionesArray.length),
-    });
-    this.intervencionesArray.push(group);
-  }
-
-  removeIntervencion(index: number): void {
-    this.intervencionesArray.removeAt(index);
-  }
-
   openCasoDrawer(defaultProfesionalId?: string): void {
     this.casoForm.reset(
       {
@@ -1386,44 +1147,6 @@ export class HistoriaClinicaPacientePage {
     return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  sessionProgressLabel(): string {
-    const completed = this.summaryMainCase()?.cantidadSesiones ?? 0;
-    const planned = this.plannedSessions();
-    return planned && planned > 0 ? `${completed}/${planned} realizadas` : `${completed} realizadas`;
-  }
-
-  latestSessionLabel(): string {
-    const date = this.summaryLatestEvent()?.fechaAtencion;
-    return date ? this.formatDateTime(date) : 'Sin registrar';
-  }
-
-  nextSessionLabel(): string {
-    const next = this.nextSession();
-    return next ? this.formatDateTime(next.fechaAtencion) : 'Sin turno proximo';
-  }
-
-  tipoLabel(tipo?: HistoriaClinicaTipoAtencion | null): string {
-    const value = tipo ?? '';
-    return this.tipoAtencionOptions.find((option) => option.value === value)?.label ?? value;
-  }
-
-  attachmentKindLabel(contentType: string, filename: string): string {
-    const normalizedName = filename.toLowerCase();
-    if (contentType.startsWith('image/') || /\.(png|jpe?g|gif|webp)$/i.test(normalizedName)) {
-      return 'Imagen';
-    }
-    if (normalizedName.includes('receta')) {
-      return 'Receta';
-    }
-    if (normalizedName.includes('orden')) {
-      return 'Orden';
-    }
-    if (normalizedName.includes('estudio') || normalizedName.includes('eco') || normalizedName.includes('rx')) {
-      return 'Estudio';
-    }
-    return 'Documento';
-  }
-
   patient360QueryParams(): Record<string, string> {
     const state = this.routeState();
     return {
@@ -1499,10 +1222,6 @@ export class HistoriaClinicaPacientePage {
         if (sesionId) {
           this.openSesion(sesionId, false);
         }
-        if (overview.legajo.exists) {
-          this.ensureTimelineData();
-          this.ensureBackgroundData();
-        }
         this.ensureTabData(this.activeTab());
       },
       error: (err) => {
@@ -1512,7 +1231,7 @@ export class HistoriaClinicaPacientePage {
     });
   }
 
-  reloadSelectedPatient(sesionId?: string): void {
+  private reloadSelectedPatient(sesionId?: string): void {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const pacienteId = this.selectedPatient()?.id;
     if (!consultorioId || !pacienteId) {
@@ -1527,17 +1246,13 @@ export class HistoriaClinicaPacientePage {
       return;
     }
     switch (tab) {
-      case 'sessions':
       case 'cases':
         this.ensureCasesTabData();
         break;
-      case 'antecedents':
-      case 'attachments':
       case 'timeline':
-        if (tab === 'timeline') {
-          this.ensureTimelineData();
-          break;
-        }
+        this.ensureTimelineData();
+        break;
+      case 'background':
         this.ensureBackgroundData();
         break;
       default:
@@ -1825,12 +1540,7 @@ export class HistoriaClinicaPacientePage {
   }
 
   private readTab(value: string | null): ClinicalTab | undefined {
-    return value === 'summary' ||
-      value === 'sessions' ||
-      value === 'cases' ||
-      value === 'antecedents' ||
-      value === 'attachments' ||
-      value === 'timeline'
+    return value === 'summary' || value === 'cases' || value === 'timeline' || value === 'background'
       ? value
       : undefined;
   }
@@ -1866,48 +1576,9 @@ export class HistoriaClinicaPacientePage {
       },
       { emitEvent: false },
     );
-
-    if (sesion.evaluacionEstructurada) {
-      const evalData = { ...sesion.evaluacionEstructurada };
-      Object.keys(evalData).forEach(key => {
-        if ((evalData as any)[key] === null) (evalData as any)[key] = '';
-      });
-      this.sesionForm.controls.evaluacionEstructurada.patchValue(evalData as any, { emitEvent: false });
-    } else {
-      this.sesionForm.controls.evaluacionEstructurada.reset({}, { emitEvent: false });
-    }
-
-    if (sesion.examenFisico) {
-      const examData = { ...sesion.examenFisico };
-      Object.keys(examData).forEach(key => {
-        if ((examData as any)[key] === null) (examData as any)[key] = '';
-      });
-      this.sesionForm.controls.examenFisico.patchValue(examData as any, { emitEvent: false });
-    } else {
-      this.sesionForm.controls.examenFisico.reset({}, { emitEvent: false });
-    }
-
-    this.intervencionesArray.clear();
-    if (sesion.intervenciones?.length) {
-      sesion.intervenciones.forEach((intervencion) => {
-        this.intervencionesArray.push(
-          new FormGroup({
-            tratamientoId: new FormControl(intervencion.tratamientoId, { nonNullable: true, validators: [Validators.required] }),
-            tratamientoNombre: new FormControl(intervencion.tratamientoNombre, { nonNullable: true, validators: [Validators.required] }),
-            técnica: new FormControl(intervencion.técnica ?? '', { nonNullable: true }),
-            zona: new FormControl(intervencion.zona ?? '', { nonNullable: true }),
-            parametrosJson: new FormControl(intervencion.parametrosJson ?? '', { nonNullable: true }),
-            duracionMinutos: new FormControl<number | null>(intervencion.duracionMinutos ?? null),
-            profesionalId: new FormControl(intervencion.profesionalId ?? this.defaultProfesionalId()),
-            observaciones: new FormControl(intervencion.observaciones ?? '', { nonNullable: true }),
-            orderIndex: new FormControl(intervencion.orderIndex),
-          })
-        );
-      });
-    }
   }
 
-  private buildSesionRequest(): SesionClinicaRequest | null {
+  private buildSesionRequest() {
     const raw = this.sesionForm.getRawValue();
     if (!raw.profesionalId || !raw.fechaAtencion || !raw.tipoAtencion) {
       return null;
@@ -1924,54 +1595,6 @@ export class HistoriaClinicaPacientePage {
       objetivo: this.emptyToUndefined(raw.objetivo) ?? null,
       evaluacion: this.emptyToUndefined(raw.evaluacion) ?? null,
       plan: this.emptyToUndefined(raw.plan) ?? null,
-      evaluacionEstructurada: this.cleanEvaluacion(raw.evaluacionEstructurada),
-      examenFisico: this.cleanExamen(raw.examenFisico),
-      intervenciones: raw.intervenciones.length 
-        ? raw.intervenciones.map((i: any) => ({
-            tratamientoId: i.tratamientoId,
-            tratamientoNombre: i.tratamientoNombre,
-            técnica: this.emptyToUndefined(i.técnica) ?? null,
-            zona: this.emptyToUndefined(i.zona) ?? null,
-            parametrosJson: this.emptyToUndefined(i.parametrosJson) ?? null,
-            duracionMinutos: i.duracionMinutos ?? null,
-            profesionalId: i.profesionalId ?? null,
-            observaciones: this.emptyToUndefined(i.observaciones) ?? null,
-            orderIndex: i.orderIndex
-          }))
-        : null,
-    };
-  }
-
-  private cleanEvaluacion(raw: any) {
-    if (!raw.dolorIntensidad && !raw.evolucionEstado && !raw.respuestaPaciente) return null;
-    return {
-      ...raw,
-      dolorIntensidad: raw.dolorIntensidad ?? null,
-      dolorZona: this.emptyToUndefined(raw.dolorZona) ?? null,
-      dolorLateralidad: this.emptyToUndefined(raw.dolorLateralidad) ?? null,
-      dolorTipo: this.emptyToUndefined(raw.dolorTipo) ?? null,
-      dolorComportamiento: this.emptyToUndefined(raw.dolorComportamiento) ?? null,
-      evolucionEstado: this.emptyToUndefined(raw.evolucionEstado) ?? null,
-      evolucionNota: this.emptyToUndefined(raw.evolucionNota) ?? null,
-      objetivoSesion: this.emptyToUndefined(raw.objetivoSesion) ?? null,
-      limitacionFuncional: this.emptyToUndefined(raw.limitacionFuncional) ?? null,
-      respuestaPaciente: this.emptyToUndefined(raw.respuestaPaciente) ?? null,
-      tolerancia: this.emptyToUndefined(raw.tolerancia) ?? null,
-      indicacionesDomiciliarias: this.emptyToUndefined(raw.indicacionesDomiciliarias) ?? null,
-      proximaConducta: this.emptyToUndefined(raw.proximaConducta) ?? null,
-    };
-  }
-
-  private cleanExamen(raw: any) {
-    if (!raw.rangoMovimientoJson && !raw.fuerzaMuscularJson && !raw.funcionalidadNota) return null;
-    return {
-      rangoMovimientoJson: this.emptyToUndefined(raw.rangoMovimientoJson) ?? null,
-      fuerzaMuscularJson: this.emptyToUndefined(raw.fuerzaMuscularJson) ?? null,
-      funcionalidadNota: this.emptyToUndefined(raw.funcionalidadNota) ?? null,
-      marchaBalanceNota: this.emptyToUndefined(raw.marchaBalanceNota) ?? null,
-      signosInflamatorios: this.emptyToUndefined(raw.signosInflamatorios) ?? null,
-      observacionesNeuroResp: this.emptyToUndefined(raw.observacionesNeuroResp) ?? null,
-      testsMedidasJson: this.emptyToUndefined(raw.testsMedidasJson) ?? null,
     };
   }
 
@@ -2052,7 +1675,7 @@ export class HistoriaClinicaPacientePage {
     };
     return Object.values(payload).some((value) => value !== null && value !== undefined)
       ? payload
-      : undefined;
+      : null;
   }
 
   private finishCreateAtencionInicial(): void {

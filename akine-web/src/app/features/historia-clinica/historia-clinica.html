@@ -342,260 +342,119 @@
             </div>
 
             <section class="panel-card editor-card">
-              <!-- BLOQUE A: Contexto de la Sesion (Sticky Header) -->
-              <div class="session-sticky-header">
-                <div class="card-head">
-                  <div>
-                    <p class="eyebrow">
-                      {{ isFullEvaluation() ? 'Evaluacion Completa' : 'Sesion de Seguimiento' }}
-                    </p>
-                    <h3>{{ selectedSesion() ? 'Registro de Sesion' : 'Nueva Sesion' }}</h3>
-                    <p class="session-meta-info">
-                      @if (selectedPatient(); as p) {
-                        <strong>{{ p.apellido }}, {{ p.nombre }}</strong> · {{ p.dni }} · 
-                        {{ p.obraSocialNombre || 'Particular' }}
-                      }
-                    </p>
-                  </div>
-
-                  @if (selectedSesion()) {
-                    <div class="editor-actions">
-                      <button
-                        type="button"
-                        class="btn btn--warning btn--sm"
-                        [disabled]="!canEditSesion() || isSavingSesion()"
-                        (click)="closeSesion()"
-                      >
-                        Cerrar sesion
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn--danger btn--sm"
-                        [disabled]="!canEditSesion() || isSavingSesion()"
-                        (click)="annulSesion()"
-                      >
-                        Anular
-                      </button>
-                    </div>
-                  }
+              <div class="card-head">
+                <div>
+                  <h3>{{ selectedSesion() ? 'Sesion clinica' : 'Nueva sesion clinica' }}</h3>
+                  <p>
+                    @if (selectedSesion()) {
+                      {{ selectedSesion()!.estado }} ·
+                      {{ selectedSesion()!.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}
+                    } @else {
+                      Completa el formulario estructurado y guarda en borrador.
+                    }
+                  </p>
                 </div>
-                
-                @if (!canEditSesion() && selectedSesion()) {
-                  <div class="alert alert--info alert--compact">
-                    Sesion cerrada el {{ selectedSesion()!.closedAt | date: 'dd/MM/yyyy HH:mm' }}. Modo solo lectura.
+
+                @if (selectedSesion()) {
+                  <div class="editor-actions">
+                    <button
+                      type="button"
+                      class="btn btn--warning btn--sm"
+                      [disabled]="!canEditSesion() || isSavingSesion()"
+                      (click)="closeSesion()"
+                    >
+                      Cerrar sesion
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn--danger btn--sm"
+                      [disabled]="!canEditSesion() || isSavingSesion()"
+                      (click)="annulSesion()"
+                    >
+                      Anular
+                    </button>
                   </div>
                 }
               </div>
 
-              <form class="session-form-structured" [formGroup]="sesionForm">
-                <!-- BLOQUE B: Evaluacion Clinica Base -->
-                <fieldset class="form-section" formGroupName="evaluacionEstructurada">
-                  <legend>Evaluacion Clinica Base</legend>
-                  
-                  <div class="field">
-                    <span>Intensidad del Dolor (0-10)</span>
-                    <div class="pain-scale">
-                      @for (val of dolorOptions; track val) {
-                        <button 
-                          type="button" 
-                          class="pain-btn" 
-                          [class.pain-btn--active]="sesionForm.value.evaluacionEstructurada?.dolorIntensidad === val"
-                          (click)="sesionForm.get('evaluacionEstructurada.dolorIntensidad')?.setValue(val)"
-                          [disabled]="!canEditSesion()"
-                        >
-                          {{ val }}
-                        </button>
-                      }
-                    </div>
-                  </div>
+              @if (!canEditSesion() && selectedSesion()) {
+                <div class="alert alert--info">
+                  La sesion esta en solo lectura. Para v1 no existe reapertura.
+                </div>
+              }
 
-                  <div class="mini-grid">
-                    <label class="field">
-                      <span>Zona del dolor</span>
-                      <input type="text" formControlName="dolorZona" placeholder="Ej: Lumbar, Rodilla Der." />
-                    </label>
-                    <label class="field">
-                      <span>Evolucion desde la anterior</span>
-                      <div class="chip-group">
-                        @for (opt of evolucionOptions; track opt.value) {
-                          <button 
-                            type="button" 
-                            class="chip-btn" 
-                            [class.chip-btn--active]="sesionForm.value.evaluacionEstructurada?.evolucionEstado === opt.value"
-                            (click)="sesionForm.get('evaluacionEstructurada.evolucionEstado')?.setValue(opt.value)"
-                            [disabled]="!canEditSesion()"
-                          >
-                            {{ opt.label }}
-                          </button>
-                        }
-                      </div>
-                    </label>
-                  </div>
-
+              <form class="session-form" [formGroup]="sesionForm">
+                <div class="mini-grid">
                   <label class="field">
-                    <span>Limitacion funcional actual</span>
-                    <input type="text" formControlName="limitacionFuncional" placeholder="¿Que no puede hacer o que le cuesta?" />
-                  </label>
-
-                  <label class="field">
-                    <span>Objetivo de la sesion</span>
-                    <input type="text" formControlName="objetivoSesion" placeholder="Ej: Disminuir dolor, mejorar movilidad" />
-                  </label>
-                </fieldset>
-
-                <!-- BLOQUE C: Examen Fisico (Expandible) -->
-                <details class="form-section-details" [attr.open]="isFullEvaluation() ? true : null">
-                  <summary class="form-section-summary">
-                    <span>Examen Fisico Objetivado</span>
-                    <small>Completo en evaluaciones, opcional en seguimiento</small>
-                  </summary>
-                  
-                  <div class="form-section-content" formGroupName="examenFisico">
-                    <div class="double-column">
-                      <label class="field">
-                        <span>Rangos de Movimiento (ROM)</span>
-                        <textarea formControlName="rangoMovimientoJson" rows="3" placeholder="Articulacion, grados, dolor..."></textarea>
-                      </label>
-                      <label class="field">
-                        <span>Fuerza Muscular</span>
-                        <textarea formControlName="fuerzaMuscularJson" rows="3" placeholder="Grupo muscular, escala Daniels..."></textarea>
-                      </label>
-                    </div>
-                    <div class="double-column">
-                      <label class="field">
-                        <span>Funcionalidad / Marcha</span>
-                        <textarea formControlName="funcionalidadNota" rows="2"></textarea>
-                      </label>
-                      <label class="field">
-                        <span>Signos Relevantes</span>
-                        <textarea formControlName="signosInflamatorios" rows="2" placeholder="Edema, espasmo, inflamacion..."></textarea>
-                      </label>
-                    </div>
-                  </div>
-                </details>
-
-                <!-- BLOQUE D: Tratamiento Aplicado (Intervenciones) -->
-                <fieldset class="form-section">
-                  <legend>Tratamiento Aplicado</legend>
-                  
-                  <div class="intervention-list" formArrayName="intervenciones">
-                    @for (item of intervencionesArray.controls; track $index; let i = $index) {
-                      <div class="intervention-item" [formGroupName]="i">
-                        <div class="intervention-row">
-                          <label class="field field--grow">
-                            <span>Practica / Tratamiento</span>
-                            <input type="text" formControlName="tratamientoNombre" placeholder="Ej: Magnetoterapia" />
-                          </label>
-                          <label class="field">
-                            <span>Tecnica/Parametros</span>
-                            <input type="text" formControlName="técnica" placeholder="Ej: 50Hz, 20 min" />
-                          </label>
-                          <button 
-                            type="button" 
-                            class="btn btn--danger btn--icon btn--sm" 
-                            (click)="removeIntervencion(i)"
-                            [disabled]="!canEditSesion()"
-                            aria-label="Quitar practica"
-                          >
-                            &times;
-                          </button>
-                        </div>
-                        <input type="hidden" formControlName="tratamientoId" value="manual-entry" />
-                      </div>
-                    }
-                  </div>
-
-                  <button 
-                    type="button" 
-                    class="btn btn--ghost btn--sm btn--full" 
-                    (click)="addIntervencion()"
-                    [disabled]="!canEditSesion()"
-                  >
-                    + Agregar practica realizada
-                  </button>
-                </fieldset>
-
-                <!-- BLOQUE E: Resultado de la Sesion -->
-                <fieldset class="form-section" formGroupName="evaluacionEstructurada">
-                  <legend>Resultado y Conducta</legend>
-                  
-                  <div class="mini-grid">
-                    <label class="field">
-                      <span>Respuesta al tratamiento</span>
-                      <select formControlName="respuestaPaciente">
-                        <option value="">Seleccionar</option>
-                        @for (opt of respuestaOptions; track opt.value) {
-                          <option [value]="opt.value">{{ opt.label }}</option>
-                        }
-                      </select>
-                    </label>
-                    <label class="field">
-                      <span>Tolerancia</span>
-                      <select formControlName="tolerancia">
-                        <option value="">Seleccionar</option>
-                        @for (opt of toleranciaOptions; track opt.value) {
-                          <option [value]="opt.value">{{ opt.label }}</option>
-                        }
-                      </select>
-                    </label>
-                  </div>
-
-                  <label class="field">
-                    <span>Indicaciones domiciliarias / Conducta</span>
-                    <textarea formControlName="indicacionesDomiciliarias" rows="2" placeholder="Ejercicios, reposo, proximo ajuste..."></textarea>
-                  </label>
-
-                  <label class="field">
-                    <span>Proxima conducta</span>
-                    <select formControlName="proximaConducta">
+                    <span>Profesional</span>
+                    <select formControlName="profesionalId">
                       <option value="">Seleccionar</option>
-                      @for (opt of conductaOptions; track opt.value) {
-                        <option [value]="opt.value">{{ opt.label }}</option>
+                      @for (profesional of professionalOptions(); track profesional.id) {
+                        <option [value]="profesional.id">{{ profesional.nombre }}</option>
                       }
                     </select>
                   </label>
-                </fieldset>
 
-                <!-- BLOQUE F: Administrativo Minimo -->
-                <details class="admin-details">
-                  <summary>Datos administrativos y SOAP tradicional</summary>
-                  <div class="admin-content">
-                    <div class="mini-grid">
-                      <label class="field">
-                        <span>Profesional Responsable</span>
-                        <select formControlName="profesionalId">
-                          @for (profesional of professionalOptions(); track profesional.id) {
-                            <option [value]="profesional.id">{{ profesional.nombre }}</option>
-                          }
-                        </select>
-                      </label>
-                      <label class="field">
-                        <span>Fecha y Hora</span>
-                        <input type="datetime-local" formControlName="fechaAtencion" />
-                      </label>
-                    </div>
-                    
-                    <div class="mini-grid">
-                      <label class="field">
-                        <span>Tipo de atencion</span>
-                        <select formControlName="tipoAtencion">
-                          @for (tipo of tipoAtencionOptions; track tipo.value) {
-                            <option [value]="tipo.value">{{ tipo.label }}</option>
-                          }
-                        </select>
-                      </label>
-                      <label class="field">
-                        <span>Box / Espacio</span>
-                        <input type="text" formControlName="boxId" />
-                      </label>
-                    </div>
+                  <label class="field">
+                    <span>Fecha atencion</span>
+                    <input type="datetime-local" formControlName="fechaAtencion" />
+                  </label>
 
-                    <label class="field">
-                      <span>Resumen SOAP (Legacy / Libre)</span>
-                      <textarea formControlName="resumenClinico" rows="3"></textarea>
-                    </label>
-                  </div>
-                </details>
+                  <label class="field">
+                    <span>Tipo atencion</span>
+                    <select formControlName="tipoAtencion">
+                      @for (tipo of tipoAtencionOptions; track tipo.value) {
+                        <option [value]="tipo.value">{{ tipo.label }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+
+                <div class="mini-grid">
+                  <label class="field">
+                    <span>Turno vinculado</span>
+                    <input type="text" formControlName="turnoId" placeholder="UUID opcional" />
+                  </label>
+
+                  <label class="field">
+                    <span>Box</span>
+                    <input type="text" formControlName="boxId" placeholder="UUID opcional" />
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>Motivo consulta</span>
+                  <textarea formControlName="motivoConsulta" rows="2"></textarea>
+                </label>
+
+                <label class="field">
+                  <span>Resumen clinico</span>
+                  <textarea formControlName="resumenClinico" rows="3"></textarea>
+                </label>
+
+                <div class="double-column">
+                  <label class="field">
+                    <span>Subjetivo</span>
+                    <textarea formControlName="subjetivo" rows="5"></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Objetivo</span>
+                    <textarea formControlName="objetivo" rows="5"></textarea>
+                  </label>
+                </div>
+
+                <div class="double-column">
+                  <label class="field">
+                    <span>Evaluacion</span>
+                    <textarea formControlName="evaluacion" rows="5"></textarea>
+                  </label>
+
+                  <label class="field">
+                    <span>Plan</span>
+                    <textarea formControlName="plan" rows="5"></textarea>
+                  </label>
+                </div>
               </form>
 
               <section class="adjuntos-card">
@@ -643,10 +502,14 @@
                       </div>
                     }
                   </div>
+                } @else {
+                  <div class="state-box state-box--empty">
+                    <p>No hay adjuntos cargados para la sesion actual.</p>
+                  </div>
                 }
               </section>
 
-              <div class="editor-footer sticky-footer">
+              <div class="editor-footer">
                 <button type="button" class="btn btn--ghost" (click)="startNewSesion()" [disabled]="!selectedPatient()">
                   Nuevo borrador
                 </button>
