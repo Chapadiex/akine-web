@@ -13,4 +13,9 @@ export const HISTORIA_CLINICA_ROUTES: Routes = [
     loadComponent: () =>
       import('./historia-clinica').then((m) => m.HistoriaClinica),
   },
+  {
+    path: 'sesion/:sesionId',
+    loadComponent: () =>
+      import('./pages/sesion-page/sesion-page').then((m) => m.SesionPage),
+  },
 ];

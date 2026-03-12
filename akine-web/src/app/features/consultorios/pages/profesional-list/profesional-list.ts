@@ -105,6 +105,7 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     @if (showForm()) {
       <app-profesional-form
         [editItem]="editTarget()"
+        [consultorioId]="consultorioId"
         (saved)="onSave($event)"
         (savedEstado)="pendingEstado.set($event)"
         (cancelled)="closeForm()"
@@ -175,7 +176,7 @@ export class ProfesionalListPage implements OnInit {
     estado: [''],
   });
 
-  private consultorioId = '';
+  consultorioId = '';
 
   readonly canWrite = () => this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
 

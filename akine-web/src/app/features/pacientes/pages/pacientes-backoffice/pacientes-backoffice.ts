@@ -168,7 +168,15 @@ import { PacienteService } from '../../services/paciente.service';
                               </div>
                               <div class="detail-copy">
                                 <span class="detail-label">Profesion</span>
-                                <strong>{{ detail.profesion || '-' }}</strong>
+                                @if ((detail.profesiones || []).length > 0) {
+                                  <div class="detail-professions">
+                                    @for (prof of detail.profesiones; track prof) {
+                                      <span class="profession-tag">{{ prof }}</span>
+                                    }
+                                  </div>
+                                } @else {
+                                  <strong>-</strong>
+                                }
                               </div>
                             </article>
                             <article class="detail-item">
@@ -376,6 +384,23 @@ import { PacienteService } from '../../services/paciente.service';
       color: var(--text);
       line-height: 1.35;
       overflow-wrap: break-word;
+    }
+    .detail-professions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+    }
+    .profession-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: .28rem .42rem;
+      border-radius: 5px;
+      background: color-mix(in srgb, var(--primary) 10%, var(--white));
+      border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+      color: var(--primary);
+      font-size: .78rem;
+      font-weight: 600;
+      white-space: nowrap;
     }
     .detail-loading {
       padding: .9rem 1rem 1rem;

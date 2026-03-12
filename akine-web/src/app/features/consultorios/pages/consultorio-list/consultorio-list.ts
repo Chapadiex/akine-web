@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
+import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
@@ -85,7 +86,7 @@ import { ConsultorioService } from '../../services/consultorio.service';
     @if (deleteTarget()) {
       <app-confirm-dialog
         title="Dar de baja consultorio"
-        [message]="'�Dar de baja ' + deleteTarget()!.name + '? El consultorio quedar� inactivo.'"
+        [message]="'�Dar de baja ' + deleteTarget()!.name + '? El consultorio quedar� inactivo.'"
         (confirmed)="confirmDelete()"
         (cancelled)="deleteTarget.set(null)"
       />
@@ -94,9 +95,20 @@ import { ConsultorioService } from '../../services/consultorio.service';
     @if (activateTarget()) {
       <app-confirm-dialog
         title="Reactivar consultorio"
-        [message]="'�Reactivar ' + activateTarget()!.name + '?'"
+        [message]="'¿Reactivar ' + activateTarget()!.name + '?'"
         (confirmed)="confirmActivate()"
         (cancelled)="activateTarget.set(null)"
+      />
+    }
+
+    @if (defaultTarget()) {
+      <app-confirm-dialog
+        title="Consultorio predeterminado"
+        [message]="'¿Desea utilizar ' + defaultTarget()!.name + ' como consultorio predeterminado?'"
+        variant="primary"
+        confirmLabel="Sí"
+        (confirmed)="confirmSetDefault()"
+        (cancelled)="declineSetDefault()"
       />
     }
   `,
@@ -134,6 +146,7 @@ export class ConsultorioListPage implements OnInit {
   private auth = inject(AuthService);
   private toast = inject(ToastService);
   private errMap = inject(ErrorMapperService);
+  private consultorioCtx = inject(ConsultorioContextService);
 
   items = signal<Consultorio[]>([]);
   loading = signal(true);
@@ -141,6 +154,7 @@ export class ConsultorioListPage implements OnInit {
   editTarget = signal<Consultorio | null>(null);
   deleteTarget = signal<Consultorio | null>(null);
   activateTarget = signal<Consultorio | null>(null);
+  defaultTarget = signal<Consultorio | null>(null);
 
   isAdmin = () => this.auth.hasRole('ADMIN');
   canEdit = (c: Consultorio) => c.status === 'ACTIVE' && this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
@@ -175,13 +189,45 @@ export class ConsultorioListPage implements OnInit {
       : this.svc.create(req);
 
     obs.subscribe({
-      next: () => {
-        this.toast.success('Guardado correctamente');
+      next: (saved) => {
         this.closeForm();
         this.load();
+
+        if (target) {
+          // Edit mode — no default selection logic
+          this.toast.success('Guardado correctamente');
+          return;
+        }
+
+        // Creation mode — check if this is the first consultorio
+        const hadConsultorios = this.consultorioCtx.consultorios().length > 0;
+        if (!hadConsultorios) {
+          // Rule 1: first consultorio → auto-select
+          this.consultorioCtx.reloadAndSelect(saved.id);
+          this.toast.success('Consultorio creado y seleccionado como predeterminado.');
+        } else {
+          // Rule 2: already has consultorios → ask user
+          this.defaultTarget.set(saved);
+        }
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
+  }
+
+  confirmSetDefault(): void {
+    const target = this.defaultTarget();
+    if (!target) return;
+    this.consultorioCtx.reloadAndSelect(target.id);
+    this.toast.success('Consultorio creado y seleccionado como predeterminado.');
+    this.defaultTarget.set(null);
+  }
+
+  declineSetDefault(): void {
+    const target = this.defaultTarget();
+    if (!target) return;
+    this.consultorioCtx.reloadAndSelect();
+    this.toast.success('Consultorio creado correctamente.');
+    this.defaultTarget.set(null);
   }
 
   startDelete(c: Consultorio): void {

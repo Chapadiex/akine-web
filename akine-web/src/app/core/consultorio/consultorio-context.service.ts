@@ -1,10 +1,13 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { Consultorio } from '../../features/consultorios/models/consultorio.models';
+import { ConsultorioService } from '../../features/consultorios/services/consultorio.service';
 
 const STORAGE_KEY = 'akine.activeConsultorioId';
 
 @Injectable({ providedIn: 'root' })
 export class ConsultorioContextService {
+  private readonly consultorioService = inject(ConsultorioService);
+
   readonly consultorios = signal<Consultorio[]>([]);
   readonly selectedConsultorioId = signal<string>('');
 
@@ -28,5 +31,18 @@ export class ConsultorioContextService {
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
+  }
+
+  /** Reloads consultorios from backend and optionally selects a specific one. */
+  reloadAndSelect(selectId?: string): void {
+    this.consultorioService.list().subscribe({
+      next: (items) => {
+        const activeItems = items.filter((c) => c.status === 'ACTIVE');
+        this.consultorios.set(activeItems);
+        if (selectId && activeItems.some((c) => c.id === selectId)) {
+          this.setSelectedConsultorioId(selectId);
+        }
+      },
+    });
   }
 }

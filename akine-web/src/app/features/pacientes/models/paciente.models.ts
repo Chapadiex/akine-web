@@ -9,7 +9,7 @@ export interface PacienteRequest {
   domicilio?: string;
   nacionalidad?: string;
   estadoCivil?: string;
-  profesion?: string;
+  profesiones?: string[];
   obraSocialNombre?: string;
   obraSocialPlan?: string;
   obraSocialNroAfiliado?: string;
@@ -25,7 +25,7 @@ export interface PacienteUpdateRequest {
   domicilio?: string;
   nacionalidad?: string;
   estadoCivil?: string;
-  profesion?: string;
+  profesiones?: string[];
   obraSocialNombre?: string;
   obraSocialPlan?: string;
   obraSocialNroAfiliado?: string;
@@ -43,7 +43,7 @@ export interface Paciente {
   domicilio?: string;
   nacionalidad?: string;
   estadoCivil?: string;
-  profesion?: string;
+  profesiones?: string[];
   obraSocialNombre?: string;
   obraSocialPlan?: string;
   obraSocialNroAfiliado?: string;

@@ -213,7 +213,7 @@ export class Paciente360Service {
       domicilio: patient.domicilio ?? null,
       nacionalidad: patient.nacionalidad ?? null,
       estadoCivil: patient.estadoCivil ?? null,
-      profesion: patient.profesion ?? null,
+      profesiones: patient.profesiones ?? null,
       obraSocialNombre: patient.obraSocialNombre ?? null,
       obraSocialPlan: patient.obraSocialPlan ?? null,
       obraSocialNroAfiliado: patient.obraSocialNroAfiliado ?? null,

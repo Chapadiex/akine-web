@@ -47,6 +47,7 @@ import {
   HistoriaClinicaTimelineEvent,
   HistoriaClinicaTipoAtencion,
   HistoriaClinicaWorkspace,
+  SesionClinicaRequest,
   SesionClinicaResponse,
 } from '../../models/historia-clinica.models';
 import { HistoriaClinicaService } from '../../services/historia-clinica.service';
@@ -728,52 +729,37 @@ export class HistoriaClinicaPacientePage {
     if (!this.hasLegajo()) {
       return;
     }
-    this.selectedSesion.set(null);
-    this.sesionForm.reset(
-      {
-        profesionalId: defaultProfesionalId ?? this.defaultProfesionalId(),
-        turnoId: '',
-        boxId: '',
-        fechaAtencion: this.nowForInput(),
-        tipoAtencion: 'SEGUIMIENTO',
-        motivoConsulta: '',
-        resumenClinico: '',
-        subjetivo: '',
-        objetivo: '',
-        evaluacion: '',
-        plan: '',
-      },
-      { emitEvent: false },
-    );
-    this.sesionForm.enable({ emitEvent: false });
-    this.showSesionDrawer.set(true);
-    this.navigateWithState({ ...this.routeState(), sesionId: undefined });
-  }
-
-  openSesion(sesionId: string, updateQuery = true): void {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const pacienteId = this.selectedPatient()?.id;
     if (!consultorioId || !pacienteId) {
       return;
     }
-    this.historiaSvc.getSesion(consultorioId, pacienteId, sesionId).subscribe({
+    const request: SesionClinicaRequest = {
+      profesionalId: defaultProfesionalId ?? this.defaultProfesionalId() ?? '',
+      turnoId: undefined,
+      boxId: undefined,
+      fechaAtencion: new Date().toISOString().slice(0, 16),
+      tipoAtencion: 'SEGUIMIENTO',
+      motivoConsulta: '',
+      resumenClinico: '',
+    };
+    this.historiaSvc.createSesion(consultorioId, pacienteId, request).subscribe({
       next: (sesion) => {
-        this.selectedSesion.set(sesion);
-        this.patchSesionForm(sesion);
-        if (sesion.estado === 'BORRADOR') {
-          this.sesionForm.enable({ emitEvent: false });
-        } else {
-          this.sesionForm.disable({ emitEvent: false });
-        }
-        this.showSesionDrawer.set(true);
-        if (this.backgroundLatestSesion()?.id === sesion.id) {
-          this.backgroundLatestSesion.set(sesion);
-        }
-        if (updateQuery) {
-          this.navigateWithState({ ...this.routeState(), sesionId });
-        }
+        this.router.navigate(['/app/historia-clinica/sesion', sesion.id], {
+          queryParams: { pacienteId },
+        });
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
+    });
+  }
+
+  openSesion(sesionId: string, updateQuery = true): void {
+    const pacienteId = this.selectedPatient()?.id;
+    if (!pacienteId) {
+      return;
+    }
+    this.router.navigate(['/app/historia-clinica/sesion', sesionId], {
+      queryParams: { pacienteId },
     });
   }
 
@@ -1219,9 +1205,6 @@ export class HistoriaClinicaPacientePage {
           emitEvent: false,
         });
         this.selectedCaseId.set(overview.casosActivos[0]?.diagnosticoId ?? null);
-        if (sesionId) {
-          this.openSesion(sesionId, false);
-        }
         this.ensureTabData(this.activeTab());
       },
       error: (err) => {

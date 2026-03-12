@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Profesional, ProfesionalRequest } from '../../models/consultorio.models';
+import { EspecialidadService } from '../../services/especialidad.service';
 
 @Component({
   selector: 'app-profesional-form',
@@ -83,16 +84,42 @@ import { Profesional, ProfesionalRequest } from '../../models/consultorio.models
 
             <div class="field">
               <label>Especialidades *</label>
+
               <div class="chips">
                 @for (e of especialidades(); track e) {
                   <span class="chip">{{ e }} <button type="button" (click)="removeEspecialidad(e)">x</button></span>
                 }
               </div>
-              <div class="speciality-input">
-                <input [value]="especialidadInput()" (input)="especialidadInput.set($any($event.target).value)"
-                       placeholder="Ej: Kinesiologia deportiva" />
-                <button type="button" (click)="addEspecialidad()">Agregar</button>
+
+              <div class="combobox" (click)="$event.stopPropagation()">
+                <input
+                  class="combobox-input"
+                  [value]="especialidadInput()"
+                  (input)="onInputChange($any($event.target).value)"
+                  (focus)="dropdownOpen.set(true)"
+                  (keydown.enter)="$event.preventDefault(); selectFirst()"
+                  (keydown.escape)="dropdownOpen.set(false)"
+                  placeholder="Buscar o escribir especialidad..."
+                />
+
+                @if (dropdownOpen() && filteredOptions().length > 0) {
+                  <ul class="dropdown" role="listbox">
+                    @for (opt of filteredOptions(); track opt.id) {
+                      <li
+                        role="option"
+                        (mousedown)="$event.preventDefault(); addFromCatalog(opt.nombre)"
+                      >{{ opt.nombre }}</li>
+                    }
+                  </ul>
+                }
+
+                @if (dropdownOpen() && filteredOptions().length === 0 && especialidadInput().trim()) {
+                  <div class="dropdown dropdown-hint">
+                    <span>Presiona Enter para agregar "{{ especialidadInput().trim() }}"</span>
+                  </div>
+                }
               </div>
+
               @if (showEspecialidadesError()) {
                 <small>Debe seleccionar al menos una especialidad.</small>
               }
@@ -139,33 +166,55 @@ import { Profesional, ProfesionalRequest } from '../../models/consultorio.models
     .field label { font-size: .84rem; font-weight: 600; color: var(--text-muted); }
     .field input { padding: .55rem .75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: .95rem; }
     .field small { color: var(--error); font-size: .78rem; }
-    .chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .4rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .4rem; min-height: 1.5rem; }
     .chip { border-radius: 999px; background: var(--bg); padding: .2rem .5rem; font-size: .8rem; display: inline-flex; align-items: center; gap: .35rem; }
     .chip button { border: 0; background: transparent; cursor: pointer; color: var(--text-muted); font-size: .75rem; }
-    .speciality-input { display: flex; gap: .5rem; }
-    .speciality-input input { flex: 1; }
-    .speciality-input button { border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); padding: .45rem .75rem; cursor: pointer; }
+    .combobox { position: relative; }
+    .combobox-input { width: 100%; padding: .55rem .75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: .95rem; box-sizing: border-box; }
+    .combobox-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent); }
+    .dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); z-index: 100; list-style: none; margin: 0; padding: .25rem 0; max-height: 200px; overflow-y: auto; }
+    .dropdown li { padding: .5rem .75rem; cursor: pointer; font-size: .9rem; }
+    .dropdown li:hover { background: var(--bg); }
+    .dropdown-hint { padding: .5rem .75rem; font-size: .82rem; color: var(--text-muted); }
     .actions { display: flex; justify-content: flex-end; gap: .7rem; margin-top: 1rem; }
     .btn-cancel { padding: .5rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--white); cursor: pointer; }
     .btn-save { padding: .5rem 1rem; border: none; border-radius: var(--radius); background: var(--primary); color: #fff; font-weight: 600; cursor: pointer; }
     .btn-save:disabled { opacity: .5; cursor: not-allowed; }
   `],
+  host: {
+    '(document:click)': 'dropdownOpen.set(false)',
+  },
 })
 export class ProfesionalForm {
   readonly editItem = input<Profesional | null>(null);
+  readonly consultorioId = input<string>('');
 
   readonly saved = output<ProfesionalRequest>();
   readonly savedEstado = output<{ activo: boolean; fechaDeBaja?: string; motivoDeBaja?: string }>();
   readonly cancelled = output<void>();
 
   private readonly fb = inject(FormBuilder);
+  private readonly especialidadSvc = inject(EspecialidadService);
+
   readonly tab = signal<'personales' | 'profesionales' | 'estado'>('personales');
   readonly especialidadInput = signal('');
   readonly especialidades = signal<string[]>([]);
   readonly submitted = signal(false);
+  readonly dropdownOpen = signal(false);
+  readonly catalogoEspecialidades = signal<{ id: string; nombre: string; activo: boolean }[]>([]);
+
   readonly showEspecialidadesError = computed(
     () => this.submitted() && this.especialidades().length === 0,
   );
+
+  readonly filteredOptions = computed(() => {
+    const q = this.especialidadInput().toLowerCase();
+    const selected = new Set(this.especialidades().map((e) => e.toLowerCase()));
+    return this.catalogoEspecialidades()
+      .filter((e) => e.activo)
+      .filter((e) => !selected.has(e.nombre.toLowerCase()))
+      .filter((e) => !q || e.nombre.toLowerCase().includes(q));
+  });
 
   readonly form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
@@ -183,6 +232,15 @@ export class ProfesionalForm {
   });
 
   constructor() {
+    effect(() => {
+      const cid = this.consultorioId();
+      if (!cid) return;
+      this.especialidadSvc.list(cid, { includeInactive: false }).subscribe({
+        next: (rows) => this.catalogoEspecialidades.set(rows),
+        error: () => this.catalogoEspecialidades.set([]),
+      });
+    });
+
     effect(() => {
       const item = this.editItem();
       if (!item) {
@@ -222,14 +280,34 @@ export class ProfesionalForm {
     });
   }
 
-  addEspecialidad(): void {
-    const value = this.especialidadInput().trim();
-    if (!value) return;
-    const exists = this.especialidades().some((x) => x.toLowerCase() === value.toLowerCase());
+  onInputChange(value: string): void {
+    this.especialidadInput.set(value);
+    this.dropdownOpen.set(true);
+  }
+
+  addFromCatalog(nombre: string): void {
+    const exists = this.especialidades().some((x) => x.toLowerCase() === nombre.toLowerCase());
     if (!exists) {
-      this.especialidades.set([...this.especialidades(), value]);
+      this.especialidades.set([...this.especialidades(), nombre]);
     }
     this.especialidadInput.set('');
+    this.dropdownOpen.set(false);
+  }
+
+  selectFirst(): void {
+    const options = this.filteredOptions();
+    if (options.length > 0) {
+      this.addFromCatalog(options[0].nombre);
+    } else {
+      const value = this.especialidadInput().trim();
+      if (!value) return;
+      const exists = this.especialidades().some((x) => x.toLowerCase() === value.toLowerCase());
+      if (!exists) {
+        this.especialidades.set([...this.especialidades(), value]);
+      }
+      this.especialidadInput.set('');
+      this.dropdownOpen.set(false);
+    }
   }
 
   removeEspecialidad(value: string): void {

@@ -1,0 +1,233 @@
+@if (status() === 'loading') {
+  <div class="sesion-loading">
+    <div class="spinner spinner--primary"></div>
+    <span>Cargando sesión...</span>
+  </div>
+}
+
+@if (status() === 'error') {
+  <div class="sesion-error">
+    <p>No se pudo cargar la sesión.</p>
+    <button class="btn btn--secondary" (click)="goBack()">Volver</button>
+  </div>
+}
+
+@if (status() === 'success' && sesion()) {
+  <!-- Block A: Context header (sticky) -->
+  <app-bloque-contexto
+    [sesion]="sesion()"
+    [overview]="overview()"
+    [casoActivo]="casoActivo()"
+    [sesionNumero]="sesionNumero()"
+  />
+
+  <!-- Mode selector — only for editable sessions -->
+  @if (isEditable()) {
+    <div class="mode-bar">
+      <div class="mode-selector">
+        <button
+          type="button"
+          class="mode-btn"
+          [class.mode-btn--active]="selectedMode() === 'quick'"
+          (click)="setMode('quick')"
+          title="Vista compacta: todos los bloques en una sola pantalla"
+        >
+          ⚡ Express
+        </button>
+        <button
+          type="button"
+          class="mode-btn"
+          [class.mode-btn--active]="selectedMode() === 'full'"
+          (click)="setMode('full')"
+          title="Vista completa: paso a paso con examen físico"
+        >
+          Completa
+        </button>
+      </div>
+      <span class="mode-hint">
+        @if (selectedMode() === 'quick') { Seguimiento rápido · estado actual, tratamiento y cierre }
+        @else { Evaluación completa · evaluación clínica y examen físico estructurado }
+      </span>
+    </div>
+  }
+
+  <!-- ═══ FULL MODE: stepper + step content ═══ -->
+  @if (sessionMode() === 'full') {
+    <nav class="stepper">
+      @for (step of steps; track step.key; let i = $index) {
+        <button
+          type="button"
+          class="stepper__item"
+          [class.stepper__item--active]="activeStep() === step.key"
+          [class.stepper__item--done]="isStepBefore(step.key)"
+          (click)="setStep(step.key)"
+        >
+          <span class="stepper__number">{{ step.icon }}</span>
+          <span class="stepper__label">{{ step.label }}</span>
+        </button>
+        @if (i < steps.length - 1) {
+          <span class="stepper__connector" [class.stepper__connector--done]="isStepBefore(steps[i + 1].key)"></span>
+        }
+      }
+    </nav>
+
+    <div class="sesion-body">
+      <main class="sesion-main">
+        @if (activeStep() === 'evaluacion') {
+          <app-bloque-evaluacion
+            [form]="evaluacionForm"
+            [previousEval]="previousSesion()?.evaluacionEstructurada ?? null"
+            (changed)="triggerAutoSave()"
+          />
+        }
+
+        @if (activeStep() === 'examen') {
+          @if (showExamenFisico()) {
+            <app-bloque-examen-fisico [form]="examenFisicoForm" (changed)="triggerAutoSave()" />
+          } @else if (isEditable()) {
+            <div class="step-empty">
+              <p class="step-empty__text">El examen físico es opcional para seguimientos habituales.</p>
+              <p class="step-empty__hint">Activalo si hay re-evaluación, empeoramiento o necesitás medición objetiva.</p>
+              <button type="button" class="btn btn--secondary" (click)="toggleExamenFisico()">
+                Registrar examen físico
+              </button>
+            </div>
+          } @else {
+            <div class="step-empty">
+              <p class="step-empty__text">No se registró examen físico en esta sesión.</p>
+            </div>
+          }
+        }
+
+        @if (activeStep() === 'tratamiento') {
+          <app-bloque-tratamiento
+            [form]="intervencionesForm"
+            [tratamientos]="tratamientos()"
+            [editable]="isEditable()"
+            (changed)="triggerAutoSave()"
+            (addIntervencion)="addIntervencion()"
+            (removeIntervencion)="removeIntervencion($event)"
+          />
+        }
+
+        @if (activeStep() === 'resultado') {
+          <app-bloque-resultado [form]="evaluacionForm" (changed)="triggerAutoSave()" />
+          <app-bloque-administrativo [form]="baseForm" (changed)="triggerAutoSave()" />
+        }
+
+        <div class="step-nav">
+          @if (!isFirstStep()) {
+            <button type="button" class="btn btn--ghost" (click)="prevStep()">← Anterior</button>
+          } @else {
+            <span></span>
+          }
+          @if (!isLastStep()) {
+            <button type="button" class="btn btn--secondary" (click)="nextStep()">Siguiente →</button>
+          }
+        </div>
+      </main>
+
+      @if (previousSesion(); as prev) {
+        <aside class="sesion-sidebar">
+          <ng-container *ngTemplateOutlet="sidebarPrev; context: { $implicit: prev }"></ng-container>
+        </aside>
+      }
+    </div>
+  }
+
+  <!-- ═══ EXPRESS / READONLY MODE: single scroll ═══ -->
+  @if (sessionMode() !== 'full') {
+    <div class="sesion-body">
+      <main class="sesion-main">
+        <!-- Block A: Estado actual (dolor + evolución) -->
+        <app-bloque-estado-actual
+          [form]="evaluacionForm"
+          [previousEval]="previousSesion()?.evaluacionEstructurada ?? null"
+          (changed)="triggerAutoSave()"
+        />
+
+        <!-- Block B: Tratamiento -->
+        <app-bloque-tratamiento
+          [form]="intervencionesForm"
+          [tratamientos]="tratamientos()"
+          [editable]="isEditable()"
+          (changed)="triggerAutoSave()"
+          (addIntervencion)="addIntervencion()"
+          (removeIntervencion)="removeIntervencion($event)"
+        />
+
+        <!-- Block C: Cierre rápido (respuesta + tolerancia + conducta + evolución breve) -->
+        <app-bloque-cierre-express [form]="evaluacionForm" (changed)="triggerAutoSave()" />
+
+        <app-bloque-administrativo [form]="baseForm" (changed)="triggerAutoSave()" />
+      </main>
+
+      @if (previousSesion(); as prev) {
+        <aside class="sesion-sidebar">
+          <ng-container *ngTemplateOutlet="sidebarPrev; context: { $implicit: prev }"></ng-container>
+        </aside>
+      }
+    </div>
+  }
+
+  <!-- Footer actions -->
+  <footer class="sesion-footer">
+    <button class="btn btn--ghost" (click)="goBack()">← Volver al workspace</button>
+    <div class="footer-right">
+      @if (isSaving()) {
+        <span class="save-indicator">Guardando...</span>
+      }
+      @if (isEditable()) {
+        <button class="btn btn--secondary" (click)="save()" [disabled]="isSaving()">Guardar</button>
+        <button class="btn btn--primary" (click)="closeSesion()" [disabled]="isSaving()">Cerrar sesión</button>
+      }
+    </div>
+  </footer>
+}
+
+<!-- Sidebar template -->
+<ng-template #sidebarPrev let-prev>
+  <div class="sidebar-card">
+    <h4 class="sidebar-title">Sesión anterior</h4>
+    <div class="sidebar-date">{{ prev.fechaAtencion | date: 'dd/MM/yyyy' }}</div>
+    @if (prev.evaluacionEstructurada; as evalPrev) {
+      @if (evalPrev.dolorIntensidad != null) {
+        <div class="sidebar-row">
+          <span class="sidebar-label">Dolor</span>
+          <span class="sidebar-value sidebar-value--dolor" [attr.data-nivel]="dolorNivel(evalPrev.dolorIntensidad)">
+            {{ evalPrev.dolorIntensidad }}/10
+          </span>
+        </div>
+      }
+      @if (evalPrev.evolucionEstado) {
+        <div class="sidebar-row">
+          <span class="sidebar-label">Evolución</span>
+          <span class="sidebar-value sidebar-value--evol" [attr.data-evol]="evalPrev.evolucionEstado">
+            {{ evolucionLabel(evalPrev.evolucionEstado) }}
+          </span>
+        </div>
+      }
+      @if (evalPrev.respuestaPaciente) {
+        <div class="sidebar-row">
+          <span class="sidebar-label">Respuesta</span>
+          <span class="sidebar-value">{{ respuestaLabel(evalPrev.respuestaPaciente) }}</span>
+        </div>
+      }
+      @if (evalPrev.proximaConducta) {
+        <div class="sidebar-row">
+          <span class="sidebar-label">Conducta</span>
+          <span class="sidebar-value">{{ conductaLabel(evalPrev.proximaConducta) }}</span>
+        </div>
+      }
+      @if (evalPrev.evolucionNota) {
+        <div class="sidebar-note">{{ evalPrev.evolucionNota }}</div>
+      }
+    }
+    @if (prev.intervenciones?.length) {
+      <div class="sidebar-row">
+        <span class="sidebar-label">Tratamientos</span>
+        <span class="sidebar-value">{{ prev.intervenciones!.length }} intervención(es)</span>
+      </div>
+    }
+  </div>
+</ng-template>

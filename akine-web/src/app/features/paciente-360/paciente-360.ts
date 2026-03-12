@@ -187,7 +187,15 @@ interface TabDef {
                     </div>
                     <div>
                       <span class="info-label">Profesion</span>
-                      <strong class="info-value">{{ current.profesion || '-' }}</strong>
+                      @if ((current.profesiones || []).length > 0) {
+                        <div class="info-professions">
+                          @for (prof of current.profesiones; track prof) {
+                            <span class="profession-tag">{{ prof }}</span>
+                          }
+                        </div>
+                      } @else {
+                        <strong class="info-value">-</strong>
+                      }
                     </div>
                   </article>
                   <article class="info-item">
@@ -585,6 +593,23 @@ interface TabDef {
       word-break: normal;
       line-height: 1.3;
     }
+    .info-professions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem;
+    }
+    .profession-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: .25rem .4rem;
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--primary) 10%, var(--white));
+      border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+      color: var(--primary);
+      font-size: .75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
     .card-divider { height: 1px; background: var(--border); }
     .body-block {
       padding: .75rem 1.2rem .95rem;
@@ -919,7 +944,7 @@ export class Paciente360 {
       domicilio: payload.domicilio,
       nacionalidad: payload.nacionalidad,
       estadoCivil: payload.estadoCivil,
-      profesion: payload.profesion,
+      profesiones: payload.profesiones,
       obraSocialNombre: payload.obraSocialNombre,
       obraSocialPlan: payload.obraSocialPlan,
       obraSocialNroAfiliado: payload.obraSocialNroAfiliado,
@@ -945,7 +970,7 @@ export class Paciente360 {
       domicilio: current.domicilio ?? '',
       nacionalidad: current.nacionalidad ?? '',
       estadoCivil: current.estadoCivil ?? '',
-      profesion: current.profesion ?? '',
+      profesiones: current.profesiones ?? [],
       obraSocialNombre: current.obraSocialNombre ?? '',
       obraSocialPlan: current.obraSocialPlan ?? '',
       obraSocialNroAfiliado: current.obraSocialNroAfiliado ?? '',

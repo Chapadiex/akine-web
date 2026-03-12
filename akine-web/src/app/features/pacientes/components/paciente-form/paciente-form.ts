@@ -10,7 +10,8 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { PacienteRequest } from '../../models/paciente.models';
 import { PACIENTE_PAISES } from '../../models/paciente-paises';
 import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones';
@@ -18,7 +19,7 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
 @Component({
   selector: 'app-paciente-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()">
@@ -106,7 +107,27 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
                 (click)="toggleProfessionMenu()"
               >
                 <span class="profession-trigger-copy">
-                  {{ form.controls.profesion.value || 'Seleccionar o buscar profesion' }}
+                  @if ((form.controls.profesiones.value || []).length > 0) {
+                    <div class="profession-chips">
+                      @for (prof of form.controls.profesiones.value; track prof) {
+                        <span class="profession-chip">
+                          {{ prof }}
+                          <button
+                            type="button"
+                            class="profession-chip-remove"
+                            (click)="removeProfession(prof); $event.stopPropagation()"
+                            aria-label="Remover {{ prof }}"
+                          >
+                            <svg viewBox="0 0 16 16" width="12" height="12" fill="none">
+                              <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                            </svg>
+                          </button>
+                        </span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="profession-trigger-placeholder">Seleccionar o buscar profesion</span>
+                  }
                 </span>
                 <span class="profession-trigger-icon" aria-hidden="true">
                   <svg viewBox="0 0 20 20" width="16" height="16" fill="none">
@@ -138,10 +159,17 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
                       <button
                         type="button"
                         class="profession-option"
-                        [class.profession-option-active]="form.controls.profesion.value === profession"
+                        [class.profession-option-active]="isProfessionSelected(profession)"
                         (click)="selectProfession(profession)"
                       >
-                        {{ profession }}
+                        <span class="profession-option-checkbox">
+                          @if (isProfessionSelected(profession)) {
+                            <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                              <path d="M3 8l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                          }
+                        </span>
+                        <span>{{ profession }}</span>
                       </button>
                     }
 
@@ -368,6 +396,49 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      display: flex;
+      width: 100%;
+    }
+    .profession-trigger-placeholder {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-muted);
+    }
+    .profession-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+      width: 100%;
+    }
+    .profession-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .32rem .48rem;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--primary) 10%, var(--white));
+      border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+      color: var(--primary);
+      font-size: .82rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .profession-chip-remove {
+      display: inline-grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      opacity: .7;
+      transition: opacity .16s ease;
+    }
+    .profession-chip-remove:hover {
+      opacity: 1;
     }
     .profession-trigger-icon {
       display: inline-grid;
@@ -425,10 +496,38 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
       gap: .2rem;
       padding-right: .1rem;
     }
-    .profession-option:hover,
+    .profession-option {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .profession-option-checkbox {
+      display: inline-grid;
+      place-items: center;
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      background: var(--white);
+      color: var(--primary);
+      transition: background .16s ease, border-color .16s ease;
+    }
+    .profession-option:hover {
+      background: color-mix(in srgb, var(--primary) 8%, var(--white));
+      border-color: color-mix(in srgb, var(--primary) 12%, var(--border));
+    }
+    .profession-option:hover .profession-option-checkbox {
+      border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+    }
     .profession-option-active {
       background: color-mix(in srgb, var(--primary) 8%, var(--white));
       border-color: color-mix(in srgb, var(--primary) 12%, var(--border));
+    }
+    .profession-option-active .profession-option-checkbox {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
     }
     .profession-empty {
       padding: .65rem;
@@ -512,7 +611,7 @@ export class PacienteForm {
     domicilio: ['', [Validators.maxLength(255)]],
     nacionalidad: ['', [Validators.maxLength(100)]],
     estadoCivil: ['', [Validators.maxLength(50)]],
-    profesion: ['', [Validators.maxLength(100)]],
+    profesiones: [[] as string[], []],
     obraSocialNombre: [''],
     obraSocialPlan: [''],
     obraSocialNroAfiliado: [''],
@@ -537,7 +636,7 @@ export class PacienteForm {
         domicilio: patient?.domicilio ?? '',
         nacionalidad: patient?.nacionalidad ?? defaultNationality,
         estadoCivil: patient?.estadoCivil ?? '',
-        profesion: patient?.profesion ?? '',
+        profesiones: JSON.stringify(patient?.profesiones ?? []),
         obraSocialNombre: patient?.obraSocialNombre ?? '',
         obraSocialPlan: patient?.obraSocialPlan ?? '',
         obraSocialNroAfiliado: patient?.obraSocialNroAfiliado ?? '',
@@ -559,7 +658,7 @@ export class PacienteForm {
         domicilio: patient?.domicilio ?? '',
         nacionalidad: patient?.nacionalidad ?? defaultNationality,
         estadoCivil: patient?.estadoCivil ?? '',
-        profesion: patient?.profesion ?? '',
+        profesiones: patient?.profesiones ?? [],
         obraSocialNombre: patient?.obraSocialNombre ?? '',
         obraSocialPlan: patient?.obraSocialPlan ?? '',
         obraSocialNroAfiliado: patient?.obraSocialNroAfiliado ?? '',
@@ -607,17 +706,31 @@ export class PacienteForm {
     const nextState = !this.professionOpen();
     this.nationalityOpen.set(false);
     this.professionOpen.set(nextState);
-    this.professionQuery.set(nextState ? this.form.controls.profesion.value : '');
+    this.professionQuery.set('');
   }
 
   updateProfessionQuery(value: string): void {
     this.professionQuery.set(value);
   }
 
+  isProfessionSelected(profession: string): boolean {
+    return (this.form.controls.profesiones.value || []).includes(profession);
+  }
+
   selectProfession(profession: string): void {
-    this.form.controls.profesion.setValue(profession);
-    this.professionQuery.set(profession);
-    this.professionOpen.set(false);
+    const current = this.form.controls.profesiones.value || [];
+    if (this.isProfessionSelected(profession)) {
+      this.removeProfession(profession);
+    } else {
+      this.form.controls.profesiones.setValue([...current, profession]);
+    }
+  }
+
+  removeProfession(profession: string): void {
+    const current = this.form.controls.profesiones.value || [];
+    this.form.controls.profesiones.setValue(
+      current.filter((p) => p !== profession)
+    );
   }
 
   toggleNationalityMenu(): void {
@@ -648,8 +761,11 @@ export class PacienteForm {
   useCustomProfession(): void {
     const query = this.professionQuery().trim();
     if (!query) return;
-    this.form.controls.profesion.setValue(query);
-    this.professionOpen.set(false);
+    const current = this.form.controls.profesiones.value || [];
+    if (!this.isProfessionSelected(query)) {
+      this.form.controls.profesiones.setValue([...current, query]);
+    }
+    this.professionQuery.set('');
   }
 
   submit(): void {
@@ -671,7 +787,7 @@ export class PacienteForm {
       domicilio: this.toOptional(v.domicilio),
       nacionalidad: this.toOptional(v.nacionalidad),
       estadoCivil: this.toOptional(v.estadoCivil),
-      profesion: this.toOptional(v.profesion),
+      profesiones: (v.profesiones && v.profesiones.length > 0) ? v.profesiones : undefined,
       obraSocialNombre: this.toOptional(v.obraSocialNombre),
       obraSocialPlan: this.toOptional(v.obraSocialPlan),
       obraSocialNroAfiliado: this.toOptional(v.obraSocialNroAfiliado),
@@ -704,7 +820,7 @@ export class PacienteForm {
       fechaNacimiento: 'basicos',
       sexo: 'basicos',
       email: 'otros',
-      profesion: 'otros',
+      profesiones: 'otros',
       domicilio: 'otros',
       nacionalidad: 'otros',
       estadoCivil: 'otros',

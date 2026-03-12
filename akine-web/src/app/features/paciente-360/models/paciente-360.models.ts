@@ -11,7 +11,7 @@ export interface Patient360Header {
   domicilio?: string | null;
   nacionalidad?: string | null;
   estadoCivil?: string | null;
-  profesion?: string | null;
+  profesiones?: string[] | null;
   obraSocialNombre?: string | null;
   obraSocialPlan?: string | null;
   obraSocialNroAfiliado?: string | null;

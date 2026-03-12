@@ -233,6 +233,9 @@ export interface SesionClinicaResponse {
   updatedAt: string;
   closedAt?: string | null;
   adjuntos: AdjuntoClinicoResponse[];
+  evaluacionEstructurada?: SesionEvaluacionDTO | null;
+  examenFisico?: SesionExamenFisicoDTO | null;
+  intervenciones?: SesionIntervencionDTO[] | null;
 }
 
 export interface SesionClinicaRequest {
@@ -247,6 +250,9 @@ export interface SesionClinicaRequest {
   objetivo?: string | null;
   evaluacion?: string | null;
   plan?: string | null;
+  evaluacionEstructurada?: SesionEvaluacionDTO | null;
+  examenFisico?: SesionExamenFisicoDTO | null;
+  intervenciones?: SesionIntervencionDTO[] | null;
 }
 
 export interface DiagnosticoClinicoResponse {
@@ -369,4 +375,61 @@ export interface HistoriaClinicaSesionQuery {
 export interface ClinicalDownload {
   filename: string;
   blob: Blob;
+}
+
+// ── Structured Session Data (Blocks B/C/D/E) ──────────────────────────
+
+export type DolorTipo = 'PUNZANTE' | 'QUEMANTE' | 'DIFUSO' | 'MECANICO' | 'OTRO';
+export type DolorComportamiento = 'MEJORA' | 'EMPEORA' | 'CONSTANTE' | 'INTERMITENTE';
+export type EvolucionDesdeAnterior = 'MEJOR' | 'IGUAL' | 'PEOR';
+export type RespuestaPaciente = 'FAVORABLE' | 'SIN_CAMBIOS' | 'REGULAR' | 'EMPEORA' | 'PARCIAL';
+export type Tolerancia = 'BUENA' | 'REGULAR' | 'MALA';
+export type ProximaConducta =
+  | 'CONTINUAR'
+  | 'AJUSTAR'
+  | 'REEVALUAR'
+  | 'ALTA'
+  | 'DERIVAR'
+  | 'SOLICITAR_ESTUDIO'
+  | 'SUSPENDER';
+
+/** Block B + E — Evaluación clínica + Resultado */
+export interface SesionEvaluacionDTO {
+  dolorIntensidad?: number | null;
+  dolorZona?: string | null;
+  dolorLateralidad?: string | null;
+  dolorTipo?: DolorTipo | null;
+  dolorComportamiento?: DolorComportamiento | null;
+  evolucionEstado?: EvolucionDesdeAnterior | null;
+  evolucionNota?: string | null;
+  objetivoSesion?: string | null;
+  limitacionFuncional?: string | null;
+  respuestaPaciente?: RespuestaPaciente | null;
+  tolerancia?: Tolerancia | null;
+  indicacionesDomiciliarias?: string | null;
+  proximaConducta?: ProximaConducta | null;
+}
+
+/** Block C — Examen físico */
+export interface SesionExamenFisicoDTO {
+  rangoMovimientoJson?: string | null;
+  fuerzaMuscularJson?: string | null;
+  funcionalidadNota?: string | null;
+  marchaBalanceNota?: string | null;
+  signosInflamatorios?: string | null;
+  observacionesNeuroResp?: string | null;
+  testsMedidasJson?: string | null;
+}
+
+/** Block D — Intervención / tratamiento aplicado */
+export interface SesionIntervencionDTO {
+  tratamientoId?: string | null;
+  tratamientoNombre: string;
+  tecnica?: string | null;
+  zona?: string | null;
+  parametrosJson?: string | null;
+  duracionMinutos?: number | null;
+  profesionalId?: string | null;
+  observaciones?: string | null;
+  orderIndex: number;
 }
