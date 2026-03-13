@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, output, ViewChild, AfterViewInit, ElementRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   HORARIO_DIA_OPTIONS,
@@ -23,7 +23,7 @@ export interface HorarioFormValue {
         <form [formGroup]="form" (ngSubmit)="submit()">
           <div class="field">
             <label>Dia</label>
-            <select formControlName="diaSeleccion">
+            <select formControlName="diaSeleccion" #diaSelect>
               @for (d of dias; track d.key) {
                 <option [value]="d.key">{{ d.label }}</option>
               }
@@ -60,6 +60,8 @@ export class HorarioForm {
   saved = output<HorarioFormValue>();
   cancelled = output<void>();
 
+  @ViewChild('diaSelect') diaSelect!: ElementRef<HTMLSelectElement>;
+
   private fb = inject(FormBuilder);
   dias = HORARIO_DIA_OPTIONS;
 
@@ -68,6 +70,11 @@ export class HorarioForm {
     horaApertura: ['', Validators.required],
     horaCierre: ['', Validators.required],
   });
+
+  ngAfterViewInit(): void {
+    // Auto-focus en el select del día cuando el modal se abre
+    this.diaSelect.nativeElement.focus();
+  }
 
   submit(): void {
     if (this.form.invalid) return;

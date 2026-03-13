@@ -77,10 +77,10 @@ export interface Profesional {
 }
 
 export interface ProfesionalRequest {
-  nombre: string;
-  apellido: string;
+  nombre?: string;
+  apellido?: string;
   nroDocumento?: string;
-  matricula: string;
+  matricula?: string;
   especialidad?: string;
   especialidades?: string;
   email?: string;

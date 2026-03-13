@@ -44,7 +44,7 @@
         </div>
       } @else {
         <div class="selector-empty selector-empty--compact">
-          <p>Sin coincidencias para la busqueda actual.</p>
+          <p>Sin coincidencias para la búsqueda actual.</p>
         </div>
       }
     </div>
@@ -76,7 +76,7 @@
                   <div class="selected-row__chips">
                     <span class="soft-chip">{{ card.categoryName }}</span>
                     @if (card.critical) {
-                      <span class="soft-chip soft-chip--critical">Critico</span>
+                      <span class="soft-chip soft-chip--critical">Crítico</span>
                     }
                   </div>
                 </div>
@@ -105,13 +105,13 @@
                             <input type="text" formControlName="label" placeholder="Ej. Dolor cronico de pie derecho" />
                           </label>
                           <label class="field">
-                            <span>Categoria</span>
+                            <span>Categoría</span>
                             <input type="text" formControlName="category" placeholder="Ej. Traumatologico, Personal, Familiar" />
                           </label>
                         </div>
                         <label class="field">
-                          <span>Observacion opcional</span>
-                          <textarea rows="3" formControlName="observations" placeholder="Contexto clinico relevante"></textarea>
+                          <span>Observación opcional</span>
+                          <textarea rows="3" formControlName="observations" placeholder="Contexto clínico relevante"></textarea>
                         </label>
                       } @else if (editorState.descriptor.schema === 'allergy') {
                         <div class="editor-grid">
@@ -120,7 +120,7 @@
                             <input type="text" formControlName="substance" placeholder="Ej. Penicilina, latex, crema" />
                           </label>
                           <label class="field">
-                            <span>Reaccion</span>
+                            <span>Reacción</span>
                             <input type="text" formControlName="reaction" placeholder="Ej. Rash, anafilaxia, prurito" />
                           </label>
                           <label class="field">
@@ -135,13 +135,13 @@
                         </div>
                         <label class="field">
                           <span>Notas</span>
-                          <textarea rows="3" formControlName="notes" placeholder="Indicaciones o aclaraciones utiles"></textarea>
+                          <textarea rows="3" formControlName="notes" placeholder="Indicaciones o aclaraciones útiles"></textarea>
                         </label>
                       } @else if (editorState.descriptor.schema === 'medication') {
                         <div class="editor-grid">
                           <label class="field">
-                            <span>Medicacion o grupo</span>
-                            <input type="text" formControlName="medication" placeholder="Ej. Losartan, analgesicos, anticoagulantes" />
+                            <span>Medicación o grupo</span>
+                            <input type="text" formControlName="medication" placeholder="Ej. Losartan, analgésicos, anticoagulantes" />
                           </label>
                           <label class="field">
                             <span>Dosis</span>
@@ -154,7 +154,7 @@
                         </div>
                         <label class="field">
                           <span>Notas</span>
-                          <textarea rows="3" formControlName="notes" placeholder="Aclaraciones clinicas o administrativas"></textarea>
+                          <textarea rows="3" formControlName="notes" placeholder="Aclaraciones clínicas o administrativas"></textarea>
                         </label>
                       } @else if (editorState.descriptor.schema === 'surgery') {
                         <div class="editor-grid">
@@ -207,7 +207,7 @@
                           </div>
                         } @else {
                           <label class="field">
-                            <span>{{ editorState.descriptor.mode === 'simple' ? 'Observacion opcional' : 'Detalle breve' }}</span>
+                            <span>{{ editorState.descriptor.mode === 'simple' ? 'Observación opcional' : 'Detalle breve' }}</span>
                             <input
                               type="text"
                               formControlName="detail"
@@ -218,14 +218,14 @@
 
                         <label class="field">
                           <span>Notas</span>
-                          <textarea rows="3" formControlName="notes" placeholder="Complemento clinico opcional"></textarea>
+                          <textarea rows="3" formControlName="notes" placeholder="Complemento clínico opcional"></textarea>
                         </label>
                       }
 
                       <div class="editor-footer">
                         <label class="check">
                           <input type="checkbox" formControlName="critical" />
-                          Critico
+                          Crítico
                         </label>
                         <div class="editor-footer__actions">
                           <button type="button" class="btn btn--ghost btn--sm" (click)="closeEditor()">Cancelar</button>

@@ -210,81 +210,158 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
               </div>
             }
 
-            <div class="form-grid">
-              <label class="field">
-                <span>Nombre <em class="required-mark">*</em></span>
-                <input formControlName="nombre" />
-                @if (isControlInvalid('nombre')) {
-                  <small class="field-error">Nombre es obligatorio.</small>
+            <!-- Tabs -->
+            <div class="etabs-shell">
+              <div class="etabs" role="tablist" aria-label="Secciones del empleado">
+                @for (tab of tabSections; track tab.id) {
+                  <button
+                    type="button"
+                    class="etab"
+                    [class.etab-active]="activeTab() === tab.id"
+                    [attr.aria-selected]="activeTab() === tab.id"
+                    (click)="setActiveTab(tab.id)"
+                  >{{ tab.label }}</button>
                 }
-              </label>
-
-              <label class="field">
-                <span>Apellido <em class="required-mark">*</em></span>
-                <input formControlName="apellido" />
-                @if (isControlInvalid('apellido')) {
-                  <small class="field-error">Apellido es obligatorio.</small>
-                }
-              </label>
-
-              <label class="field">
-                <span>Cargo <em class="required-mark">*</em></span>
-                <select formControlName="cargo">
-                  <option value="">Seleccionar cargo</option>
-                  @for (cargo of cargoOptions(); track cargo.slug) {
-                    <option [value]="cargo.nombre">{{ cargo.nombre }}</option>
-                  }
-                </select>
-                @if (isControlInvalid('cargo')) {
-                  <small class="field-error">Cargo es obligatorio.</small>
-                }
-              </label>
-
-              <label class="field">
-                <span>Email <em class="required-mark">*</em></span>
-                <input formControlName="email" type="email" />
-                @if (isControlInvalid('email')) {
-                  <small class="field-error">{{ emailErrorMessage() }}</small>
-                }
-              </label>
-
-              <label class="field">
-                <span>DNI <em class="required-mark">*</em></span>
-                <input formControlName="dni" />
-                @if (isControlInvalid('dni')) {
-                  <small class="field-error">DNI es obligatorio.</small>
-                }
-              </label>
-
-              <label class="field">
-                <span>Fecha de nacimiento <em class="required-mark">*</em></span>
-                <input formControlName="fechaNacimiento" type="date" />
-                @if (isControlInvalid('fechaNacimiento')) {
-                  <small class="field-error">Fecha de nacimiento es obligatoria.</small>
-                }
-              </label>
-
-              <label class="field">
-                <span>Telefono <em class="required-mark">*</em></span>
-                <input formControlName="telefono" />
-                @if (isControlInvalid('telefono')) {
-                  <small class="field-error">Telefono es obligatorio.</small>
-                }
-              </label>
-
-              <label class="field field-full">
-                <span>Direccion <em class="required-mark">*</em></span>
-                <input formControlName="direccion" />
-                @if (isControlInvalid('direccion')) {
-                  <small class="field-error">Direccion es obligatoria.</small>
-                }
-              </label>
-
-              <label class="field field-full">
-                <span>Notas internas</span>
-                <textarea formControlName="notasInternas" rows="2"></textarea>
-              </label>
+              </div>
             </div>
+
+            <!-- Tab: Datos básicos -->
+            @if (activeTab() === 'basicos') {
+              <div class="etab-panel">
+                <div class="etab-heading">
+                  <strong>Datos básicos</strong>
+                  <span>Identificacion y datos personales obligatorios.</span>
+                </div>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Nombre <em class="required-mark">*</em></span>
+                    <input formControlName="nombre" placeholder="Nombre"
+                      [class.input-invalid]="isControlInvalid('nombre')" />
+                    @if (isControlInvalid('nombre') && form.controls.nombre.hasError('required')) {
+                      <small class="field-error">Nombre es obligatorio.</small>
+                    }
+                    @if (isControlInvalid('nombre') && form.controls.nombre.hasError('maxlength')) {
+                      <small class="field-error">Maximo 100 caracteres.</small>
+                    }
+                  </label>
+
+                  <label class="field">
+                    <span>Apellido <em class="required-mark">*</em></span>
+                    <input formControlName="apellido" placeholder="Apellido"
+                      [class.input-invalid]="isControlInvalid('apellido')" />
+                    @if (isControlInvalid('apellido') && form.controls.apellido.hasError('required')) {
+                      <small class="field-error">Apellido es obligatorio.</small>
+                    }
+                    @if (isControlInvalid('apellido') && form.controls.apellido.hasError('maxlength')) {
+                      <small class="field-error">Maximo 100 caracteres.</small>
+                    }
+                  </label>
+
+                  <label class="field">
+                    <span>DNI <em class="required-mark">*</em></span>
+                    <input formControlName="dni" placeholder="30111222"
+                      inputmode="numeric"
+                      [class.input-invalid]="isControlInvalid('dni')" />
+                    @if (isControlInvalid('dni') && form.controls.dni.hasError('required')) {
+                      <small class="field-error">El DNI es obligatorio.</small>
+                    }
+                    @if (isControlInvalid('dni') && form.controls.dni.hasError('pattern')) {
+                      <small class="field-error">El DNI debe tener entre 7 y 10 digitos.</small>
+                    }
+                  </label>
+
+                  <label class="field">
+                    <span>Fecha de nacimiento <em class="required-mark">*</em></span>
+                    <input formControlName="fechaNacimiento" type="date"
+                      [class.input-invalid]="isControlInvalid('fechaNacimiento')" />
+                    @if (isControlInvalid('fechaNacimiento')) {
+                      <small class="field-error">La fecha de nacimiento es obligatoria.</small>
+                    }
+                  </label>
+                </div>
+              </div>
+            }
+
+            <!-- Tab: Contacto -->
+            @if (activeTab() === 'contacto') {
+              <div class="etab-panel">
+                <div class="etab-heading">
+                  <strong>Contacto</strong>
+                  <span>Email, telefono y direccion del empleado.</span>
+                </div>
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Email <em class="required-mark">*</em></span>
+                    <input formControlName="email" type="email" placeholder="mail@ejemplo.com"
+                      inputmode="email"
+                      [class.input-invalid]="isControlInvalid('email')" />
+                    @if (isControlInvalid('email')) {
+                      <small class="field-error">{{ emailErrorMessage() }}</small>
+                    }
+                  </label>
+
+                  <label class="field">
+                    <span>Telefono <em class="required-mark">*</em></span>
+                    <input formControlName="telefono" type="tel" placeholder="1155554444"
+                      inputmode="tel"
+                      [class.input-invalid]="isControlInvalid('telefono')" />
+                    @if (isControlInvalid('telefono') && form.controls.telefono.hasError('required')) {
+                      <small class="field-error">El telefono es obligatorio.</small>
+                    }
+                    @if (isControlInvalid('telefono') && form.controls.telefono.hasError('maxlength')) {
+                      <small class="field-error">Maximo 30 caracteres.</small>
+                    }
+                  </label>
+
+                  <label class="field field-full">
+                    <span>Direccion <em class="required-mark">*</em></span>
+                    <input formControlName="direccion" placeholder="Calle, numero, localidad"
+                      [class.input-invalid]="isControlInvalid('direccion')" />
+                    @if (isControlInvalid('direccion') && form.controls.direccion.hasError('required')) {
+                      <small class="field-error">La direccion es obligatoria.</small>
+                    }
+                    @if (isControlInvalid('direccion') && form.controls.direccion.hasError('maxlength')) {
+                      <small class="field-error">Maximo 255 caracteres.</small>
+                    }
+                  </label>
+                </div>
+              </div>
+            }
+
+            <!-- Tab: Cargo -->
+            @if (activeTab() === 'cargo') {
+              <div class="etab-panel">
+                <div class="etab-heading">
+                  <strong>Cargo</strong>
+                  <span>Rol del empleado dentro del consultorio.</span>
+                </div>
+                <div class="form-grid">
+                  <label class="field field-full">
+                    <span>Cargo <em class="required-mark">*</em></span>
+                    <select formControlName="cargo"
+                      [class.input-invalid]="isControlInvalid('cargo')">
+                      <option value="">Seleccionar cargo</option>
+                      @for (cargo of cargoOptions(); track cargo.slug) {
+                        <option [value]="cargo.nombre">{{ cargo.nombre }}</option>
+                      }
+                    </select>
+                    @if (isControlInvalid('cargo')) {
+                      <small class="field-error">El cargo es obligatorio.</small>
+                    }
+                  </label>
+
+                  <label class="field field-full">
+                    <span>Notas internas</span>
+                    <textarea formControlName="notasInternas" rows="3"
+                      placeholder="Notas internas del empleado (opcional)"
+                      [class.input-invalid]="isControlInvalid('notasInternas')"></textarea>
+                    @if (isControlInvalid('notasInternas') && form.controls.notasInternas.hasError('maxlength')) {
+                      <small class="field-error">Maximo 500 caracteres.</small>
+                    }
+                  </label>
+                </div>
+              </div>
+            }
 
             <div class="actions modal-actions">
               <button class="btn-primary" type="submit" [disabled]="saving()">
@@ -453,6 +530,57 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
       font: inherit;
       background: var(--white);
     }
+    .input-invalid {
+      border-color: #e53e3e !important;
+      background: color-mix(in srgb, #e53e3e 4%, var(--white)) !important;
+    }
+    .input-invalid:focus {
+      border-color: #e53e3e !important;
+      box-shadow: 0 0 0 3px color-mix(in srgb, #e53e3e 18%, transparent) !important;
+    }
+    /* Tabs */
+    .etabs-shell { margin-bottom: .65rem; }
+    .etabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+      padding: .22rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--border) 50%, var(--white) 50%);
+    }
+    .etab {
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--text);
+      font-size: .86rem;
+      font-weight: 700;
+      padding: .48rem .78rem;
+      cursor: pointer;
+      transition: background .16s ease, border-color .16s ease, color .16s ease;
+    }
+    .etab:hover { background: color-mix(in srgb, var(--white) 80%, var(--border) 20%); }
+    .etab-active {
+      background: var(--white);
+      border-color: var(--border);
+      box-shadow: var(--shadow-sm);
+      color: var(--primary);
+    }
+    .etab-panel {
+      border: 1px solid color-mix(in srgb, var(--border) 92%, var(--primary) 8%);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--bg) 18%, var(--white));
+      padding: .9rem .95rem .3rem;
+      margin-bottom: .2rem;
+    }
+    .etab-heading {
+      display: grid;
+      gap: .15rem;
+      margin-bottom: .85rem;
+    }
+    .etab-heading strong { color: var(--text); font-size: .98rem; }
+    .etab-heading span { color: var(--text-muted); font-size: .8rem; }
     .actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .6rem; }
     .btn-link {
       border: 1px solid var(--border); background: var(--white); color: var(--text);
@@ -569,16 +697,23 @@ export class EmpleadosListPage {
   });
 
   readonly form = this.fb.nonNullable.group({
-    nombre: ['', [Validators.required]],
-    apellido: ['', [Validators.required]],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
+    apellido: ['', [Validators.required, Validators.maxLength(100)]],
     cargo: ['', [Validators.required]],
-    dni: ['', [Validators.required]],
+    dni: ['', [Validators.required, Validators.pattern(/^[0-9]{7,10}$/)]],
     fechaNacimiento: ['', [Validators.required]],
-    email: ['', [Validators.required, Validators.email]],
-    telefono: ['', [Validators.required]],
-    direccion: ['', [Validators.required]],
-    notasInternas: [''],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
+    telefono: ['', [Validators.required, Validators.maxLength(30)]],
+    direccion: ['', [Validators.required, Validators.maxLength(255)]],
+    notasInternas: ['', [Validators.maxLength(500)]],
   });
+
+  readonly activeTab = signal<'basicos' | 'contacto' | 'cargo'>('basicos');
+  readonly tabSections = [
+    { id: 'basicos' as const, label: 'Datos básicos' },
+    { id: 'contacto' as const, label: 'Contacto' },
+    { id: 'cargo' as const, label: 'Cargo' },
+  ];
 
   readonly filteredRows = computed(() => {
     const estado = this.filtersForm.controls.estado.value as 'ALL' | ColaboradorEstado;
@@ -662,11 +797,35 @@ export class EmpleadosListPage {
     }
   }
 
+  setActiveTab(tab: 'basicos' | 'contacto' | 'cargo'): void {
+    this.activeTab.set(tab);
+  }
+
   isControlInvalid(
-    name: 'nombre' | 'apellido' | 'cargo' | 'dni' | 'fechaNacimiento' | 'email' | 'telefono' | 'direccion',
+    name: 'nombre' | 'apellido' | 'cargo' | 'dni' | 'fechaNacimiento' | 'email' | 'telefono' | 'direccion' | 'notasInternas',
   ): boolean {
     const control = this.form.controls[name];
     return control.invalid && (control.touched || this.submitAttempted());
+  }
+
+  private moveToFirstInvalidTab(): void {
+    const tabByControl: Record<string, 'basicos' | 'contacto' | 'cargo'> = {
+      nombre: 'basicos',
+      apellido: 'basicos',
+      dni: 'basicos',
+      fechaNacimiento: 'basicos',
+      email: 'contacto',
+      telefono: 'contacto',
+      direccion: 'contacto',
+      cargo: 'cargo',
+      notasInternas: 'cargo',
+    };
+    for (const controlName of Object.keys(this.form.controls)) {
+      if (this.form.controls[controlName as keyof typeof this.form.controls].invalid) {
+        this.activeTab.set(tabByControl[controlName] ?? 'basicos');
+        return;
+      }
+    }
   }
 
   emailErrorMessage(): string {
@@ -732,6 +891,7 @@ export class EmpleadosListPage {
       notasInternas: '',
     });
     this.submitAttempted.set(false);
+    this.activeTab.set('basicos');
     this.selected.set(null);
     this.panelMode.set('create');
   }
@@ -752,6 +912,7 @@ export class EmpleadosListPage {
       notasInternas: row.notasInternas ?? '',
     });
     this.submitAttempted.set(false);
+    this.activeTab.set('basicos');
     this.panelMode.set('edit');
   }
 
@@ -768,6 +929,7 @@ export class EmpleadosListPage {
     this.submitAttempted.set(true);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.moveToFirstInvalidTab();
       this.toast.error('Faltan datos obligatorios para guardar.');
       return;
     }

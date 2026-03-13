@@ -259,7 +259,7 @@ describe('HistoriaClinica page', () => {
     fixture.detectChanges();
 
     expect(component.canEditSesion()).toBeFalse();
-    expect(fixture.nativeElement.textContent).toContain('La sesion esta en solo lectura');
+    expect(fixture.nativeElement.textContent).toContain('La sesión está en solo lectura');
   });
 
   it('searches patients by dni and keeps only linked matches', fakeAsync(() => {

@@ -292,7 +292,7 @@ describe('HistoriaClinicaPacientePage', () => {
 
     createComponent();
 
-    expect(fixture.nativeElement.textContent).toContain('Registrar atencion inicial');
+    expect(fixture.nativeElement.textContent).toContain('Registrar atención inicial');
     expect(fixture.nativeElement.querySelector('.header-search')).toBeNull();
   });
 
@@ -311,14 +311,14 @@ describe('HistoriaClinicaPacientePage', () => {
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
-    clickButton('Registrar atencion inicial');
+    clickButton('Registrar atención inicial');
 
     expect(fixture.nativeElement.querySelectorAll('.wizard-step').length).toBe(3);
-    expect(fixture.nativeElement.textContent).toContain('Ingreso clinico');
+    expect(fixture.nativeElement.textContent).toContain('Ingreso clínico');
     expect(fixture.nativeElement.textContent).toContain('Paso 1');
     expect(
       fixture.nativeElement.querySelector('input[formControlName="fechaHora"]')?.value,
-    ).withContext('fecha/hora de atencion inicial precargada').toBeTruthy();
+    ).withContext('fecha/hora de atención inicial precargada').toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Consulta particular');
   });
 
@@ -337,7 +337,7 @@ describe('HistoriaClinicaPacientePage', () => {
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
-    clickButton('Registrar atencion inicial');
+    clickButton('Registrar atención inicial');
     fixture.componentInstance.createLegajoForm.controls.profesionalId.setValue('', { emitEvent: false });
     fixture.componentInstance.createLegajoForm.controls.fechaHora.setValue('', { emitEvent: false });
     fixture.componentInstance.createLegajoForm.controls.motivoConsultaBreve.setValue('', { emitEvent: false });
@@ -372,7 +372,7 @@ describe('HistoriaClinicaPacientePage', () => {
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
-    clickButton('Registrar atencion inicial');
+    clickButton('Registrar atención inicial');
     fixture.componentInstance.handleSelectedTreatment('TMN001');
     fixture.detectChanges();
 
@@ -401,7 +401,7 @@ describe('HistoriaClinicaPacientePage', () => {
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
-    clickButton('Registrar atencion inicial');
+    clickButton('Registrar atención inicial');
     fixture.componentInstance.createLegajoForm.controls.motivoConsultaBreve.setValue('Ingreso inicial');
     fixture.componentInstance.createLegajoForm.controls.motivoConsultaBreve.markAsDirty();
     fixture.componentInstance.createLegajoForm.markAsDirty();
@@ -413,7 +413,7 @@ describe('HistoriaClinicaPacientePage', () => {
     closeButton!.click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Salir del registro de atencion inicial');
+    expect(fixture.nativeElement.textContent).toContain('Salir del registro de atención inicial');
   });
 
   it('shows new-case CTA as primary action when patient has legajo but no active cases', () => {
@@ -430,8 +430,8 @@ describe('HistoriaClinicaPacientePage', () => {
 
     createComponent();
 
-    expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').toContain('Nuevo caso clinico');
-    expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').not.toContain('Nueva sesion');
+    expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').toContain('Nuevo caso clínico');
+    expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').not.toContain('Nueva sesión');
   });
 
   it('searches by DNI using the patient service', fakeAsync(() => {
@@ -455,7 +455,7 @@ describe('HistoriaClinicaPacientePage', () => {
     queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
 
     createComponent();
-    clickButton('Nueva sesion');
+    clickButton('Nueva sesión');
 
     fixture.componentInstance.sesionForm.controls.motivoConsulta.setValue('Borrador pendiente');
     fixture.componentInstance.sesionForm.controls.motivoConsulta.markAsDirty();

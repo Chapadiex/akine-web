@@ -54,7 +54,7 @@ export interface ProfesionalColaboradorRequest {
   nombre: string;
   apellido: string;
   nroDocumento?: string;
-  matricula: string;
+  matricula?: string;
   especialidades: string[];
   email?: string;
   telefono?: string;

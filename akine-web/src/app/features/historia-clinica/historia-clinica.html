@@ -1,10 +1,10 @@
 <section class="historia-page">
   <header class="hero">
     <div class="hero-copy">
-      <p class="eyebrow">Workspace clinico global</p>
-      <h1>Historia clinica consultorio-scoped</h1>
+      <p class="eyebrow">Workspace clínico global</p>
+      <h1>Historia clínica consultorio-scoped</h1>
       <p>
-        Seguimiento operativo de sesiones, legajo del paciente y registro clinico en un solo
+        Seguimiento operativo de sesiones, legajo del paciente y registro clínico en un solo
         espacio.
       </p>
     </div>
@@ -21,7 +21,7 @@
   @if (!consultorioCtx.selectedConsultorioId()) {
     <section class="empty-card">
       <h2>Selecciona un consultorio activo</h2>
-      <p>El workspace clinico necesita contexto de consultorio para cargar pacientes y sesiones.</p>
+      <p>El workspace clínico necesita contexto de consultorio para cargar pacientes y sesiones.</p>
     </section>
   } @else {
     <div class="workspace-shell">
@@ -69,7 +69,7 @@
           <form class="filters-grid" [formGroup]="filterForm">
             <label class="field field--full">
               <span>Texto libre</span>
-              <input type="search" formControlName="q" placeholder="Motivo, resumen o evaluacion" />
+              <input type="search" formControlName="q" placeholder="Motivo, resumen o evaluación" />
             </label>
 
             <label class="field">
@@ -153,7 +153,7 @@
               <button type="button" class="btn btn--ghost btn--sm" [disabled]="!canGoPrevPage()" (click)="goToPrevPage()">
                 Anterior
               </button>
-              <span>Pagina {{ workspacePage() + 1 }}</span>
+              <span>Página {{ workspacePage() + 1 }}</span>
               <button type="button" class="btn btn--ghost btn--sm" [disabled]="!canGoNextPage()" (click)="goToNextPage()">
                 Siguiente
               </button>
@@ -172,8 +172,8 @@
           <section class="empty-card">
             <h2>Selecciona un paciente</h2>
             <p>
-              Puedes buscarlo por apellido o elegir una sesion del panel izquierdo para abrir el
-              legajo clinico y comenzar a registrar evoluciones.
+              Puedes buscarlo por apellido o elegir una sesión del panel izquierdo para abrir el
+              legajo clínico y comenzar a registrar evoluciones.
             </p>
           </section>
         } @else {
@@ -182,13 +182,13 @@
               <p class="eyebrow">Legajo del paciente</p>
               <h2>{{ patientSummary() }}</h2>
               <p class="patient-copy">
-                {{ selectedPatient()!.dni }} · {{ selectedPatient()!.telefono || 'Sin telefono' }} ·
+                {{ selectedPatient()!.dni }} · {{ selectedPatient()!.telefono || 'Sin teléfono' }} ·
                 {{ selectedPatient()!.obraSocialNombre || 'Sin cobertura declarada' }}
               </p>
             </div>
 
             <div class="patient-actions">
-              <span class="meta-chip">{{ selectedPatient()!.diagnosticosActivos }} diagnosticos activos</span>
+              <span class="meta-chip">{{ selectedPatient()!.diagnosticosActivos }} diagnósticos activos</span>
               <a
                 class="btn btn--secondary btn--sm"
                 [routerLink]="['/app/pacientes', selectedPatient()!.id, 'historia-clinica']"
@@ -216,7 +216,7 @@
                         <div>
                           <strong>{{ diagnostico.descripcion }}</strong>
                           <p>
-                            {{ diagnostico.codigo || 'Sin codigo' }} ·
+                            {{ diagnostico.codigo || 'Sin código' }} ·
                             {{ diagnostico.fechaInicio | date: 'dd/MM/yyyy' }}
                           </p>
                         </div>
@@ -243,13 +243,13 @@
                   </div>
                 } @else {
                   <div class="state-box state-box--empty">
-                    <p>No hay diagnosticos activos para este paciente.</p>
+                    <p>No hay diagnósticos activos para este paciente.</p>
                   </div>
                 }
 
                 <form class="diagnostico-form" [formGroup]="diagnosticoForm">
                   <div class="card-head">
-                    <h3>Nuevo diagnostico</h3>
+                    <h3>Nuevo diagnóstico</h3>
                   </div>
 
                   <div class="mini-grid">
@@ -270,7 +270,7 @@
                   </div>
 
                   <div class="field">
-                    <span>Diagnostico medico</span>
+                    <span>Diagnóstico médico</span>
                     <app-diagnostico-medico-selector
                       [diagnosticos]="diagnosticosMedicos()"
                       [categorias]="diagnosticosMedicosCategorias()"
@@ -292,7 +292,7 @@
                       [disabled]="isSavingDiagnostico()"
                       (click)="createDiagnostico()"
                     >
-                      Guardar diagnostico
+                      Guardar diagnóstico
                     </button>
                   </div>
                 </form>
@@ -300,16 +300,16 @@
 
               <section class="panel-card panel-card--compact">
                 <div class="card-head">
-                  <h3>Timeline clinica</h3>
+                  <h3>Timeline clínica</h3>
                   <button type="button" class="btn btn--ghost btn--sm" (click)="startNewSesion()">
-                    Nueva sesion
+                    Nueva sesión
                   </button>
                 </div>
 
                 @if (detailStatus() === 'loading') {
                   <div class="state-box">
                     <span class="spinner spinner--primary" aria-hidden="true"></span>
-                    <p>Cargando legajo clinico...</p>
+                    <p>Cargando legajo clínico...</p>
                   </div>
                 } @else if (sesiones().length) {
                   <div class="timeline-list">
@@ -335,7 +335,7 @@
                   </div>
                 } @else {
                   <div class="state-box state-box--empty">
-                    <p>No hay sesiones registradas para los filtros clinicos actuales.</p>
+                    <p>No hay sesiones registradas para los filtros clínicos actuales.</p>
                   </div>
                 }
               </section>
@@ -344,7 +344,7 @@
             <section class="panel-card editor-card">
               <div class="card-head">
                 <div>
-                  <h3>{{ selectedSesion() ? 'Sesion clinica' : 'Nueva sesion clinica' }}</h3>
+                  <h3>{{ selectedSesion() ? 'Sesión clínica' : 'Nueva sesión clínica' }}</h3>
                   <p>
                     @if (selectedSesion()) {
                       {{ selectedSesion()!.estado }} ·
@@ -363,7 +363,7 @@
                       [disabled]="!canEditSesion() || isSavingSesion()"
                       (click)="closeSesion()"
                     >
-                      Cerrar sesion
+                      Cerrar sesión
                     </button>
                     <button
                       type="button"
@@ -379,7 +379,7 @@
 
               @if (!canEditSesion() && selectedSesion()) {
                 <div class="alert alert--info">
-                  La sesion esta en solo lectura. Para v1 no existe reapertura.
+                  La sesión está en solo lectura. Para v1 no existe reapertura.
                 </div>
               }
 
@@ -396,12 +396,12 @@
                   </label>
 
                   <label class="field">
-                    <span>Fecha atencion</span>
+                    <span>Fecha atención</span>
                     <input type="datetime-local" formControlName="fechaAtencion" />
                   </label>
 
                   <label class="field">
-                    <span>Tipo atencion</span>
+                    <span>Tipo atención</span>
                     <select formControlName="tipoAtencion">
                       @for (tipo of tipoAtencionOptions; track tipo.value) {
                         <option [value]="tipo.value">{{ tipo.label }}</option>
@@ -423,12 +423,12 @@
                 </div>
 
                 <label class="field">
-                  <span>Motivo consulta</span>
+                  <span>Motivo de consulta</span>
                   <textarea formControlName="motivoConsulta" rows="2"></textarea>
                 </label>
 
                 <label class="field">
-                  <span>Resumen clinico</span>
+                  <span>Resumen clínico</span>
                   <textarea formControlName="resumenClinico" rows="3"></textarea>
                 </label>
 
@@ -446,7 +446,7 @@
 
                 <div class="double-column">
                   <label class="field">
-                    <span>Evaluacion</span>
+                    <span>Evaluación</span>
                     <textarea formControlName="evaluacion" rows="5"></textarea>
                   </label>
 
@@ -461,7 +461,7 @@
                 <div class="card-head">
                   <div>
                     <h3>Adjuntos</h3>
-                    <p>Formatos permitidos: pdf, jpg, jpeg, png. Limite sugerido: 10 MB.</p>
+                    <p>Formatos permitidos: pdf, jpg, jpeg, png. Límite sugerido: 10 MB.</p>
                   </div>
 
                   <label class="btn btn--secondary btn--sm" [class.is-disabled]="!selectedSesion() || !canEditSesion()">
@@ -504,7 +504,7 @@
                   </div>
                 } @else {
                   <div class="state-box state-box--empty">
-                    <p>No hay adjuntos cargados para la sesion actual.</p>
+                    <p>No hay adjuntos cargados para la sesión actual.</p>
                   </div>
                 }
               </section>
@@ -519,7 +519,7 @@
                   [disabled]="!canEditSesion() || isSavingSesion()"
                   (click)="saveSesion()"
                 >
-                  {{ selectedSesion() ? 'Guardar cambios' : 'Crear sesion' }}
+                  {{ selectedSesion() ? 'Guardar cambios' : 'Crear sesión' }}
                 </button>
               </div>
             </section>

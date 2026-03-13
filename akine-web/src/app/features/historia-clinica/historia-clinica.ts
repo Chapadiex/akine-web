@@ -122,7 +122,7 @@ export class HistoriaClinica {
   });
 
   readonly tipoAtencionOptions: ReadonlyArray<{ value: HistoriaClinicaTipoAtencion; label: string }> = [
-    { value: 'EVALUACION', label: 'Evaluacion' },
+    { value: 'EVALUACION', label: 'Evaluación' },
     { value: 'SEGUIMIENTO', label: 'Seguimiento' },
     { value: 'TRATAMIENTO', label: 'Tratamiento' },
     { value: 'INTERCONSULTA', label: 'Interconsulta' },
@@ -304,7 +304,7 @@ export class HistoriaClinica {
     operation.subscribe({
       next: (sesion) => {
         this.isSavingSesion.set(false);
-        this.toast.success(selectedSesion ? 'Sesion actualizada.' : 'Sesion creada.');
+        this.toast.success(selectedSesion ? 'Sesión actualizada.' : 'Sesión creada.');
         if (selectedSesion) {
           this.reloadPatientContext(sesion.id);
         } else {
@@ -323,7 +323,7 @@ export class HistoriaClinica {
   }
 
   annulSesion(): void {
-    if (window.confirm('Esta accion marcara la sesion como anulada.')) {
+    if (window.confirm('Esta acción marcará la sesión como anulada.')) {
       this.changeSesionState('annul');
     }
   }
@@ -350,7 +350,7 @@ export class HistoriaClinica {
       .subscribe({
         next: () => {
           this.isSavingDiagnostico.set(false);
-          this.toast.success('Diagnostico agregado.');
+          this.toast.success('Diagnóstico agregado.');
           this.resetDiagnosticoForm();
           this.loadDiagnosticos(consultorioId, pacienteId);
         },
@@ -425,7 +425,7 @@ export class HistoriaClinica {
       this.toast.warning('Solo se pueden eliminar adjuntos en sesiones en borrador.');
       return;
     }
-    if (!window.confirm('Se eliminara el adjunto seleccionado.')) return;
+    if (!window.confirm('Se eliminará el adjunto seleccionado.')) return;
 
     this.historiaSvc.deleteAdjunto(consultorioId, pacienteId, adjuntoId).subscribe({
       next: () => {
@@ -595,7 +595,7 @@ export class HistoriaClinica {
     operation.subscribe({
       next: (sesion) => {
         this.isSavingSesion.set(false);
-        this.toast.info(action === 'close' ? 'Sesion cerrada.' : 'Sesion anulada.');
+        this.toast.info(action === 'close' ? 'Sesión cerrada.' : 'Sesión anulada.');
         this.selectedSesion.set(sesion);
         this.patchSesionForm(sesion);
         this.syncSessionFormState();
@@ -615,8 +615,8 @@ export class HistoriaClinica {
     if (
       !window.confirm(
         action === 'resolver'
-          ? 'Se marcara el diagnostico como resuelto.'
-          : 'Se marcara el diagnostico como descartado.',
+          ? 'Se marcará el diagnóstico como resuelto.'
+          : 'Se marcará el diagnóstico como descartado.',
       )
     ) {
       return;
@@ -632,7 +632,7 @@ export class HistoriaClinica {
     operation.subscribe({
       next: () => {
         this.isSavingDiagnostico.set(false);
-        this.toast.info(action === 'resolver' ? 'Diagnostico resuelto.' : 'Diagnostico descartado.');
+        this.toast.info(action === 'resolver' ? 'Diagnóstico resuelto.' : 'Diagnóstico descartado.');
         this.loadDiagnosticos(consultorioId, pacienteId);
       },
       error: (err) => {

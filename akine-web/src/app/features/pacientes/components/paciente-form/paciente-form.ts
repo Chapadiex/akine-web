@@ -48,31 +48,61 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
 
           <div class="grid">
             <div class="field">
-              <label>DNI *</label>
-              <input formControlName="dni" placeholder="30111222" [readOnly]="mode() === 'edit'" />
+              <label for="f-nombre">Nombre *</label>
+              <input id="f-nombre" formControlName="nombre" placeholder="Nombre"
+                [class.field-error]="form.controls.nombre.invalid && form.controls.nombre.touched" />
+              @if (form.controls.nombre.touched && form.controls.nombre.hasError('required')) {
+                <span class="error-msg">El nombre es obligatorio.</span>
+              }
+              @if (form.controls.nombre.touched && form.controls.nombre.hasError('maxlength')) {
+                <span class="error-msg">Maximo 100 caracteres.</span>
+              }
             </div>
             <div class="field">
-              <label>Telefono *</label>
-              <input formControlName="telefono" placeholder="1155554444" />
+              <label for="f-apellido">Apellido *</label>
+              <input id="f-apellido" formControlName="apellido" placeholder="Apellido"
+                [class.field-error]="form.controls.apellido.invalid && form.controls.apellido.touched" />
+              @if (form.controls.apellido.touched && form.controls.apellido.hasError('required')) {
+                <span class="error-msg">El apellido es obligatorio.</span>
+              }
+              @if (form.controls.apellido.touched && form.controls.apellido.hasError('maxlength')) {
+                <span class="error-msg">Maximo 100 caracteres.</span>
+              }
             </div>
             <div class="field">
-              <label>Nombre *</label>
-              <input formControlName="nombre" placeholder="Nombre" />
+              <label for="f-dni">DNI *</label>
+              <input id="f-dni" formControlName="dni" placeholder="30111222"
+                inputmode="numeric" [readOnly]="mode() === 'edit'"
+                [class.field-error]="form.controls.dni.invalid && form.controls.dni.touched" />
+              @if (form.controls.dni.touched && form.controls.dni.hasError('required')) {
+                <span class="error-msg">El DNI es obligatorio.</span>
+              }
+              @if (form.controls.dni.touched && form.controls.dni.hasError('pattern')) {
+                <span class="error-msg">El DNI debe tener entre 7 y 10 digitos.</span>
+              }
             </div>
             <div class="field">
-              <label>Apellido *</label>
-              <input formControlName="apellido" placeholder="Apellido" />
+              <label for="f-telefono">Telefono *</label>
+              <input id="f-telefono" formControlName="telefono" type="tel" placeholder="1155554444"
+                inputmode="tel"
+                [class.field-error]="form.controls.telefono.invalid && form.controls.telefono.touched" />
+              @if (form.controls.telefono.touched && form.controls.telefono.hasError('required')) {
+                <span class="error-msg">El telefono es obligatorio.</span>
+              }
+              @if (form.controls.telefono.touched && form.controls.telefono.hasError('maxlength')) {
+                <span class="error-msg">Maximo 30 caracteres.</span>
+              }
             </div>
           </div>
 
           <div class="grid">
             <div class="field">
-              <label>Fecha de nacimiento</label>
-              <input formControlName="fechaNacimiento" type="date" />
+              <label for="f-fechaNacimiento">Fecha de nacimiento</label>
+              <input id="f-fechaNacimiento" formControlName="fechaNacimiento" type="date" />
             </div>
             <div class="field">
-              <label>Sexo</label>
-              <select formControlName="sexo">
+              <label for="f-sexo">Sexo</label>
+              <select id="f-sexo" formControlName="sexo">
                 <option value="">Seleccionar</option>
                 <option value="Femenino">Femenino</option>
                 <option value="Masculino">Masculino</option>
@@ -93,8 +123,13 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
 
           <div class="grid">
             <div class="field">
-              <label>Email</label>
-              <input formControlName="email" type="email" placeholder="mail@ejemplo.com" />
+              <label for="f-email">Email</label>
+              <input id="f-email" formControlName="email" type="email" placeholder="mail@ejemplo.com"
+                inputmode="email"
+                [class.field-error]="form.controls.email.invalid && form.controls.email.touched" />
+              @if (form.controls.email.touched && form.controls.email.hasError('email')) {
+                <span class="error-msg">Ingrese un email valido.</span>
+              }
             </div>
 
             <div class="field profession-field">
@@ -361,6 +396,20 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
     .field input[readonly] {
       background: color-mix(in srgb, var(--bg) 72%, var(--white));
       color: var(--text-muted);
+    }
+    .field-error {
+      border-color: #e53e3e !important;
+      background: color-mix(in srgb, #e53e3e 4%, var(--white)) !important;
+    }
+    .field-error:focus {
+      border-color: #e53e3e !important;
+      box-shadow: 0 0 0 3px color-mix(in srgb, #e53e3e 18%, transparent) !important;
+    }
+    .error-msg {
+      font-size: .78rem;
+      color: #c53030;
+      font-weight: 500;
+      margin-top: -.1rem;
     }
     .field input:focus,
     .field select:focus,

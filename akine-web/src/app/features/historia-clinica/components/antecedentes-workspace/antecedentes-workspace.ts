@@ -90,7 +90,7 @@ export class AntecedenteSelectorComponent {
   readonly context = input<WorkspaceContext>('edit');
   readonly categories = input<AntecedenteCatalogCategory[]>([]);
   readonly formArray = input.required<FormArray<FormGroup>>();
-  readonly emptySelectionMessage = input('No hay antecedentes cargados todavia.');
+  readonly emptySelectionMessage = input('No hay antecedentes cargados todavía.');
 
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly activeSelectedIndex = signal<number | null>(null);
@@ -427,7 +427,7 @@ export class AntecedenteSelectorComponent {
         critical: raw.critical,
         notes: this.composeStructuredNotes([
           ['Sustancia', raw.substance],
-          ['Reaccion', raw.reaction],
+          ['Reacción', raw.reaction],
           ['Severidad', raw.severity],
           ['Notas', raw.notes],
         ]),
@@ -438,7 +438,7 @@ export class AntecedenteSelectorComponent {
         valueText: [raw.medication, raw.dose, raw.frequency].filter(Boolean).join(' · '),
         critical: raw.critical,
         notes: this.composeStructuredNotes([
-          ['Medicacion', raw.medication],
+          ['Medicación', raw.medication],
           ['Dosis', raw.dose],
           ['Frecuencia', raw.frequency],
           ['Notas', raw.notes],
@@ -572,13 +572,13 @@ export class AntecedenteSelectorComponent {
       return { mode: 'form', schema: 'uncatalogued', modeLabel: 'Libre' };
     }
     if (code === 'ALG_TIPOS') {
-      return { mode: 'form', schema: 'allergy', modeLabel: 'Formulario clinico' };
+      return { mode: 'form', schema: 'allergy', modeLabel: 'Formulario clínico' };
     }
     if (code === 'MED_GRUPOS') {
-      return { mode: 'form', schema: 'medication', modeLabel: 'Formulario clinico' };
+      return { mode: 'form', schema: 'medication', modeLabel: 'Formulario clínico' };
     }
     if (categoryCode === 'AQX' || item?.valueType === 'REPEATABLE') {
-      return { mode: 'form', schema: 'surgery', modeLabel: 'Formulario clinico' };
+      return { mode: 'form', schema: 'surgery', modeLabel: 'Formulario clínico' };
     }
     if (
       code === 'APP_DIABETES' ||
@@ -648,14 +648,14 @@ export class AntecedenteSelectorComponent {
     if (schema === 'allergy') {
       return {
         substance: lines.get('Sustancia') ?? parts[0] ?? '',
-        reaction: lines.get('Reaccion') ?? parts[1] ?? '',
+        reaction: lines.get('Reacción') ?? parts[1] ?? '',
         severity: lines.get('Severidad') ?? parts[2] ?? '',
         notes: lines.get('Notas') ?? '',
       };
     }
     if (schema === 'medication') {
       return {
-        medication: lines.get('Medicacion') ?? parts[0] ?? '',
+        medication: lines.get('Medicación') ?? parts[0] ?? '',
         dose: lines.get('Dosis') ?? parts[1] ?? '',
         frequency: lines.get('Frecuencia') ?? parts[2] ?? '',
         notes: lines.get('Notas') ?? '',

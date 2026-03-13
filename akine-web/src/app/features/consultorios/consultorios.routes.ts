@@ -39,13 +39,6 @@ export const CONSULTORIO_ROUTES: Routes = [
               import('./pages/horarios-list/horarios-list').then((m) => m.HorariosListPage),
           },
           {
-            path: 'cobertura-profesionales',
-            loadComponent: () =>
-              import('./pages/asignaciones-list/asignaciones-list').then(
-                (m) => m.AsignacionesListPage,
-              ),
-          },
-          {
             path: 'intervalo-turnos',
             loadComponent: () =>
               import('./pages/duraciones-list/duraciones-list').then((m) => m.DuracionesListPage),
@@ -108,12 +101,7 @@ export const CONSULTORIO_ROUTES: Routes = [
 
       // Legacy URLs retained for compatibility.
       { path: 'horarios', redirectTo: 'agenda/horarios-atencion', pathMatch: 'full' },
-      {
-        path: 'asignaciones',
-        redirectTo: 'agenda/cobertura-profesionales',
-        pathMatch: 'full',
-      },
-      { path: 'duraciones', redirectTo: 'agenda/intervalo-turnos', pathMatch: 'full' },
+{ path: 'duraciones', redirectTo: 'agenda/intervalo-turnos', pathMatch: 'full' },
       { path: 'feriados', redirectTo: 'agenda/feriados-cierres', pathMatch: 'full' },
       {
         path: 'antecedentes-catalogo',

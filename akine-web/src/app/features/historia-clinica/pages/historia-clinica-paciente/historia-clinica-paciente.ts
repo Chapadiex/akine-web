@@ -242,13 +242,13 @@ export class HistoriaClinicaPacientePage {
     items: new FormArray([this.createAntecedenteGroup()]),
   });
   readonly tipoIngresoOptions: ReadonlyArray<{ value: AtencionInicialTipoIngreso; label: string }> = [
-    { value: 'CON_PRESCRIPCION', label: 'Con prescripcion medica' },
+    { value: 'CON_PRESCRIPCION', label: 'Con prescripción médica' },
     { value: 'CONSULTA_PARTICULAR', label: 'Consulta particular' },
   ];
   readonly caracterCasoOptions: ReadonlyArray<{ value: PlanTratamientoCaracter; label: string }> = [
     { value: 'PARCIAL', label: 'Parcial' },
     { value: 'DEFINITIVO', label: 'Definitivo' },
-    { value: 'CRONICO', label: 'Cronico' },
+    { value: 'CRONICO', label: 'Crónico' },
   ];
 
   readonly tabOptions: ReadonlyArray<{ value: ClinicalTab; label: string }> = [
@@ -274,7 +274,7 @@ export class HistoriaClinicaPacientePage {
   ];
 
   readonly tipoAtencionOptions: ReadonlyArray<{ value: HistoriaClinicaTipoAtencion; label: string }> = [
-    { value: 'EVALUACION', label: 'Evaluacion inicial' },
+    { value: 'EVALUACION', label: 'Evaluación inicial' },
     { value: 'SEGUIMIENTO', label: 'Seguimiento' },
     { value: 'TRATAMIENTO', label: 'Tratamiento' },
     { value: 'INTERCONSULTA', label: 'Interconsulta' },
@@ -300,7 +300,7 @@ export class HistoriaClinicaPacientePage {
   });
   readonly patientContextMeta = computed(() => {
     const patient = this.selectedPatient();
-    if (!patient) return 'Cargando contexto clinico...';
+    if (!patient) return 'Cargando contexto clínico...';
     return `${patient.dni} / ${this.patientAge()} / ${this.patientCoverage()}`;
   });
   readonly headerStatusBadge = computed(() => {
@@ -318,23 +318,23 @@ export class HistoriaClinicaPacientePage {
   readonly clinicalStatusDescription = computed(() => {
     switch (this.screenState()) {
       case 'no-history':
-        return 'Primero hay que registrar la atencion inicial para dejar base clinica, antecedentes y plan terapeutico.';
+        return 'Primero hay que registrar la atención inicial para dejar base clínica, antecedentes y plan terapéutico.';
       case 'history-no-case':
-        return 'La historia clinica existe, pero hoy no hay un caso abierto. El siguiente paso operativo es abrir uno.';
+        return 'La historia clínica existe, pero hoy no hay un caso abierto. El siguiente paso operativo es abrir uno.';
       case 'history-active-case':
-        return 'El paciente ya tiene seguimiento activo. La accion del dia es registrar o continuar la sesion clinica.';
+        return 'El paciente ya tiene seguimiento activo. La acción del día es registrar o continuar la sesión clínica.';
       default:
-        return 'Busca un paciente para abrir el contexto clinico.';
+        return 'Busca un paciente para abrir el contexto clínico.';
     }
   });
   readonly primaryActionLabel = computed(() => {
     switch (this.screenState()) {
       case 'no-history':
-        return 'Registrar atencion inicial';
+        return 'Registrar atención inicial';
       case 'history-no-case':
-        return 'Nuevo caso clinico';
+        return 'Nuevo caso clínico';
       case 'history-active-case':
-        return 'Nueva sesion';
+        return 'Nueva sesión';
       default:
         return '';
     }
@@ -346,7 +346,7 @@ export class HistoriaClinicaPacientePage {
     { label: 'HC', value: this.hasLegajo() ? 'Creada' : 'Pendiente' },
     { label: 'Casos activos', value: String(this.overview()?.casosActivos?.length ?? 0) },
     {
-      label: 'Ultima atencion',
+      label: 'Última atención',
       value: this.overview()?.ultimaSesion?.fechaAtencion
         ? this.formatDateTime(this.overview()!.ultimaSesion!.fechaAtencion)
         : 'Sin sesiones',
@@ -356,7 +356,7 @@ export class HistoriaClinicaPacientePage {
       value: String(this.overview()?.alertasClinicas?.length ?? this.recentCriticalAntecedentes().length ?? 0),
     },
     { label: 'Profesional actual/habitual', value: this.currentProfessionalLabel() },
-    { label: 'Accion sugerida', value: this.suggestedActionLabel() },
+    { label: 'Acción sugerida', value: this.suggestedActionLabel() },
   ]);
   readonly compatibilityFilters = computed(() => {
     const state = this.routeState();
@@ -447,17 +447,17 @@ export class HistoriaClinicaPacientePage {
     {
       step: 0,
       label: 'Paso 1',
-      title: 'Ingreso clinico',
+      title: 'Ingreso clínico',
     },
     {
       step: 1,
       label: 'Paso 2',
-      title: 'Evaluacion y antecedentes',
+      title: 'Evaluación y antecedentes',
     },
     {
       step: 2,
       label: 'Paso 3',
-      title: 'Plan terapeutico',
+      title: 'Plan terapéutico',
     },
   ];
 
@@ -708,13 +708,13 @@ export class HistoriaClinicaPacientePage {
               const failed = uploads.filter((item) => item === null).length;
               this.finishCreateAtencionInicial();
               if (failed > 0) {
-                this.toast.info('La atencion inicial se guardo, pero algunos adjuntos no se pudieron subir.');
+                this.toast.info('La atención inicial se guardó, pero algunos adjuntos no se pudieron subir.');
               }
             },
             error: () => {
               this.isUploadingAdjunto.set(false);
               this.finishCreateAtencionInicial();
-              this.toast.info('La atencion inicial se guardo, pero fallaron los adjuntos.');
+              this.toast.info('La atención inicial se guardó, pero fallaron los adjuntos.');
             },
           });
         },
@@ -791,7 +791,7 @@ export class HistoriaClinicaPacientePage {
     operation.subscribe({
       next: (sesion) => {
         this.isSavingSesion.set(false);
-        this.toast.success(currentSesion ? 'Sesion actualizada.' : 'Sesion creada.');
+        this.toast.success(currentSesion ? 'Sesión actualizada.' : 'Sesión creada.');
         this.openSesion(sesion.id);
         this.reloadSelectedPatient(sesion.id);
       },
@@ -813,7 +813,7 @@ export class HistoriaClinicaPacientePage {
     this.historiaSvc.closeSesion(consultorioId, pacienteId, sesionId).subscribe({
       next: () => {
         this.isSavingSesion.set(false);
-        this.toast.info('Sesion cerrada.');
+        this.toast.info('Sesión cerrada.');
         this.reloadSelectedPatient(sesionId);
       },
       error: (err) => {
@@ -827,14 +827,14 @@ export class HistoriaClinicaPacientePage {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const pacienteId = this.selectedPatient()?.id;
     const sesionId = this.selectedSesion()?.id;
-    if (!consultorioId || !pacienteId || !sesionId || !window.confirm('Esta accion anulara la sesion actual.')) {
+    if (!consultorioId || !pacienteId || !sesionId || !window.confirm('Esta acción anulará la sesión actual.')) {
       return;
     }
     this.isSavingSesion.set(true);
     this.historiaSvc.annulSesion(consultorioId, pacienteId, sesionId).subscribe({
       next: () => {
         this.isSavingSesion.set(false);
-        this.toast.info('Sesion anulada.');
+        this.toast.info('Sesión anulada.');
         this.reloadSelectedPatient(sesionId);
       },
       error: (err) => {
@@ -882,7 +882,7 @@ export class HistoriaClinicaPacientePage {
         next: () => {
           this.isSavingCaso.set(false);
           this.showCasoDrawer.set(false);
-          this.toast.success('Caso clinico creado.');
+          this.toast.success('Caso clínico creado.');
           this.reloadSelectedPatient();
         },
         error: (err) => {
@@ -896,14 +896,14 @@ export class HistoriaClinicaPacientePage {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const pacienteId = this.selectedPatient()?.id;
     const diagnosticoId = 'diagnosticoId' in caso ? caso.diagnosticoId : caso.id;
-    if (!consultorioId || !pacienteId || !window.confirm('Se marcara el caso como resuelto.')) {
+    if (!consultorioId || !pacienteId || !window.confirm('Se marcará el caso como resuelto.')) {
       return;
     }
     this.historiaSvc
       .resolveDiagnostico(consultorioId, pacienteId, diagnosticoId, { fechaFin: this.todayForInput() })
       .subscribe({
         next: () => {
-          this.toast.info('Caso clinico cerrado.');
+          this.toast.info('Caso clínico cerrado.');
           this.reloadSelectedPatient();
         },
         error: (err) => this.toast.error(this.errMap.toMessage(err)),
@@ -1044,7 +1044,7 @@ export class HistoriaClinicaPacientePage {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const pacienteId = this.selectedPatient()?.id;
     const sesionId = this.selectedSesion()?.id;
-    if (!consultorioId || !pacienteId || !sesionId || !window.confirm('Se eliminara el adjunto seleccionado.')) {
+    if (!consultorioId || !pacienteId || !sesionId || !window.confirm('Se eliminará el adjunto seleccionado.')) {
       return;
     }
     this.historiaSvc.deleteAdjunto(consultorioId, pacienteId, adjuntoId).subscribe({
@@ -1102,7 +1102,7 @@ export class HistoriaClinicaPacientePage {
       case 'ADJUNTO':
         return 'Adjunto';
       default:
-        return 'Sesion';
+        return 'Sesión';
     }
   }
 
@@ -1666,7 +1666,7 @@ export class HistoriaClinicaPacientePage {
     this.showLegajoCloseConfirm.set(false);
     this.showLegajoModal.set(false);
     this.createLegajoAdjuntos.set([]);
-    this.toast.success('Atencion inicial registrada.');
+    this.toast.success('Atención inicial registrada.');
     this.reloadSelectedPatient();
   }
 
@@ -1704,7 +1704,7 @@ export class HistoriaClinicaPacientePage {
 
   resolveTreatmentCategoryName(categoriaCodigo: string | null | undefined): string {
     if (!categoriaCodigo) {
-      return 'Sin categoria';
+      return 'Sin categoría';
     }
     return this.treatmentCatalogCategorias().find((item) => item.codigo === categoriaCodigo)?.nombre ?? categoriaCodigo;
   }
@@ -1805,11 +1805,11 @@ export class HistoriaClinicaPacientePage {
   private suggestedActionLabel(): string {
     switch (this.screenState()) {
       case 'no-history':
-        return 'Registrar atencion inicial';
+        return 'Registrar atención inicial';
       case 'history-no-case':
-        return 'Abrir caso clinico';
+        return 'Abrir caso clínico';
       case 'history-active-case':
-        return this.overview()?.ultimaSesion ? 'Nueva sesion' : 'Registrar sesion inicial';
+        return this.overview()?.ultimaSesion ? 'Nueva sesión' : 'Registrar sesión inicial';
       default:
         return 'Buscar paciente';
     }

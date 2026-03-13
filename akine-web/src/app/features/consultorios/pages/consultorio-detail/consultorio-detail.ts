@@ -824,13 +824,11 @@ export class ConsultorioDetailPage implements OnInit {
     { label: 'Resumen', path: 'resumen', exact: true },
     { label: 'Boxes', path: 'boxes', exact: true },
     { label: 'Profesionales', path: 'profesionales', exact: true },
-    { label: 'Agenda', path: 'agenda', exact: false },
     { label: 'Configuracion', path: 'configuracion', exact: false },
   ];
 
   readonly agendaTabs: NavItem[] = [
     { label: 'Horarios de atencion', path: 'agenda/horarios-atencion' },
-    { label: 'Cobertura profesional', path: 'agenda/cobertura-profesionales' },
     { label: 'Intervalo de turnos', path: 'agenda/intervalo-turnos' },
     { label: 'Feriados y cierres', path: 'agenda/feriados-cierres' },
   ];

@@ -44,7 +44,7 @@ import {
                 </span>
               </button>
             } @empty {
-              <div class="selector-empty">No se encontraron diagnosticos.</div>
+              <div class="selector-empty">No se encontraron diagnósticos.</div>
             }
           </div>
         }
@@ -52,7 +52,7 @@ import {
 
       @if (multiple()) {
         <div class="selector-picked">
-          <span class="selector-picked__label">Diagnosticos seleccionados</span>
+          <span class="selector-picked__label">Diagnósticos seleccionados</span>
           <div class="selector-picked__list">
             @for (item of selectedItems(); track item.codigoInterno) {
               <button type="button" class="selector-chip" (click)="removeDiagnostico(item.codigoInterno)">
@@ -60,7 +60,7 @@ import {
                 <strong>&times;</strong>
               </button>
             } @empty {
-              <span class="selector-picked__empty">Sin diagnosticos seleccionados.</span>
+              <span class="selector-picked__empty">Sin diagnósticos seleccionados.</span>
             }
           </div>
         </div>
@@ -174,7 +174,7 @@ export class DiagnosticoMedicoSelectorComponent {
   readonly diagnosticos = input<DiagnosticoMedicoItem[]>([]);
   readonly categorias = input<DiagnosticoMedicoCategoria[]>([]);
   readonly tipos = input<DiagnosticoMedicoTipo[]>([]);
-  readonly placeholder = input('Buscar diagnostico medico...');
+  readonly placeholder = input('Buscar diagnóstico médico...');
   readonly multiple = input(false);
   readonly selectedCode = model('');
   readonly selectedCodes = model<string[]>([]);

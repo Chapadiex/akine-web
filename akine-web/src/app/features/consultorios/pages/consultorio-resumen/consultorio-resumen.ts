@@ -76,14 +76,14 @@ interface ResumenData {
         <div class="panels-grid">
           <article class="panel">
             <header class="panel-head">
-              <h3>Alertas de configuracion</h3>
-              <a [routerLink]="path('configuracion/especialidades')">Ir a configuracion</a>
+              <h3>Alertas de configuración</h3>
+              <a [routerLink]="path('configuracion/especialidades')">Ir a configuración</a>
             </header>
 
             @if (alerts().length === 0) {
               <div class="state-ok">
-                <strong>Configuracion principal completa</strong>
-                <p>No hay bloqueos operativos detectados para agenda y catalogos.</p>
+                <strong>Configuración principal completa</strong>
+                <p>No hay bloqueos operativos detectados para agenda y catálogos.</p>
               </div>
             } @else {
               <ul class="alerts-list">
@@ -102,20 +102,20 @@ interface ResumenData {
 
           <article class="panel">
             <header class="panel-head">
-              <h3>Proximos feriados</h3>
+              <h3>Próximos feriados</h3>
               <a [routerLink]="path('agenda/feriados-cierres')">Gestionar</a>
             </header>
 
             @if (upcomingHolidays().length === 0) {
               <div class="state-empty">
-                <p>No hay feriados proximos en los siguientes 30 dias.</p>
+                <p>No hay feriados próximos en los siguientes 30 días.</p>
               </div>
             } @else {
               <ul class="holiday-list">
                 @for (feriado of upcomingHolidays(); track feriado.id) {
                   <li>
                     <strong>{{ formatDate(feriado.fecha) }}</strong>
-                    <span>{{ feriado.descripcion || 'Feriado sin descripcion' }}</span>
+                    <span>{{ feriado.descripcion || 'Feriado sin descripción' }}</span>
                   </li>
                 }
               </ul>
@@ -186,6 +186,7 @@ interface ResumenData {
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
       gap: .65rem;
+      align-items: start;
     }
 
     .panel {
@@ -393,7 +394,7 @@ export class ConsultorioResumenPage implements OnInit {
         this.loading.set(false);
 
         if (partialError) {
-          this.toast.warning('El resumen se cargo parcialmente. Algunas metricas pueden estar incompletas.');
+          this.toast.warning('El resumen se cargó parcialmente. Algunas métricas pueden estar incompletas.');
         }
       },
       error: (err) => {
@@ -451,12 +452,6 @@ export class ConsultorioResumenPage implements OnInit {
         helper: intervalSummary,
         route: this.path('agenda/intervalo-turnos'),
       },
-      {
-        label: 'Especialidades',
-        value: String(activeSpecialties),
-        helper: 'Especialidades activas',
-        route: this.path('configuracion/especialidades'),
-      },
     ]);
 
     this.upcomingHolidays.set(upcomingHolidays);
@@ -465,7 +460,7 @@ export class ConsultorioResumenPage implements OnInit {
     if (activeBoxes === 0) {
       alerts.push({
         title: 'Sin boxes activos',
-        detail: 'Configura al menos un box para habilitar operacion de agenda.',
+        detail: 'Configura al menos un box para habilitar operación de agenda.',
         route: this.path('boxes'),
       });
     }
@@ -478,7 +473,7 @@ export class ConsultorioResumenPage implements OnInit {
     }
     if (data.horarios.length === 0) {
       alerts.push({
-        title: 'Horarios de atencion incompletos',
+        title: 'Horarios de atención incompletos',
         detail: 'Debes cargar horarios para habilitar disponibilidad de turnos.',
         route: this.path('agenda/horarios-atencion'),
       });
@@ -486,28 +481,28 @@ export class ConsultorioResumenPage implements OnInit {
     if (data.asignaciones.length === 0) {
       alerts.push({
         title: 'Cobertura profesional sin configurar',
-        detail: 'Asigna profesionales para completar cobertura por consultorio.',
+        detail: 'Asigna profesionales para completar la cobertura por consultorio.',
         route: this.path('agenda/cobertura-profesionales'),
       });
     }
     if (data.duraciones.length === 0) {
       alerts.push({
         title: 'Intervalo de turnos no definido',
-        detail: 'Define al menos una duracion para bloquear turnos invalidos.',
+        detail: 'Define al menos una duración para bloquear turnos inválidos.',
         route: this.path('agenda/intervalo-turnos'),
       });
     }
     if (activeSpecialties === 0) {
       alerts.push({
         title: 'Sin especialidades activas',
-        detail: 'Activa especialidades para completar la configuracion clinica.',
+        detail: 'Activa especialidades para completar la configuración clínica.',
         route: this.path('configuracion/especialidades'),
       });
     }
     if (antecedentesActivos === 0) {
       alerts.push({
-        title: 'Catalogo de antecedentes vacio',
-        detail: 'No hay plantillas activas para antecedentes clinicos.',
+        title: 'Catálogo de antecedentes vacío',
+        detail: 'No hay plantillas activas para antecedentes clínicos.',
         route: this.path('configuracion/plantillas-antecedentes'),
       });
     }

@@ -5,25 +5,24 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
-import { ProfesionalForm } from '../../components/profesional-form/profesional-form';
 import {
-  Profesional,
-  ProfesionalEstadoRequest,
-  ProfesionalRequest,
-} from '../../models/consultorio.models';
+  ProfesionalForm,
+  ProfesionalFormEditValue,
+  ProfesionalFormResult,
+} from '../../../../shared/ui/profesional-form/profesional-form';
+import { Profesional, ProfesionalEstadoRequest, ProfesionalRequest } from '../../models/consultorio.models';
 import { ProfesionalService } from '../../services/profesional.service';
 import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-profesional-list',
   standalone: true,
-  imports: [ProfesionalForm, ConfirmDialog, RouterLink, ReactiveFormsModule],
+  imports: [ProfesionalForm, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sub-page">
@@ -60,7 +59,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
                 <th>Nombre</th>
                 <th>Matricula</th>
                 <th>Especialidades</th>
-                <th>Consultorios</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -78,21 +76,15 @@ import { resolveConsultorioId } from '../../utils/route-utils';
                       }
                     </div>
                   </td>
-                  <td>{{ p.consultoriosAsociados ?? 0 }}</td>
                   <td>
                     <span class="badge" [class.badge-active]="p.activo">
                       {{ p.activo ? 'Activo' : 'Baja' }}
                     </span>
                   </td>
                   <td class="actions">
-                    <button class="btn-icon" (click)="openView(p)">Ver</button>
                     @if (canWrite()) {
-                      <button class="btn-icon" (click)="openEdit(p)">Editar</button>
-                      <button class="btn-icon" (click)="toggleEstado(p)">
-                        {{ p.activo ? 'Desactivar' : 'Activar' }}
-                      </button>
+                      <button type="button" class="btn-action" (click)="openEdit(p)">Editar</button>
                     }
-                    <a class="btn-icon" [routerLink]="['..', 'agenda', 'profesionales', p.id, 'disponibilidad']">Agenda</a>
                   </td>
                 </tr>
               }
@@ -104,20 +96,12 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 
     @if (showForm()) {
       <app-profesional-form
-        [editItem]="editTarget()"
+        [editValue]="formEditValue()"
         [consultorioId]="consultorioId"
-        (saved)="onSave($event)"
-        (savedEstado)="pendingEstado.set($event)"
+        [showEstado]="isEditMode()"
+        [saving]="saving()"
+        (submitted$)="onSubmit($event)"
         (cancelled)="closeForm()"
-      />
-    }
-
-    @if (deleteTarget()) {
-      <app-confirm-dialog
-        [title]="deleteTarget()!.activo ? 'Dar de baja profesional' : 'Activar profesional'"
-        [message]="deleteMessage()"
-        (confirmed)="confirmEstado()"
-        (cancelled)="deleteTarget.set(null)"
       />
     }
   `,
@@ -141,14 +125,29 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     .chip { padding: .1rem .45rem; border-radius: 999px; background: var(--bg); font-size: .75rem; }
     .badge { padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--bg); color: var(--text-muted); }
     .badge-active { background: var(--success-bg); color: var(--success); }
-    .actions { white-space: nowrap; }
-    .btn-icon {
-      background: none; border: none; cursor: pointer; font-size: .82rem; padding: .2rem .35rem;
-      border-radius: var(--radius); color: var(--primary); text-decoration: none;
+    .actions { width: 1%; }
+    .btn-action {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 2rem; padding: .38rem .72rem;
+      border: 1px solid color-mix(in srgb, var(--border) 82%, var(--primary) 18%);
+      border-radius: 999px; background: var(--white); color: color-mix(in srgb, var(--text) 82%, var(--primary) 18%);
+      cursor: pointer; font-size: .8rem; font-weight: 600; line-height: 1; text-decoration: none;
+      transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
     }
-    .btn-icon:hover { background: var(--bg); }
+    .btn-action:hover {
+      background: color-mix(in srgb, var(--bg) 78%, var(--white) 22%);
+      border-color: color-mix(in srgb, var(--primary) 30%, var(--border) 70%);
+      color: var(--primary);
+      transform: translateY(-1px);
+    }
+    .btn-action:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
     @media (max-width: 1024px) {
       .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .btn-action { flex: 1 1 auto; }
     }
   `],
 })
@@ -162,11 +161,28 @@ export class ProfesionalListPage implements OnInit {
 
   readonly items = signal<Profesional[]>([]);
   readonly loading = signal(true);
+  readonly saving = signal(false);
   readonly showForm = signal(false);
   readonly editTarget = signal<Profesional | null>(null);
-  readonly deleteTarget = signal<Profesional | null>(null);
-  readonly pendingEstado = signal<ProfesionalEstadoRequest | null>(null);
-  readonly mode = signal<'create' | 'edit' | 'view'>('create');
+  readonly isEditMode = signal(false);
+
+  readonly formEditValue = (): ProfesionalFormEditValue | null => {
+    const p = this.editTarget();
+    if (!p) return null;
+    return {
+      nombre: p.nombre,
+      apellido: p.apellido,
+      nroDocumento: p.nroDocumento,
+      email: p.email,
+      matricula: p.matricula,
+      telefono: p.telefono,
+      domicilio: p.domicilio,
+      especialidades: p.especialidades,
+      activo: p.activo,
+      fechaBaja: p.fechaBaja,
+      motivoBaja: p.motivoBaja,
+    };
+  };
 
   readonly filtersForm = this.fb.nonNullable.group({
     dni: [''],
@@ -190,64 +206,33 @@ export class ProfesionalListPage implements OnInit {
     this.load();
   }
 
-  deleteMessage(): string {
-    const target = this.deleteTarget();
-    if (!target) return '';
-    return target.activo
-      ? `Vas a dar de baja a ${target.nombre} ${target.apellido}.`
-      : `Vas a activar a ${target.nombre} ${target.apellido}.`;
-  }
-
   openCreate(): void {
-    this.mode.set('create');
     this.editTarget.set(null);
-    this.pendingEstado.set({ activo: true });
+    this.isEditMode.set(false);
     this.showForm.set(true);
   }
 
   openEdit(p: Profesional): void {
-    this.mode.set('edit');
     this.editTarget.set(p);
-    this.pendingEstado.set({
-      activo: p.activo,
-      fechaDeBaja: p.fechaBaja,
-      motivoDeBaja: p.motivoBaja,
-    });
+    this.isEditMode.set(true);
     this.showForm.set(true);
   }
 
-  openView(p: Profesional): void {
-    this.openEdit(p);
-  }
-
-  toggleEstado(p: Profesional): void {
-    this.deleteTarget.set(p);
-  }
-
-  confirmEstado(): void {
-    const p = this.deleteTarget();
-    if (!p) return;
-
-    const payload: ProfesionalEstadoRequest = p.activo
-      ? { activo: false, fechaDeBaja: new Date().toISOString().slice(0, 10), motivoDeBaja: 'Baja logica' }
-      : { activo: true };
-
-    this.svc.changeEstado(this.consultorioId, p.id, payload).subscribe({
-      next: () => {
-        this.toast.success(p.activo ? 'Profesional dado de baja' : 'Profesional activado');
-        this.deleteTarget.set(null);
-        this.load();
-      },
-      error: (err) => {
-        this.toast.error(this.errMap.toMessage(err));
-        this.deleteTarget.set(null);
-      },
-    });
-  }
-
-  onSave(req: ProfesionalRequest): void {
+  onSubmit(result: ProfesionalFormResult): void {
     const target = this.editTarget();
-    const estado = this.pendingEstado() ?? { activo: true };
+    this.saving.set(true);
+
+    const req: ProfesionalRequest = {
+      nombre: result.nombre,
+      apellido: result.apellido,
+      nroDocumento: result.nroDocumento,
+      email: result.email,
+      matricula: result.matricula,
+      especialidad: result.especialidades[0],
+      especialidades: result.especialidades.join('|'),
+      telefono: result.telefono,
+      domicilio: result.domicilio,
+    };
 
     const save$ = target
       ? this.svc.update(this.consultorioId, target.id, req)
@@ -255,24 +240,43 @@ export class ProfesionalListPage implements OnInit {
 
     save$.subscribe({
       next: (saved) => {
+        const estado: ProfesionalEstadoRequest = {
+          activo: result.activo,
+          fechaDeBaja: result.fechaDeBaja,
+          motivoDeBaja: result.motivoDeBaja,
+        };
         this.svc.changeEstado(this.consultorioId, saved.id, estado).subscribe({
           next: () => {
-            this.toast.success(target ? 'Profesional actualizado' : 'Profesional creado');
+            this.saving.set(false);
+            if (target) {
+              this.toast.success('Profesional actualizado.');
+            } else {
+              const msg = result.activo
+                ? 'Profesional agregado. Recibirá un email para crear su cuenta.'
+                : 'Profesional agregado. Podés habilitarle el acceso desde su perfil.';
+              this.toast.success(msg);
+            }
             this.closeForm();
             this.load();
           },
-          error: (err) => this.toast.error(this.errMap.toMessage(err)),
+          error: (err) => {
+            this.saving.set(false);
+            this.toast.error(this.errMap.toMessage(err));
+          },
         });
       },
-      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+      error: (err) => {
+        this.saving.set(false);
+        this.toast.error(this.errMap.toMessage(err));
+      },
     });
   }
 
   closeForm(): void {
     this.showForm.set(false);
     this.editTarget.set(null);
-    this.pendingEstado.set(null);
-    this.mode.set('create');
+    this.isEditMode.set(false);
+    this.saving.set(false);
   }
 
   load(): void {
