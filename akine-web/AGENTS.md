@@ -279,6 +279,47 @@ Responsive behavior is mandatory for:
 
 But responsiveness must preserve usability, not just visual shrinkage.
 
+### Global table standard
+
+All current and future tables in the frontend must inherit a reusable system standard instead of manual per-screen tuning.
+
+Required reusable column types at minimum:
+- `text`
+- `textShort`
+- `numeric`
+- `status`
+- `actions`
+
+Each type must define by default:
+- alignment
+- width behavior
+- responsive behavior
+- padding
+- visual hierarchy
+
+Mandatory alignment rules:
+- descriptive text and names -> left
+- numeric values, percentages, amounts -> right
+- dates -> consistent by pattern, preferably left for descriptive use or centered for short data cells
+- status -> consistent and non-expansive
+- actions -> compact and consistently aligned in a constrained column
+
+Mandatory layout rules:
+- descriptive columns should stay flexible and consume remaining space
+- short text columns should stay content-based or constrained
+- numeric columns should stay narrow and right-aligned
+- status columns should be fixed or semi-fixed and should not steal space from primary text
+- action columns must use the minimum stable width and must not deform the table
+- headers must follow the same alignment logic as their cells
+- visual states inside tables must be bold
+- applies to `Activo`, `Inactivo`, `Pendiente`, `Suspendido`, `Cancelado`, and equivalent statuses
+- bold is for hierarchy only and must not increase the overall component size
+- keep the same rule across current and future tables
+
+Implementation rule:
+- solve this through shared table infrastructure such as global utility classes, reusable column configuration, base table abstractions, or equivalent common layout rules
+- do not keep solving table alignment screen by screen when the rule belongs to the shared standard
+
 ---
 
 ## Accessibility baseline

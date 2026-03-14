@@ -12,10 +12,10 @@ export type BoxCapacidadTipo = 'UNLIMITED' | 'LIMITED';
 export const DIAS_SEMANA: { key: DayOfWeek; label: string }[] = [
   { key: 'MONDAY', label: 'Lunes' },
   { key: 'TUESDAY', label: 'Martes' },
-  { key: 'WEDNESDAY', label: 'Miercoles' },
+  { key: 'WEDNESDAY', label: 'Miércoles' },
   { key: 'THURSDAY', label: 'Jueves' },
   { key: 'FRIDAY', label: 'Viernes' },
-  { key: 'SATURDAY', label: 'Sabado' },
+  { key: 'SATURDAY', label: 'Sábado' },
   { key: 'SUNDAY', label: 'Domingo' },
 ];
 
@@ -39,7 +39,7 @@ export type HorarioDiaSeleccion = DayOfWeek | 'MONDAY_TO_FRIDAY' | 'MONDAY_TO_SA
 export const HORARIO_DIA_OPTIONS: { key: HorarioDiaSeleccion; label: string }[] = [
   ...DIAS_SEMANA,
   { key: 'MONDAY_TO_FRIDAY', label: 'Lunes a Viernes' },
-  { key: 'MONDAY_TO_SATURDAY', label: 'Lunes a Sabado' },
+  { key: 'MONDAY_TO_SATURDAY', label: 'Lunes a Sábado' },
 ];
 
 export interface ConsultorioDuracion {

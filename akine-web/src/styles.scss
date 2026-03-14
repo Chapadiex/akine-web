@@ -552,3 +552,129 @@ button {
   color: var(--primary);
   border-radius: 2rem;
 }
+
+/* ─── Cabeceras de tabla — regla global ─────────────────────────────────────── */
+th {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Acciones de fila en tablas */
+.table-row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.38rem 0.72rem;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, var(--primary) 18%);
+  border-radius: 999px;
+  background: var(--white);
+  color: color-mix(in srgb, var(--text) 82%, var(--primary) 18%);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--bg) 78%, var(--white) 22%);
+    border-color: color-mix(in srgb, var(--primary) 30%, var(--border) 70%);
+    color: var(--primary);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  svg {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex: 0 0 auto;
+  }
+}
+
+.table-row-action--danger {
+  color: color-mix(in srgb, var(--error) 78%, var(--text) 22%);
+  border-color: color-mix(in srgb, var(--error) 18%, var(--border) 82%);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--error-bg) 76%, var(--white) 24%);
+    border-color: color-mix(in srgb, var(--error) 32%, var(--border) 68%);
+    color: var(--error);
+  }
+}
+
+.table-row-action--success {
+  color: color-mix(in srgb, var(--success) 78%, var(--text) 22%);
+  border-color: color-mix(in srgb, var(--success) 20%, var(--border) 80%);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--success-bg) 70%, var(--white) 30%);
+    border-color: color-mix(in srgb, var(--success) 34%, var(--border) 66%);
+    color: var(--success);
+  }
+}
+
+/* Tipos base de columna para tablas */
+.app-data-table {
+  width: 100%;
+}
+
+.app-data-table .col-text,
+.app-data-table .col-text-short {
+  text-align: left;
+}
+
+.app-data-table .col-numeric {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.app-data-table .col-status {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.app-data-table td.col-status,
+.app-data-table .col-status .badge,
+.app-data-table .col-status .status-text {
+  font-weight: 700;
+}
+
+.app-data-table .col-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.app-data-table td.col-actions {
+  vertical-align: middle;
+}
+
+.app-data-table .col-actions .table-row-action + .table-row-action {
+  margin-left: 0.4rem;
+}
+
+.app-data-table td.col-status > * {
+  margin-inline: auto;
+}

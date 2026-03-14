@@ -249,7 +249,7 @@
 @if (confirmAction(); as action) {
   <app-confirm-dialog
     [title]="action.label + ' turno'"
-    [message]="'Â¿' + action.label + ' el turno de ' + pacienteNombreCompleto(action.turno) + ' a las ' + formatTime(action.turno.fechaHoraInicio) + '?'"
+    [message]="'¿' + action.label + ' el turno de ' + pacienteNombreCompleto(action.turno) + ' a las ' + formatTime(action.turno.fechaHoraInicio) + '?'"
     [variant]="action.variant"
     [confirmLabel]="action.label"
     (confirmed)="confirmarCambioEstado()"

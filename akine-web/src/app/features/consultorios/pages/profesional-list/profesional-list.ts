@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   OnInit,
   signal,
@@ -9,6 +10,7 @@ import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
+import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import {
   ProfesionalForm,
@@ -22,29 +24,53 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 @Component({
   selector: 'app-profesional-list',
   standalone: true,
-  imports: [ProfesionalForm, ReactiveFormsModule],
+  imports: [ProfesionalForm, ReactiveFormsModule, PageSectionHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sub-page">
-      <div class="sub-header">
-        <span class="sub-count">{{ items().length }} profesional(es)</span>
+      <app-page-section-header
+        title="Profesionales"
+        [description]="headerDescription()"
+        titleLevel="h3"
+      >
+        <button
+          header-actions
+          class="btn-icon"
+          type="button"
+          aria-label="Mostrar u ocultar filtros"
+          [attr.aria-expanded]="filtersExpanded()"
+          (click)="toggleFilters()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+            <path
+              d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         @if (canWrite()) {
-          <button class="btn-primary" (click)="openCreate()">+ Nuevo Profesional</button>
+          <button header-actions class="btn-primary" type="button" (click)="openCreate()">+ Agregar profesional</button>
         }
-      </div>
+      </app-page-section-header>
 
-      <form [formGroup]="filtersForm" class="filters" (ngSubmit)="load()">
-        <input formControlName="dni" placeholder="Buscar por DNI" />
-        <input formControlName="q" placeholder="Nombre / Apellido" />
-        <input formControlName="matricula" placeholder="Matricula" />
-        <input formControlName="especialidades" placeholder="Especialidad (coma separada)" />
-        <select formControlName="estado">
-          <option value="">Todos los estados</option>
-          <option value="ACTIVO">Activo</option>
-          <option value="BAJA">Baja</option>
-        </select>
-        <button class="btn-filter" type="submit">Filtrar</button>
-      </form>
+      @if (filtersExpanded()) {
+        <form [formGroup]="filtersForm" class="filters" (ngSubmit)="load()">
+          <input formControlName="dni" placeholder="Buscar por DNI" />
+          <input formControlName="q" placeholder="Nombre / apellido" />
+          <input formControlName="matricula" placeholder="Matrícula" />
+          <input formControlName="especialidades" placeholder="Especialidad (coma separada)" />
+          <select formControlName="estado">
+            <option value="">Todos los estados</option>
+            <option value="ACTIVO">Activo</option>
+            <option value="BAJA">Baja</option>
+          </select>
+          <button class="btn-filter" type="submit">Aplicar filtros</button>
+        </form>
+      }
 
       @if (loading()) {
         <p class="loading-msg">Cargando...</p>
@@ -52,38 +78,38 @@ import { resolveConsultorioId } from '../../utils/route-utils';
         <p class="empty-msg">No hay profesionales registrados.</p>
       } @else {
         <div class="table-wrap">
-          <table>
+          <table class="app-data-table">
             <thead>
               <tr>
-                <th>Apellido</th>
-                <th>Nombre</th>
-                <th>Matricula</th>
-                <th>Especialidades</th>
-                <th>Estado</th>
-                <th>Acciones</th>
+                <th class="col-text">Apellido</th>
+                <th class="col-text">Nombre</th>
+                <th class="col-text-short">Matrícula</th>
+                <th class="col-text">Especialidades</th>
+                <th class="col-status">Estado</th>
+                <th class="col-actions">Acciones</th>
               </tr>
             </thead>
             <tbody>
               @for (p of items(); track p.id) {
                 <tr>
-                  <td>{{ p.apellido }}</td>
-                  <td>{{ p.nombre }}</td>
-                  <td>{{ p.matricula }}</td>
-                  <td>
+                  <td class="col-text">{{ p.apellido }}</td>
+                  <td class="col-text">{{ p.nombre }}</td>
+                  <td class="col-text-short">{{ p.matricula }}</td>
+                  <td class="col-text">
                     <div class="chips">
                       @for (e of p.especialidades; track e) {
                         <span class="chip">{{ e }}</span>
                       }
                     </div>
                   </td>
-                  <td>
+                  <td class="col-status">
                     <span class="badge" [class.badge-active]="p.activo">
                       {{ p.activo ? 'Activo' : 'Baja' }}
                     </span>
                   </td>
-                  <td class="actions">
+                  <td class="col-actions actions">
                     @if (canWrite()) {
-                      <button type="button" class="btn-action" (click)="openEdit(p)">Editar</button>
+                      <button type="button" class="table-row-action" (click)="openEdit(p)">Editar</button>
                     }
                   </td>
                 </tr>
@@ -106,15 +132,61 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     }
   `,
   styles: [`
-    .sub-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-    .sub-count { color: var(--text-muted); font-size: .9rem; }
-    .filters { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .5rem; margin-bottom: 1rem; }
+    .sub-page { display: grid; gap: 1rem; }
+    .btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color .18s ease, background-color .18s ease, color .18s ease;
+    }
+    .btn-icon[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: .5rem;
+      padding: .85rem;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius-lg, 16px) - 2px);
+      background: color-mix(in srgb, var(--white) 92%, var(--bg));
+    }
     .filters input, .filters select {
-      padding: .5rem .65rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: .85rem;
+      min-height: 2.5rem;
+      padding: .5rem .65rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .85rem;
+      background: var(--white);
     }
     .btn-filter, .btn-primary {
-      padding: .5rem .8rem; border: none; border-radius: var(--radius); background: var(--primary); color: #fff;
-      font-weight: 600; cursor: pointer; font-size: .85rem;
+      min-height: 2.5rem;
+      padding: 0 .95rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: .85rem;
+      white-space: nowrap;
+    }
+    .btn-filter {
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .btn-primary {
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
     }
     .loading-msg, .empty-msg { color: var(--text-muted); text-align: center; margin-top: 2rem; }
     .table-wrap { overflow-x: auto; }
@@ -126,28 +198,11 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     .badge { padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--bg); color: var(--text-muted); }
     .badge-active { background: var(--success-bg); color: var(--success); }
     .actions { width: 1%; }
-    .btn-action {
-      display: inline-flex; align-items: center; justify-content: center; min-height: 2rem; padding: .38rem .72rem;
-      border: 1px solid color-mix(in srgb, var(--border) 82%, var(--primary) 18%);
-      border-radius: 999px; background: var(--white); color: color-mix(in srgb, var(--text) 82%, var(--primary) 18%);
-      cursor: pointer; font-size: .8rem; font-weight: 600; line-height: 1; text-decoration: none;
-      transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
-    }
-    .btn-action:hover {
-      background: color-mix(in srgb, var(--bg) 78%, var(--white) 22%);
-      border-color: color-mix(in srgb, var(--primary) 30%, var(--border) 70%);
-      color: var(--primary);
-      transform: translateY(-1px);
-    }
-    .btn-action:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
-    }
     @media (max-width: 1024px) {
       .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 720px) {
-      .btn-action { flex: 1 1 auto; }
+      .table-row-action { flex: 1 1 auto; }
     }
   `],
 })
@@ -165,6 +220,11 @@ export class ProfesionalListPage implements OnInit {
   readonly showForm = signal(false);
   readonly editTarget = signal<Profesional | null>(null);
   readonly isEditMode = signal(false);
+  readonly filtersExpanded = signal(false);
+  readonly headerDescription = computed(() => {
+    const count = this.items().length;
+    return `${count} ${count === 1 ? 'profesional registrado' : 'profesionales registrados'} en este consultorio.`;
+  });
 
   readonly formEditValue = (): ProfesionalFormEditValue | null => {
     const p = this.editTarget();
@@ -195,6 +255,10 @@ export class ProfesionalListPage implements OnInit {
   consultorioId = '';
 
   readonly canWrite = () => this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN');
+
+  toggleFilters(): void {
+    this.filtersExpanded.update((value) => !value);
+  }
 
   ngOnInit(): void {
     this.consultorioId = resolveConsultorioId(this.route) ?? '';

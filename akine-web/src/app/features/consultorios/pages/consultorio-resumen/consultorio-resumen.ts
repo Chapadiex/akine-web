@@ -140,7 +140,7 @@ interface ResumenData {
     .kpi-grid {
       display: grid;
       gap: .55rem;
-      grid-template-columns: repeat(6, minmax(120px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     }
 
     .kpi-card {
@@ -300,12 +300,6 @@ interface ResumenData {
       text-decoration: underline;
     }
 
-    @media (max-width: 1140px) {
-      .kpi-grid {
-        grid-template-columns: repeat(3, minmax(140px, 1fr));
-      }
-    }
-
     @media (max-width: 900px) {
       .panels-grid {
         grid-template-columns: 1fr;
@@ -314,7 +308,7 @@ interface ResumenData {
 
     @media (max-width: 680px) {
       .kpi-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
       }
 
       .panel-head {

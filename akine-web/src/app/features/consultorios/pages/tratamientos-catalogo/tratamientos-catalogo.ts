@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
+import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import {
   TratamientoCatalog,
@@ -16,70 +17,93 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 @Component({
   selector: 'app-tratamientos-catalogo-page',
   standalone: true,
-  imports: [FormsModule, ConfirmDialog],
+  imports: [FormsModule, ConfirmDialog, PageSectionHeaderComponent],
   template: `
     <div class="page">
-      <div class="header">
-        <div>
-          <h3>Tratamientos</h3>
-          <p>Maestro operativo por consultorio para planes terapeuticos, autorizaciones y configuracion clinica.</p>
-        </div>
-        <div class="actions">
-          <button class="btn-secondary" (click)="restoreMissing()">Agregar faltantes</button>
-          <button class="btn-danger" (click)="restoreResetConfirm.set(true)">Restaurar por defecto</button>
-        </div>
-      </div>
+      <app-page-section-header
+        title="Tratamientos"
+        description="Maestro operativo por consultorio para planes terapéuticos, autorizaciones y configuración clínica."
+        titleLevel="h3"
+      >
+        <button
+          header-actions
+          class="btn-icon"
+          type="button"
+          aria-label="Mostrar u ocultar filtros"
+          [attr.aria-expanded]="filtersExpanded()"
+          (click)="toggleFilters()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+            <path
+              d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button header-actions class="btn-primary" type="button" (click)="openCreate()">+ Agregar tratamiento</button>
+      </app-page-section-header>
 
       @if (loading()) {
         <div class="empty">Cargando tratamientos...</div>
       } @else if (maestro(); as current) {
-        <div class="filters">
-          <input
-            type="search"
-            [ngModel]="search()"
-            (ngModelChange)="search.set($event)"
-            placeholder="Buscar por nombre, codigo, descripcion o modalidad"
-          />
-          <select [ngModel]="selectedTipo()" (ngModelChange)="selectedTipo.set($event)">
-            <option value="">Todos los tipos</option>
-            @for (tipo of current.tipos; track tipo) {
-              <option [value]="tipo">{{ tipoLabel(tipo) }}</option>
-            }
-          </select>
-          <select [ngModel]="selectedCategoria()" (ngModelChange)="selectedCategoria.set($event)">
-            <option value="">Todas las categorias</option>
-            @for (categoria of current.categorias; track categoria.codigo) {
-              <option [value]="categoria.codigo">{{ categoria.nombre }}</option>
-            }
-          </select>
-          <button class="btn-primary" (click)="openCreate()">Agregar tratamiento</button>
-        </div>
+        @if (filtersExpanded()) {
+          <div class="filters-panel">
+            <div class="filters-main">
+              <input
+                type="search"
+                [ngModel]="search()"
+                (ngModelChange)="search.set($event)"
+                placeholder="Buscar por nombre, codigo, descripcion o modalidad"
+              />
+              <select [ngModel]="selectedTipo()" (ngModelChange)="selectedTipo.set($event)">
+                <option value="">Todos los tipos</option>
+                @for (tipo of current.tipos; track tipo) {
+                  <option [value]="tipo">{{ tipoLabel(tipo) }}</option>
+                }
+              </select>
+              <select [ngModel]="selectedCategoria()" (ngModelChange)="selectedCategoria.set($event)">
+                <option value="">Todas las categorias</option>
+                @for (categoria of current.categorias; track categoria.codigo) {
+                  <option [value]="categoria.codigo">{{ categoria.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="filters-actions">
+              <button class="btn-secondary" type="button" (click)="restoreMissing()">Agregar faltantes</button>
+              <button class="btn-danger" type="button" (click)="restoreResetConfirm.set(true)">Restaurar por defecto</button>
+            </div>
+          </div>
+        }
 
         <div class="table-wrap">
-          <table class="table">
+          <table class="table app-data-table">
             <thead>
               <tr>
-                <th>Tratamiento</th>
-                <th>Clasificacion</th>
-                <th>Operacion</th>
-                <th>Modalidades</th>
-                <th>Estado</th>
-                <th></th>
+                <th class="col-text">Tratamiento</th>
+                <th class="col-text">Clasificacion</th>
+                <th class="col-text-short">Operacion</th>
+                <th class="col-text">Modalidades</th>
+                <th class="col-status">Estado</th>
+                <th class="col-actions"></th>
               </tr>
             </thead>
             <tbody>
               @for (item of filteredTratamientos(); track item.codigoInterno) {
                 <tr>
-                  <td>
+                  <td class="col-text">
                     <strong>{{ item.nombre }}</strong>
                     <div class="meta">{{ item.codigoInterno }}</div>
                     <div class="meta">{{ item.descripcion }}</div>
                   </td>
-                  <td>
+                  <td class="col-text">
                     <div>{{ tipoLabel(item.tipo) }}</div>
                     <div class="meta">{{ categoriaLabel(item.categoriaCodigo) }}</div>
                   </td>
-                  <td>
+                  <td class="col-text-short">
                     <div class="meta-list">
                       @if (item.facturable) { <span>Facturable</span> }
                       @if (item.requierePrescripcionMedica) { <span>Con prescripcion</span> }
@@ -87,21 +111,21 @@ import { resolveConsultorioId } from '../../utils/route-utils';
                     </div>
                     <div class="meta">{{ item.duracionSugeridaMinutos }} min sugeridos</div>
                   </td>
-                  <td>
+                  <td class="col-text">
                     <div class="meta-list">
                       @for (modalidad of item.modalidades; track modalidad) {
                         <span>{{ modalidadLabel(modalidad) }}</span>
                       }
                     </div>
                   </td>
-                  <td>
+                  <td class="col-status">
                     <span class="badge" [class.badge--active]="item.activo">
                       {{ item.activo ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
-                  <td class="row-actions">
-                    <button class="btn-sm" (click)="openEdit(item)">Editar</button>
-                    <button class="btn-sm btn-warn" (click)="askToggle(item)">
+                  <td class="col-actions row-actions">
+                    <button class="table-row-action" (click)="openEdit(item)">Editar</button>
+                    <button class="table-row-action table-row-action--danger" (click)="askToggle(item)">
                       {{ item.activo ? 'Inactivar' : 'Activar' }}
                     </button>
                   </td>
@@ -212,17 +236,52 @@ import { resolveConsultorioId } from '../../utils/route-utils';
   `,
   styles: [`
     .page { display: grid; gap: 16px; }
-    .header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
-    .header h3 { margin: 0; font-size: 1.1rem; }
-    .header p { margin: 4px 0 0; color: var(--text-muted); }
-    .actions, .filters, .row-actions, .drawer-actions, .meta-list { display: flex; gap: 8px; flex-wrap: wrap; }
-    .filters { align-items: center; }
-    .filters input, .filters select, .field input, .field select, .field textarea {
+    .btn-primary {
+      min-height: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 .95rem;
+      white-space: nowrap;
+    }
+    .btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color .18s ease, background-color .18s ease, color .18s ease;
+    }
+    .btn-icon[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
+    }
+    .row-actions, .drawer-actions, .meta-list { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filters-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: .85rem;
+      align-items: start;
+      padding: .85rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--white) 92%, var(--bg));
+    }
+    .filters-main,
+    .filters-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .filters-main { align-items: center; }
+    .filters-main input, .filters-main select, .field input, .field select, .field textarea {
       min-height: 40px; border: 1px solid var(--border); border-radius: 10px; padding: 0 12px;
       background: var(--white); color: var(--text);
     }
     .field textarea { min-height: 96px; padding: 12px; }
-    .filters input { flex: 1; min-width: 260px; }
+    .filters-main input { flex: 1; min-width: 260px; }
     .table-wrap { border: 1px solid var(--border); border-radius: 12px; background: var(--white); overflow: auto; }
     .table { width: 100%; border-collapse: collapse; }
     .table th, .table td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; font-size: .84rem; }
@@ -247,8 +306,9 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     .grid-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .check { display: inline-flex; gap: 8px; align-items: center; min-height: 40px; }
     @media (max-width: 920px) {
-      .header { flex-direction: column; }
-      .filters { flex-direction: column; align-items: stretch; }
+      .btn-primary { flex: 1 1 auto; text-align: center; }
+      .filters-panel { grid-template-columns: 1fr; }
+      .filters-main { flex-direction: column; align-items: stretch; }
       .grid-two { grid-template-columns: 1fr; }
     }
   `],
@@ -265,6 +325,7 @@ export class TratamientosCatalogoPage implements OnInit {
   readonly search = signal('');
   readonly selectedTipo = signal('');
   readonly selectedCategoria = signal('');
+  readonly filtersExpanded = signal(false);
   readonly editorOpen = signal(false);
   readonly creating = signal(false);
   readonly editingItem = signal<TratamientoCatalogItem | null>(null);
@@ -325,6 +386,10 @@ export class TratamientosCatalogoPage implements OnInit {
 
   categoriaLabel(codigo: string): string {
     return this.maestro()?.categorias.find((item) => item.codigo === codigo)?.nombre ?? codigo;
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update((value) => !value);
   }
 
   openCreate(): void {

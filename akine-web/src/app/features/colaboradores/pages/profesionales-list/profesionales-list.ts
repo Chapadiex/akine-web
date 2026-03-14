@@ -12,6 +12,7 @@ import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
+import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import {
   ProfesionalForm,
@@ -32,40 +33,37 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
 @Component({
   selector: 'app-profesionales-list-page',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, ConfirmDialog, ProfesionalForm],
+  imports: [ReactiveFormsModule, RouterLink, ConfirmDialog, ProfesionalForm, PageSectionHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <header class="page-header">
-        <div class="header-copy header-inline">
-          <h1>Profesionales</h1>
-          <p>Administra altas, invitaciones y estado de cada profesional del consultorio</p>
-        </div>
-
-        <div class="header-actions">
-          <button
-            class="btn-icon"
-            type="button"
-            aria-label="Mostrar u ocultar filtros"
-            [attr.aria-expanded]="filtersExpanded()"
-            (click)="toggleFilters()"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
-              <path
-                d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          @if (canWrite()) {
-            <button class="btn-primary" type="button" (click)="openCreate()">+ Agregar / Invitar</button>
-          }
-        </div>
-      </header>
+      <app-page-section-header
+        title="Profesionales"
+        description="Administra altas, invitaciones y estado de cada profesional del consultorio"
+      >
+        <button
+          header-actions
+          class="btn-icon"
+          type="button"
+          aria-label="Mostrar u ocultar filtros"
+          [attr.aria-expanded]="filtersExpanded()"
+          (click)="toggleFilters()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+            <path
+              d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        @if (canWrite()) {
+          <button header-actions class="btn-primary" type="button" (click)="openCreate()">+ Agregar / Invitar</button>
+        }
+      </app-page-section-header>
 
       @if (filtersExpanded()) {
         <form class="filters" [formGroup]="filtersForm" (ngSubmit)="load()">
@@ -225,27 +223,17 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
   `,
   styles: [`
     .page { padding: 1rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-    .header-copy { max-width: 720px; }
-    .header-inline {
-      display: flex;
-      align-items: baseline;
-      gap: .7rem;
-      flex-wrap: wrap;
-    }
-    .page-header h1 { margin: 0; font-size: 1.5rem; }
-    .page-header p { margin: 0; color: var(--text-muted); line-height: 1.4; }
-    .header-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
-    .header-actions .btn-primary {
-      height: 2.4rem;
+    .btn-primary {
+      min-height: 2.5rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 0 .95rem;
+      white-space: nowrap;
     }
     .btn-icon {
-      width: 2.6rem;
-      height: 2.4rem;
+      width: 2.5rem;
+      height: 2.5rem;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       background: var(--white);
@@ -255,8 +243,14 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
       justify-content: center;
       font-size: 1.1rem;
       cursor: pointer;
+      transition: border-color .18s ease, background-color .18s ease, color .18s ease;
     }
     .btn-icon:hover { background: var(--bg); }
+    .btn-icon[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
+    }
     .filters {
       display: grid;
       grid-template-columns: minmax(260px, 2fr) minmax(170px, 1fr) minmax(190px, 1fr) auto;
@@ -377,9 +371,8 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
     @media (max-width: 700px) {
       .page { padding: .8rem; }
       .filters { grid-template-columns: 1fr; }
-      .header-actions { width: 100%; }
-      .header-actions .btn-primary, .header-actions .btn-secondary { flex: 1; text-align: center; }
-      .header-actions .btn-icon { flex: 0 0 auto; }
+      .btn-primary { flex: 1 1 auto; text-align: center; }
+      .btn-icon { flex: 0 0 auto; }
     }
   `],
 })

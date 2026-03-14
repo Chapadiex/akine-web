@@ -225,6 +225,12 @@ $topbar-height: 52px;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+
+  &--with-divider {
+    margin-top: .65rem;
+    padding-top: .75rem;
+    border-top: 1px solid color-mix(in srgb,var(--sidenav-text-active) 26%,transparent);
+  }
 }
 
 .nav-section {
@@ -249,27 +255,27 @@ $topbar-height: 52px;
 }
 
 .nav-submenu {
-  margin-left: 0.6rem;
-  margin-top: -0.05rem;
-  margin-bottom: 0.15rem;
-  padding-left: 0.9rem;
-  border-left: 1px solid color-mix(in srgb, var(--sidenav-text-active) 18%, transparent);
+  margin-left: .75rem;
+  margin-top: .05rem;
+  margin-bottom: .2rem;
+  padding-left: 1rem;
+  border-left: 1px solid color-mix(in srgb,var(--sidenav-text-active) 22%,transparent);
   display: flex;
   flex-direction: column;
-  gap: 0.08rem;
+  gap: .12rem;
 }
 
 .nav-subitem {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.4rem 0.55rem;
+  gap: .6rem;
+  padding: .42rem .55rem;
   border-radius: 8px;
   color: color-mix(in srgb, var(--sidenav-text) 92%, white 8%);
   text-decoration: none;
-  font-size: 0.8rem;
+  font-size: .79rem;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.32;
   transition: background 0.15s, color 0.15s;
 
   &:hover {

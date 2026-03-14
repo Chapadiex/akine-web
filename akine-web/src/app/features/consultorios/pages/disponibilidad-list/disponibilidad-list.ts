@@ -22,15 +22,15 @@ import { resolveConsultorioId } from '../../utils/route-utils';
       <p class="empty-msg">Sin disponibilidades para este profesional.</p>
     } @else {
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>Dia</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr></thead>
+        <table class="app-data-table">
+          <thead><tr><th class="col-text">Dia</th><th class="col-text-short">Inicio</th><th class="col-text-short">Fin</th><th class="col-actions">Acciones</th></tr></thead>
           <tbody>
             @for (d of items(); track d.id) {
               <tr>
-                <td>{{ dia(d.diaSemana) }}</td>
-                <td>{{ d.horaInicio }}</td>
-                <td>{{ d.horaFin }}</td>
-                <td><button class="btn-link" (click)="remove(d.id)">Eliminar</button></td>
+                <td class="col-text">{{ dia(d.diaSemana) }}</td>
+                <td class="col-text-short">{{ d.horaInicio }}</td>
+                <td class="col-text-short">{{ d.horaFin }}</td>
+                <td class="col-actions"><button class="table-row-action table-row-action--danger" (click)="remove(d.id)">Eliminar</button></td>
               </tr>
             }
           </tbody>
@@ -51,7 +51,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
     th { background: var(--bg); padding: .7rem 1rem; text-align: left; font-size: .78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
     td { padding: .7rem 1rem; border-top: 1px solid var(--border); font-size: .9rem; }
-    .btn-link { border: 0; background: none; color: var(--primary); cursor: pointer; }
   `],
 })
 export class DisponibilidadListPage implements OnInit {

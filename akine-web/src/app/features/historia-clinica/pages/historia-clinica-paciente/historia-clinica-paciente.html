@@ -212,7 +212,7 @@
 
                 <article class="surface">
                   <div class="section-head">
-                    <h3>Ultimo evento</h3>
+                    <h3>Último evento</h3>
                     @if (summaryLatestEvent()) {
                       <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(summaryLatestEvent()!.sesionId)">Ver detalle</button>
                     }
@@ -423,8 +423,8 @@
                 <div class="section-head section-head--stack">
                   <div>
                     <p class="eyebrow">Timeline</p>
-                    <h3>Que paso longitudinalmente</h3>
-                    <p class="muted-copy">El historial completo vive aca, no en la home por defecto.</p>
+                    <h3>Qué pasó longitudinalmente</h3>
+                    <p class="muted-copy">El historial completo vive acá, no en la home por defecto.</p>
                   </div>
                   <div class="chip-row">
                     @for (filter of timelineFilters; track filter.value) {
@@ -465,7 +465,7 @@
                   </div>
                   @if (canLoadMoreTimeline()) {
                     <div class="load-more">
-                      <button type="button" class="btn btn--secondary" (click)="loadMoreTimeline()">Cargar mas</button>
+                      <button type="button" class="btn btn--secondary" (click)="loadMoreTimeline()">Cargar más</button>
                     </div>
                   }
                 } @else {
@@ -516,7 +516,7 @@
                             }
                           </div>
                           @if (antecedente.critical) {
-                            <span class="state-pill" data-tone="warning">Critico</span>
+                            <span class="state-pill" data-tone="warning">Crítico</span>
                           }
                         </article>
                       }
@@ -652,7 +652,7 @@
                       <section class="wizard-section">
                         <div class="section-head section-head--stack">
                           <div>
-                            <h4>Prescripcion y derivacion</h4>
+                            <h4>Prescripción y derivación</h4>
                           </div>
                         </div>
 
@@ -755,7 +755,7 @@
                         [categories]="antecedenteCatalogCategories()"
                         [formArray]="createLegajoAntecedentes"
                         context="create"
-                        emptySelectionMessage="Puedes dejar este paso liviano y completar antecedentes mas tarde si hace falta."
+                        emptySelectionMessage="Puedes dejar este paso liviano y completar antecedentes más tarde si hace falta."
                       >
                         <div selector-left-top class="grid-two grid-two--tight">
                           <label class="field">

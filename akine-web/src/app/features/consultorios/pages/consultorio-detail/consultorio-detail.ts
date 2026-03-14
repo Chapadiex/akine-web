@@ -66,7 +66,7 @@ interface NavItem {
               </div>
 
               @if (canEdit()) {
-                <button class="btn-edit" (click)="showForm.set(true)">Editar</button>
+                <button class="btn-edit" type="button" (click)="showForm.set(true)">Editar</button>
               }
             </div>
 
@@ -94,9 +94,9 @@ interface NavItem {
 
               @if (infoExpanded()) {
                 <div id="consultorio-info-panel" class="info-strip">
-                  <article class="info-item info-item-phone">
+                  <article class="info-item">
                     <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                         <path d="M5.5 4.5h3l1.6 4.3-1.9 1.9a15 15 0 0 0 5.6 5.6l1.9-1.9 4.3 1.6v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 3.5 6.5a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
                       </svg>
                     </div>
@@ -106,9 +106,9 @@ interface NavItem {
                     </div>
                   </article>
 
-                  <article class="info-item info-item-email">
+                  <article class="info-item">
                     <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                         <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
                         <path d="m4.5 7 7.5 5 7.5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
                       </svg>
@@ -119,9 +119,9 @@ interface NavItem {
                     </div>
                   </article>
 
-                  <article class="info-item info-item-cuit">
+                  <article class="info-item">
                     <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                         <rect x="3.8" y="6" width="16.4" height="12" rx="2" stroke="currentColor" stroke-width="1.8" />
                         <path d="M7 10h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                       </svg>
@@ -134,31 +134,29 @@ interface NavItem {
 
                   <article class="info-item info-item-address">
                     <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                         <path d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z" stroke="currentColor" stroke-width="1.8" />
                         <circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8" />
                       </svg>
                     </div>
                     <div class="address-content">
                       <span class="info-label">Direccion</span>
-                      <div class="address-row">
-                        <strong class="info-value">{{ current.address || '-' }}</strong>
-                        <button
-                          class="btn-map"
-                          type="button"
-                          title="Ver mapa"
-                          aria-label="Ver mapa del consultorio"
-                          (click)="onMapButtonClick($event)"
-                        >
-                          <span class="btn-map-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-                              <path d="M12 20s6-4.6 6-9.7a6 6 0 1 0-12 0C6 15.4 12 20 12 20Z" stroke="currentColor" stroke-width="1.8" />
-                              <circle cx="12" cy="10.2" r="2.1" stroke="currentColor" stroke-width="1.8" />
-                            </svg>
-                          </span>
-                          <span>{{ hasCoordinates() ? 'Ver mapa' : 'Buscar mapa' }}</span>
-                        </button>
-                      </div>
+                      <strong class="info-value">{{ current.address || '-' }}</strong>
+                      <button
+                        class="btn-map"
+                        type="button"
+                        title="Ver mapa"
+                        aria-label="Ver mapa del consultorio"
+                        (click)="onMapButtonClick($event)"
+                      >
+                        <span class="btn-map-icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                            <path d="M12 20s6-4.6 6-9.7a6 6 0 1 0-12 0C6 15.4 12 20 12 20Z" stroke="currentColor" stroke-width="1.8" />
+                            <circle cx="12" cy="10.2" r="2.1" stroke="currentColor" stroke-width="1.8" />
+                          </svg>
+                        </span>
+                        <span>{{ hasCoordinates() ? 'Ver mapa' : 'Buscar mapa' }}</span>
+                      </button>
 
                       @if (showMapPopover()) {
                         <div class="map-popover" role="dialog" aria-label="Vista previa del mapa" (click)="$event.stopPropagation()">
@@ -200,7 +198,7 @@ interface NavItem {
               <div class="inactive-alert">
                 <p>Este consultorio esta inactivo. No se puede operar ni editar hasta reactivarlo.</p>
                 @if (isAdmin()) {
-                  <button class="btn-reactivate" (click)="reactivate()">Reactivar consultorio</button>
+                  <button class="btn-reactivate" type="button" (click)="reactivate()">Reactivar consultorio</button>
                 }
               </div>
             } @else {
@@ -307,7 +305,7 @@ interface NavItem {
       padding-top: .18rem;
     }
 
-    .clinic-copy { display: grid; gap: .3rem; min-width: 0; }
+    .clinic-copy { min-width: 0; }
 
     .title-row {
       display: flex;
@@ -378,11 +376,11 @@ interface NavItem {
       width: 100%;
       border: 0;
       background: transparent;
-      padding: .9rem 1rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
+      padding: .58rem .82rem;
       cursor: pointer;
       text-align: left;
       color: inherit;
@@ -408,7 +406,7 @@ interface NavItem {
     }
 
     .info-toggle-kicker {
-      font-size: .72rem;
+      font-size: .66rem;
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--primary);
@@ -420,24 +418,21 @@ interface NavItem {
       align-items: center;
       gap: .55rem;
       flex: 0 0 auto;
-    }
-
-    .info-toggle-state {
-      font-size: .82rem;
-      font-weight: 700;
       color: var(--text-muted);
+      font-weight: 700;
+      font-size: .74rem;
     }
 
     .info-toggle-chevron {
       display: inline-grid;
       place-items: center;
-      width: 2rem;
-      height: 2rem;
+      width: 1.65rem;
+      height: 1.65rem;
       border-radius: 999px;
       border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
       background: var(--white);
       color: var(--primary);
-      transition: transform .18s ease;
+      transition: transform .16s ease;
     }
 
     .info-toggle-chevron-open {
@@ -446,51 +441,29 @@ interface NavItem {
 
     .info-strip {
       display: grid;
-      grid-template-columns: minmax(180px, .9fr) minmax(220px, 1fr) minmax(360px, 2fr);
-      grid-template-areas:
-        "phone email address"
-        "cuit . address";
-      column-gap: 1.1rem;
-      row-gap: .95rem;
-      padding: 0 1rem 1rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      column-gap: .85rem;
+      row-gap: .45rem;
+      padding: 0 .82rem .75rem;
       align-items: start;
     }
 
     .info-item {
       display: flex;
       align-items: flex-start;
-      gap: .65rem;
+      gap: .55rem;
       min-width: 0;
     }
 
-    .info-item-phone {
-      grid-area: phone;
-    }
-
-    .info-item-email {
-      grid-area: email;
-    }
-
-    .info-item-cuit {
-      grid-area: cuit;
-    }
-
     .info-item-address {
-      grid-area: address;
       position: relative;
     }
 
     .address-content {
       min-width: 0;
       width: 100%;
-    }
-
-    .address-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: flex-start;
-      gap: 1rem;
-      min-width: 0;
+      gap: .28rem;
     }
 
     .info-icon {
@@ -498,24 +471,27 @@ interface NavItem {
       display: inline-grid;
       place-items: center;
       flex: 0 0 auto;
+      padding-top: .08rem;
     }
 
     .info-label {
       display: block;
-      font-size: .77rem;
       color: var(--text-muted);
+      font-size: .68rem;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .02em;
-      margin-bottom: .08rem;
+      margin-bottom: 0;
     }
 
     .info-value {
       display: block;
-      font-size: .9rem;
       color: var(--text);
+      font-size: .8rem;
       font-weight: 600;
       overflow-wrap: break-word;
       word-break: normal;
+      line-height: 1.3;
     }
 
     .btn-map {
@@ -523,15 +499,17 @@ interface NavItem {
       background: color-mix(in srgb, var(--primary) 10%, var(--white));
       color: color-mix(in srgb, var(--primary) 88%, var(--text) 12%);
       border-radius: 999px;
-      font-size: .83rem;
+      font-size: .74rem;
       font-weight: 700;
-      padding: .42rem .8rem;
+      padding: .24rem .55rem;
       cursor: pointer;
       flex: 0 0 auto;
       display: inline-flex;
       align-items: center;
-      gap: .38rem;
+      gap: .34rem;
       white-space: nowrap;
+      width: fit-content;
+      margin-top: .12rem;
       box-shadow: 0 10px 22px -18px color-mix(in srgb, var(--primary) 45%, transparent);
     }
 
@@ -548,7 +526,8 @@ interface NavItem {
     .map-popover {
       position: absolute;
       z-index: 20;
-      left: 0;
+      right: 0;
+      left: auto;
       top: calc(100% + .55rem);
       width: min(380px, 90vw);
       border: 1px solid var(--border);
@@ -709,10 +688,6 @@ interface NavItem {
       background: color-mix(in srgb, var(--primary) 12%, var(--white));
     }
 
-    .content-shell {
-      padding-top: .1rem;
-    }
-
     .inactive-alert {
       border: 1px solid var(--border);
       background: var(--bg);
@@ -742,10 +717,6 @@ interface NavItem {
     @media (max-width: 1180px) {
       .info-strip {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-areas:
-          "phone email"
-          "cuit cuit"
-          "address address";
       }
     }
 
@@ -783,19 +754,6 @@ interface NavItem {
 
       .info-strip {
         grid-template-columns: 1fr;
-        grid-template-areas:
-          "phone"
-          "email"
-          "cuit"
-          "address";
-      }
-      .address-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .btn-map {
-        width: fit-content;
       }
 
       .map-popover { width: min(100%, 95vw); }
@@ -824,7 +782,8 @@ export class ConsultorioDetailPage implements OnInit {
     { label: 'Resumen', path: 'resumen', exact: true },
     { label: 'Boxes', path: 'boxes', exact: true },
     { label: 'Profesionales', path: 'profesionales', exact: true },
-    { label: 'Configuracion', path: 'configuracion', exact: false },
+    { label: 'Agenda', path: 'agenda', exact: false },
+    { label: 'Configuración', path: 'configuracion', exact: false },
   ];
 
   readonly agendaTabs: NavItem[] = [
@@ -836,8 +795,8 @@ export class ConsultorioDetailPage implements OnInit {
   readonly configurationTabs: NavItem[] = [
     { label: 'Especialidades', path: 'configuracion/especialidades' },
     { label: 'Cargos del personal', path: 'configuracion/cargos-personal' },
-    { label: 'Plantillas de antecedentes', path: 'configuracion/plantillas-antecedentes' },
-    { label: 'Diagnosticos medicos', path: 'configuracion/diagnosticos-medicos' },
+    { label: 'Antecedentes', path: 'configuracion/plantillas-antecedentes' },
+    { label: 'Diagnósticos médicos', path: 'configuracion/diagnosticos-medicos' },
     { label: 'Tratamientos', path: 'configuracion/tratamientos' },
   ];
 

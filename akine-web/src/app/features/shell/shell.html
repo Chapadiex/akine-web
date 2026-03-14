@@ -26,7 +26,7 @@
         class="collapse-btn"
         type="button"
         (click)="toggle()"
-        [attr.aria-label]="collapsed() ? 'Expandir menu' : 'Colapsar menu'"
+        [attr.aria-label]="collapsed() ? 'Expandir menú' : 'Colapsar menú'"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           @for (path of iconPaths(collapsed() ? 'chevron-right' : 'chevron-left'); track path) {
@@ -44,7 +44,7 @@
           }
 
           @for (item of section.items; track item.path + item.label) {
-            <div class="nav-group">
+            <div class="nav-group" [class.nav-group--with-divider]="item.dividerBefore">
               <a
                 [routerLink]="item.path"
                 [queryParams]="item.queryParams ?? null"
@@ -134,7 +134,7 @@
 
   <div class="shell-main">
     <header class="topbar" role="banner">
-      <button class="topbar__hamburger" type="button" (click)="mobileOpen.set(true)" aria-label="Abrir menu">
+      <button class="topbar__hamburger" type="button" (click)="mobileOpen.set(true)" aria-label="Abrir menú">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           @for (path of iconPaths('menu'); track path) {
             <path [attr.d]="path" />
@@ -169,7 +169,7 @@
           </div>
         }
 
-        <button class="btn btn--ghost btn--sm" type="button" (click)="logout()">Cerrar sesion</button>
+        <button class="btn btn--ghost btn--sm" type="button" (click)="logout()">Cerrar sesión</button>
       </div>
     </header>
 

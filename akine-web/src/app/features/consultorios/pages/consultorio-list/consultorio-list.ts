@@ -35,36 +35,36 @@ import { ConsultorioService } from '../../services/consultorio.service';
         <p class="empty-msg">No hay consultorios registrados.</p>
       } @else {
         <div class="table-wrap">
-          <table>
+          <table class="app-data-table">
             <thead>
               <tr>
-                <th>Nombre</th><th>CUIT</th><th>Telefono</th>
-                <th>Email</th><th>Estado</th><th>Acciones</th>
+                <th class="col-text">Nombre</th><th class="col-text-short">CUIT</th><th class="col-text-short">Teléfono</th>
+                <th class="col-text">Email</th><th class="col-status">Estado</th><th class="col-actions">Acciones</th>
               </tr>
             </thead>
             <tbody>
               @for (c of visibleItems(); track c.id) {
                 <tr>
-                  <td>
+                  <td class="col-text">
                     <a [routerLink]="['/app/consultorios', c.id]" class="link">{{ c.name }}</a>
                   </td>
-                  <td>{{ c.cuit ?? '-' }}</td>
-                  <td>{{ c.phone ?? '-' }}</td>
-                  <td>{{ c.email ?? '-' }}</td>
-                  <td>
+                  <td class="col-text-short">{{ c.cuit ?? '-' }}</td>
+                  <td class="col-text-short">{{ c.phone ?? '-' }}</td>
+                  <td class="col-text">{{ c.email ?? '-' }}</td>
+                  <td class="col-status">
                     <span class="badge" [class.badge-active]="c.status === 'ACTIVE'">
                       {{ c.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
-                  <td class="actions-cell">
+                  <td class="col-actions actions-cell">
                     @if (canEdit(c)) {
-                      <button class="btn-icon" title="Editar" (click)="startEdit(c)">Editar</button>
+                      <button class="table-row-action" title="Editar" (click)="startEdit(c)">Editar</button>
                     }
                     @if (isAdmin() && c.status === 'ACTIVE') {
-                      <button class="btn-icon btn-danger" title="Dar de baja" (click)="startDelete(c)">Baja</button>
+                      <button class="table-row-action table-row-action--danger" title="Dar de baja" (click)="startDelete(c)">Baja</button>
                     }
                     @if (isAdmin() && c.status !== 'ACTIVE') {
-                      <button class="btn-icon btn-success" title="Reactivar" (click)="startActivate(c)">Reactivar</button>
+                      <button class="table-row-action table-row-action--success" title="Reactivar" (click)="startActivate(c)">Reactivar</button>
                     }
                   </td>
                 </tr>
@@ -133,12 +133,7 @@ import { ConsultorioService } from '../../services/consultorio.service';
     .badge { padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600;
              background: var(--bg); color: var(--text-muted); }
     .badge-active { background: var(--success-bg); color: var(--success); }
-    .actions-cell { display: flex; gap: .5rem; }
-    .btn-icon { background: none; border: none; cursor: pointer; font-size: .9rem; padding: .2rem .4rem;
-                border-radius: var(--radius); }
-    .btn-icon:hover { background: var(--bg); }
-    .btn-danger:hover { background: var(--error-bg); }
-    .btn-success:hover { background: var(--success-bg); }
+    .actions-cell { min-width: 220px; }
   `],
 })
 export class ConsultorioListPage implements OnInit {

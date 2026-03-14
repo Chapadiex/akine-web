@@ -9,6 +9,7 @@ export interface NavItem {
   roles: RoleName[];
   queryParams?: QueryParams;
   children?: NavItem[];
+  dividerBefore?: boolean;
 }
 
 export interface NavSection {
@@ -33,9 +34,6 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Inicio',
         icon: 'home',
         roles: ALL_STAFF,
-        children: [
-          { path: '/app/inicio', label: 'Dashboard', icon: 'dashboard', roles: ALL_STAFF },
-        ],
       },
       {
         path: '/app/turnos',
@@ -44,36 +42,14 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: ALL_STAFF,
         children: [
           { path: '/app/turnos', label: 'Calendario', icon: 'calendar-grid', roles: ALL_STAFF },
-          {
-            path: '/app/consultorios/:consultorioId/agenda/cobertura-profesionales',
-            label: 'Disponibilidad profesional',
-            icon: 'clock-check',
-            roles: STAFF_WITH_ADMIN,
-          },
-          {
-            path: '/app/consultorios/:consultorioId/agenda/intervalo-turnos',
-            label: 'Intervalos de turnos',
-            icon: 'timer',
-            roles: STAFF_WITH_ADMIN,
-          },
-          {
-            path: '/app/consultorios/:consultorioId/agenda/feriados-cierres',
-            label: 'Feriados y cierres',
-            icon: 'calendar-off',
-            roles: STAFF_WITH_ADMIN,
-          },
         ],
       },
       {
         path: '/app/pacientes',
-        label: 'Pacientes',
+        label: 'Paciente 360',
         icon: 'users',
         roles: STAFF_WITH_ADMIN,
-        children: [
-          { path: '/app/pacientes', label: 'Listado de pacientes', icon: 'list', roles: STAFF_WITH_ADMIN },
-          { path: '/app/pacientes', label: 'Alta de paciente', icon: 'user-plus', roles: STAFF_WITH_ADMIN },
-          { path: '/app/pacientes', label: 'Paciente 360', icon: 'user-circle', roles: STAFF_WITH_ADMIN },
-        ],
+        dividerBefore: true,
       },
       {
         path: '/app/historia-clinica',

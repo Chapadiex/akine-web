@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
+import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import { CargoEmpleadoCatalogo } from '../../../colaboradores/models/colaboradores.models';
 import { ColaboradoresService } from '../../../colaboradores/services/colaboradores.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
@@ -12,59 +13,80 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 @Component({
   selector: 'app-cargos-empleado-list',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PageSectionHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <div class="header">
-        <div>
-          <h3>Cargos de empleado</h3>
-          <p>ABM de cargos administrativos reutilizables en altas y ediciones de empleados.</p>
-        </div>
+      <app-page-section-header
+        title="Cargos del personal"
+        description="ABM de cargos administrativos reutilizables en altas y ediciones de empleados."
+        titleLevel="h3"
+      >
+        <button
+          header-actions
+          class="btn-icon"
+          type="button"
+          aria-label="Mostrar u ocultar filtros"
+          [attr.aria-expanded]="filtersExpanded()"
+          (click)="toggleFilters()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+            <path
+              d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
         @if (canWrite()) {
-          <button class="btn-primary" (click)="openCreate()">+ Agregar cargo</button>
+          <button header-actions class="btn-primary" (click)="openCreate()">+ Agregar cargo</button>
         }
-      </div>
+      </app-page-section-header>
 
-      <div class="toolbar">
-        <input
-          type="text"
-          placeholder="Buscar cargo..."
-          [ngModel]="search()"
-          (ngModelChange)="onSearchChange($event)"
-        />
-        <label class="check">
-          <input type="checkbox" [ngModel]="includeInactive()" (ngModelChange)="onToggleIncludeInactive($event)" />
-          Mostrar inactivos
-        </label>
-      </div>
+      @if (filtersExpanded()) {
+        <div class="filters-panel">
+          <input
+            type="text"
+            placeholder="Buscar cargo..."
+            [ngModel]="search()"
+            (ngModelChange)="onSearchChange($event)"
+          />
+          <label class="check">
+            <input type="checkbox" [ngModel]="includeInactive()" (ngModelChange)="onToggleIncludeInactive($event)" />
+            Mostrar inactivos
+          </label>
+        </div>
+      }
 
       @if (loading()) {
         <p class="empty">Cargando cargos...</p>
       } @else {
-        <table class="table">
+        <table class="table app-data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Slug</th>
-              <th>Estado</th>
+              <th class="col-text">Nombre</th>
+              <th class="col-text-short">Slug</th>
+              <th class="col-status">Estado</th>
               <th class="col-actions">Accion</th>
             </tr>
           </thead>
           <tbody>
             @for (item of items(); track item.id) {
               <tr>
-                <td>{{ item.nombre }}</td>
-                <td><code>{{ item.slug }}</code></td>
-                <td>
+                <td class="col-text">{{ item.nombre }}</td>
+                <td class="col-text-short"><code>{{ item.slug }}</code></td>
+                <td class="col-status">
                   <span class="badge" [class.badge-active]="item.activo">
                     {{ item.activo ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
                 <td class="col-actions">
                   @if (canWrite()) {
-                    <button class="btn-secondary" (click)="openEdit(item)">Editar</button>
-                    <button class="btn-secondary" (click)="toggleEstado(item)" [disabled]="loadingActionId() === item.id">
+                    <button class="table-row-action" (click)="openEdit(item)">Editar</button>
+                    <button class="table-row-action" (click)="toggleEstado(item)" [disabled]="loadingActionId() === item.id">
                       {{ item.activo ? 'Desactivar' : 'Activar' }}
                     </button>
                   } @else {
@@ -103,11 +125,34 @@ import { resolveConsultorioId } from '../../utils/route-utils';
   `,
   styles: [`
     .page { display: grid; gap: 1rem; }
-    .header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-    .header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; }
-    .header p { margin: .15rem 0 0; color: var(--text-muted); font-size: .85rem; }
-    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; }
-    .toolbar input[type="text"] {
+    .btn-primary {
+      min-height: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 .95rem;
+      white-space: nowrap;
+    }
+    .btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color .18s ease, background-color .18s ease, color .18s ease;
+    }
+    .btn-icon[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
+    }
+    .filters-panel { display: flex; align-items: center; justify-content: space-between; gap: .8rem; flex-wrap: wrap; }
+    .filters-panel input[type="text"] {
       flex: 1; min-width: 260px; padding: .5rem .65rem; border: 1px solid var(--border); border-radius: var(--radius);
       background: var(--white);
     }
@@ -123,8 +168,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     .table th, .table td { padding: .65rem; border-bottom: 1px solid var(--border); font-size: .86rem; }
     .table th { text-align: left; color: var(--text-muted); font-weight: 600; }
     .table tr:last-child td { border-bottom: 0; }
-    .col-actions { text-align: right; width: 250px; }
-    .col-actions .btn-secondary + .btn-secondary { margin-left: .4rem; }
     .badge { padding: .2rem .55rem; border-radius: 999px; background: var(--bg); color: var(--text-muted); font-size: .75rem; }
     .badge-active { background: var(--success-bg); color: var(--success); }
     .btn-primary, .btn-secondary {
@@ -143,6 +186,10 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     .field input { padding: .52rem .65rem; border: 1px solid var(--border); border-radius: var(--radius); }
     .field small { color: var(--error); font-size: .78rem; }
     .actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .95rem; }
+    @media (max-width: 720px) {
+      .btn-primary { flex: 1 1 auto; text-align: center; }
+      .filters-panel { flex-direction: column; align-items: stretch; }
+    }
   `],
 })
 export class CargosEmpleadoListPage implements OnInit {
@@ -156,6 +203,7 @@ export class CargosEmpleadoListPage implements OnInit {
   readonly loading = signal(true);
   readonly search = signal('');
   readonly includeInactive = signal(false);
+  readonly filtersExpanded = signal(false);
   readonly showModal = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly newNombre = signal('');
@@ -186,6 +234,10 @@ export class CargosEmpleadoListPage implements OnInit {
   onToggleIncludeInactive(value: boolean): void {
     this.includeInactive.set(!!value);
     this.load();
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update((value) => !value);
   }
 
   openCreate(): void {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
@@ -16,23 +16,23 @@ import { resolveConsultorioId } from '../../utils/route-utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sub-header">
-      <span class="sub-count">{{ daysConfiguredCount() }} dia(s) configurado(s)</span>
-      <button class="btn-primary" (click)="showForm.set(true)">+ Configurar dia</button>
+      <span class="sub-count">{{ daysConfiguredLabel() }}</span>
+      <button class="btn-primary" (click)="showForm.set(true)">+ Configurar día</button>
     </div>
 
     @if (items().length === 0) {
       <p class="empty-msg">No hay horarios configurados.</p>
     } @else {
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>Dia</th><th>Apertura</th><th>Cierre</th><th>Acciones</th></tr></thead>
+        <table class="app-data-table">
+          <thead><tr><th class="col-text">DÍA</th><th class="col-text-short">Apertura</th><th class="col-text-short">Cierre</th><th class="col-actions">Acciones</th></tr></thead>
           <tbody>
             @for (h of sortedItems(); track h.id) {
               <tr>
-                <td>{{ diaLabel(h.diaSemana) }}</td>
-                <td>{{ h.horaApertura }}</td>
-                <td>{{ h.horaCierre }}</td>
-                <td><button class="btn-icon" (click)="remove(h.id, h.diaSemana)">Quitar</button></td>
+                <td class="col-text">{{ diaLabel(h.diaSemana) }}</td>
+                <td class="col-text-short">{{ h.horaApertura }}</td>
+                <td class="col-text-short">{{ h.horaCierre }}</td>
+                <td class="col-actions"><button class="table-row-action table-row-action--danger" (click)="remove(h.id, h.diaSemana)">Quitar</button></td>
               </tr>
             }
           </tbody>
@@ -53,7 +53,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
     th { background: var(--bg); padding: .7rem 1rem; text-align: left; font-size: .78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
     td { padding: .7rem 1rem; border-top: 1px solid var(--border); font-size: .9rem; }
-    .btn-icon { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: .2rem .6rem; }
   `],
 })
 export class HorariosListPage implements OnInit {
@@ -65,6 +64,10 @@ export class HorariosListPage implements OnInit {
   items = signal<ConsultorioHorario[]>([]);
   sortedItems = signal<ConsultorioHorario[]>([]);
   daysConfiguredCount = signal(0);
+  daysConfiguredLabel = computed(() => {
+    const count = this.daysConfiguredCount();
+    return `${count} ${count === 1 ? 'día configurado' : 'días configurados'}`;
+  });
   showForm = signal(false);
   private consultorioId = '';
 

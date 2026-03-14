@@ -29,14 +29,14 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     </div>
 
     <div class="table-wrap">
-      <table>
-        <thead><tr><th>Profesional</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <table class="app-data-table">
+        <thead><tr><th class="col-text">Profesional</th><th class="col-status">Estado</th><th class="col-actions">Acciones</th></tr></thead>
         <tbody>
           @for (a of items(); track a.id) {
             <tr>
-              <td>{{ a.profesionalNombre }} {{ a.profesionalApellido }}</td>
-              <td>{{ a.activo ? 'Activo' : 'Inactivo' }}</td>
-              <td><button class="btn-link" (click)="desasignar(a.profesionalId)">Desasignar</button></td>
+              <td class="col-text">{{ a.profesionalNombre }} {{ a.profesionalApellido }}</td>
+              <td class="col-status">{{ a.activo ? 'Activo' : 'Inactivo' }}</td>
+              <td class="col-actions"><button class="table-row-action table-row-action--danger" (click)="desasignar(a.profesionalId)">Desasignar</button></td>
             </tr>
           }
         </tbody>
@@ -53,7 +53,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
     th { background: var(--bg); padding: .7rem 1rem; text-align: left; font-size: .78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
     td { padding: .7rem 1rem; border-top: 1px solid var(--border); font-size: .9rem; }
-    .btn-link { border: 0; background: none; color: var(--primary); cursor: pointer; }
   `],
 })
 export class AsignacionesListPage implements OnInit {

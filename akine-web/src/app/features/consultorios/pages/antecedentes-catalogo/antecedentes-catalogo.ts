@@ -12,6 +12,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
+import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import {
   AntecedenteCatalog,
   AntecedenteCatalogCategory,
@@ -30,19 +31,53 @@ const FIELD_TYPES: RepeatableFieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN'];
 @Component({
   selector: 'app-antecedentes-catalogo',
   standalone: true,
-  imports: [FormsModule, ConfirmDialog],
+  imports: [FormsModule, ConfirmDialog, PageSectionHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <div class="header">
-        <div>
-          <h3>Catálogo de Antecedentes</h3>
+      <app-page-section-header
+        title="Antecedentes"
+        description="Maestro configurable por categoría para historia clínica y relevamiento inicial del consultorio."
+        titleLevel="h3"
+      >
+        <button
+          header-actions
+          class="btn-icon"
+          type="button"
+          aria-label="Mostrar u ocultar filtros"
+          [attr.aria-expanded]="filtersExpanded()"
+          (click)="toggleFilters()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+            <path
+              d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button header-actions class="btn-primary" type="button" (click)="openCreate()">+ Agregar antecedente</button>
+      </app-page-section-header>
+
+      @if (filtersExpanded()) {
+        <div class="filters-panel">
+          <div class="filters-main">
+            <input
+              type="text"
+              placeholder="Buscar por nombre o código"
+              [ngModel]="search()"
+              (ngModelChange)="search.set($event)"
+            />
+          </div>
+          <div class="filters-actions">
+            <button class="btn-secondary" type="button" (click)="restoreMissing()">Agregar defaults faltantes</button>
+            <button class="btn-danger" type="button" (click)="askRestoreReset()">Restaurar valores por defecto</button>
+          </div>
         </div>
-        <div class="actions">
-          <button class="btn-secondary" (click)="restoreMissing()">Agregar defaults faltantes</button>
-          <button class="btn-danger" (click)="askRestoreReset()">Restaurar valores por defecto</button>
-        </div>
-      </div>
+      }
 
       @if (loading()) {
         <p class="empty">Cargando catálogo...</p>
@@ -62,25 +97,15 @@ const FIELD_TYPES: RepeatableFieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN'];
           </aside>
 
           <section class="content">
-            <div class="toolbar">
-              <input
-                type="text"
-                placeholder="Buscar por nombre o código"
-                [ngModel]="search()"
-                (ngModelChange)="search.set($event)"
-              />
-              <button class="btn-primary" (click)="openCreate()">+ Agregar antecedente</button>
-            </div>
-
             @if (selectedCategory(); as category) {
-              <table class="table">
+              <table class="table app-data-table">
                 <thead>
                   <tr>
-                    <th>Nombre</th>
-                    <th>Tipo</th>
-                    <th>Opciones / Fields</th>
-                    <th>Activo</th>
-                    <th></th>
+                    <th class="col-text">Nombre</th>
+                    <th class="col-text-short">Tipo</th>
+                    <th class="col-text">Opciones / Fields</th>
+                    <th class="col-status">Activo</th>
+                    <th class="col-actions"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -91,21 +116,21 @@ const FIELD_TYPES: RepeatableFieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN'];
                       (dragover)="onDragOver($event)"
                       (drop)="onDrop(item.code)"
                     >
-                      <td>
+                      <td class="col-text">
                         <strong>{{ item.label }}</strong>
                       </td>
-                      <td>{{ displayValueType(item.valueType) }}</td>
-                      <td>{{ summarize(item) }}</td>
-                      <td>
+                      <td class="col-text-short">{{ displayValueType(item.valueType) }}</td>
+                      <td class="col-text">{{ summarize(item) }}</td>
+                      <td class="col-status">
                         <span [class.badge-active]="item.active" class="badge">
                           {{ item.active ? 'Sí' : 'No' }}
                         </span>
                       </td>
-                      <td class="row-actions">
-                        <button class="btn-sm" (click)="moveUp(item.code)">Up</button>
-                        <button class="btn-sm" (click)="moveDown(item.code)">Down</button>
-                        <button class="btn-sm" (click)="openEdit(item)">Editar</button>
-                        <button class="btn-sm btn-warn" (click)="askInactivate(item)">
+                      <td class="col-actions row-actions">
+                        <button class="table-row-action" (click)="moveUp(item.code)">Up</button>
+                        <button class="table-row-action" (click)="moveDown(item.code)">Down</button>
+                        <button class="table-row-action" (click)="openEdit(item)">Editar</button>
+                        <button class="table-row-action table-row-action--danger" (click)="askInactivate(item)">
                           Inactivar
                         </button>
                       </td>
@@ -217,9 +242,51 @@ const FIELD_TYPES: RepeatableFieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN'];
   `,
   styles: [`
     .page { display: grid; gap: 1rem; }
-    .header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-    h3 { margin: 0; font-size: 1.15rem; font-weight: 700; }
-    .actions { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+    .btn-primary {
+      min-height: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 .95rem;
+      white-space: nowrap;
+    }
+    .btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color .18s ease, background-color .18s ease, color .18s ease;
+    }
+    .btn-icon[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
+    }
+    .filters-panel {
+      display: grid;
+      grid-template-columns: minmax(260px, 1.4fr) auto;
+      gap: .8rem;
+      align-items: start;
+      padding: .85rem;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius-lg, 16px) - 2px);
+      background: color-mix(in srgb, var(--white) 92%, var(--bg));
+    }
+    .filters-main input {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0 .75rem;
+      background: var(--white);
+    }
+    .filters-actions { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
     .layout { display: grid; grid-template-columns: 240px 1fr; gap: 1rem; min-height: 560px; }
     .categories {
       border: 1px solid var(--border); border-radius: var(--radius); padding: .5rem;
@@ -235,11 +302,6 @@ const FIELD_TYPES: RepeatableFieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN'];
     .content {
       border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem;
       background: var(--surface, var(--white)); display: flex; flex-direction: column; gap: .8rem;
-    }
-    .toolbar { display: flex; gap: .6rem; align-items: center; }
-    .toolbar input {
-      flex: 1; min-width: 230px; border: 1px solid var(--border); border-radius: var(--radius);
-      padding: .5rem .6rem; background: var(--white);
     }
     .table { width: 100%; border-collapse: collapse; }
     .table th, .table td { padding: .55rem; border-bottom: 1px solid var(--border); font-size: .84rem; vertical-align: top; }
@@ -280,6 +342,11 @@ const FIELD_TYPES: RepeatableFieldType[] = ['TEXT', 'NUMBER', 'BOOLEAN'];
       .categories { flex-direction: row; flex-wrap: wrap; }
       .category { width: auto; }
     }
+    @media (max-width: 720px) {
+      .btn-primary { flex: 1 1 auto; text-align: center; }
+      .filters-panel { grid-template-columns: 1fr; }
+      .filters-actions { justify-content: flex-start; }
+    }
   `],
 })
 export class AntecedentesCatalogoPage implements OnInit {
@@ -293,6 +360,7 @@ export class AntecedentesCatalogoPage implements OnInit {
   readonly catalog = signal<AntecedenteCatalog | null>(null);
   readonly selectedCategoryCode = signal('');
   readonly search = signal('');
+  readonly filtersExpanded = signal(false);
 
   readonly editorOpen = signal(false);
   readonly creating = signal(false);
@@ -339,6 +407,10 @@ export class AntecedentesCatalogoPage implements OnInit {
 
   selectCategory(code: string): void {
     this.selectedCategoryCode.set(code);
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update((value) => !value);
   }
 
   summarize(item: AntecedenteCatalogItem): string {

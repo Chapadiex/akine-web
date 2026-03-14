@@ -37,31 +37,31 @@ import { resolveConsultorioId } from '../../utils/route-utils';
         <p class="empty-msg">No hay boxes registrados.</p>
       } @else {
         <div class="table-wrap">
-          <table>
+          <table class="app-data-table">
             <thead>
-              <tr><th>Nombre</th><th>Tipo</th><th>Capacidad</th><th>Estado</th><th>Acciones</th></tr>
+              <tr><th class="col-text">Nombre</th><th class="col-text-short">Tipo</th><th class="col-numeric">Capacidad</th><th class="col-status">Estado</th><th class="col-actions">Acciones</th></tr>
             </thead>
             <tbody>
               @for (b of items(); track b.id) {
                 <tr>
-                  <td>{{ b.nombre }}</td>
-                  <td>{{ b.tipo }}</td>
-                  <td>
+                  <td class="col-text">{{ b.nombre }}</td>
+                  <td class="col-text-short">{{ b.tipo }}</td>
+                  <td class="col-numeric">
                     @if (b.capacityType === 'LIMITED') {
                       {{ b.capacity ?? 0 }}
                     } @else {
                       Sin limite
                     }
                   </td>
-                  <td>
+                  <td class="col-status">
                     <span class="badge" [class.badge-active]="b.activo">
                       {{ b.activo ? 'Activo' : 'Inactivo' }}
                     </span>
                   </td>
-                  <td class="actions-cell">
+                  <td class="col-actions actions-cell">
                     @if (canWrite()) {
                       <button
-                        class="action-btn"
+                        class="table-row-action"
                         title="Editar box"
                         aria-label="Editar box"
                         (click)="startEdit(b)"
@@ -76,7 +76,7 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 
                     @if (canWrite() && b.activo) {
                       <button
-                        class="action-btn"
+                        class="table-row-action"
                         title="Configurar capacidad"
                         aria-label="Configurar capacidad"
                         (click)="startCapacidad(b)"
@@ -87,7 +87,7 @@ import { resolveConsultorioId } from '../../utils/route-utils';
                         <span>Capacidad</span>
                       </button>
                       <button
-                        class="action-btn action-btn-danger"
+                        class="table-row-action table-row-action--danger"
                         title="Dar de baja"
                         aria-label="Dar de baja"
                         (click)="startDelete(b)"
@@ -155,31 +155,8 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     .badge { padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600;
              background: var(--bg); color: var(--text-muted); }
     .badge-active { background: var(--success-bg); color: var(--success); }
-    .actions-cell { width: 320px; }
+    .actions-cell { min-width: 220px; }
     .actions-empty { color: var(--text-muted); }
-    .action-btn {
-      height: 30px; border-radius: 9px;
-      border: 1px solid var(--border); background: var(--white);
-      display: inline-flex; align-items: center; gap: .35rem;
-      padding: 0 .5rem;
-      margin-right: .35rem;
-      color: var(--text-muted); cursor: pointer;
-      transition: all .15s ease;
-      font-size: .82rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-    .action-btn:last-child { margin-right: 0; }
-    .action-btn:hover {
-      border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
-      color: var(--primary);
-      background: color-mix(in srgb, var(--primary) 8%, var(--white));
-    }
-    .action-btn-danger:hover {
-      border-color: color-mix(in srgb, var(--error) 35%, var(--border));
-      color: var(--error);
-      background: var(--error-bg);
-    }
   `],
 })
 export class BoxListPage implements OnInit {

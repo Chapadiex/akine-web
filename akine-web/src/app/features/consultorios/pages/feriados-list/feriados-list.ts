@@ -10,6 +10,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
+import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import { FeriadoService } from '../../services/feriado.service';
 import { Feriado } from '../../../turnos/models/turno.models';
 import { resolveConsultorioId } from '../../utils/route-utils';
@@ -17,46 +18,71 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 @Component({
   selector: 'app-feriados-list',
   standalone: true,
-  imports: [FormsModule, ConfirmDialog],
+  imports: [FormsModule, ConfirmDialog, PageSectionHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="section">
-      <div class="section-header">
-        <h3>Feriados</h3>
-        <div class="header-actions">
-          <button class="btn-add-header" (click)="openForm()">Agregar feriado</button>
+      <app-page-section-header
+        title="Feriados y cierres"
+        [description]="headerDescription()"
+        titleLevel="h3"
+      >
+        <button
+          header-actions
+          class="btn-icon"
+          type="button"
+          aria-label="Mostrar u ocultar filtros"
+          [attr.aria-expanded]="filtersExpanded()"
+          (click)="toggleFilters()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+            <path
+              d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button header-actions class="btn-primary" type="button" (click)="openForm()">+ Agregar feriado</button>
+      </app-page-section-header>
+
+      @if (filtersExpanded()) {
+        <div class="filters-panel">
           <div class="year-filter">
-            <label>A&ntilde;o:</label>
-            <select [ngModel]="selectedYear()" (ngModelChange)="onYearChange($event)">
+            <label for="feriados-year">Año</label>
+            <select id="feriados-year" [ngModel]="selectedYear()" (ngModelChange)="onYearChange($event)">
               @for (y of years; track y) {
                 <option [value]="y">{{ y }}</option>
               }
             </select>
           </div>
-          <button class="btn-secondary" (click)="syncNacionales()" [disabled]="syncing()">
+          <button class="btn-secondary" type="button" (click)="syncNacionales()" [disabled]="syncing()">
             {{ syncing() ? 'Sincronizando...' : 'Importar nacionales' }}
           </button>
         </div>
-      </div>
+      }
 
       @if (feriados().length === 0) {
         <p class="empty-msg">No hay feriados para este a&ntilde;o.</p>
       } @else {
-        <table class="data-table">
+        <table class="data-table app-data-table">
           <thead>
             <tr>
-              <th>FECHA</th>
-              <th>DESCRIPCI&Oacute;N</th>
-              <th></th>
+              <th class="col-text-short">Fecha</th>
+              <th class="col-text">Descripción</th>
+              <th class="col-actions"></th>
             </tr>
           </thead>
           <tbody>
             @for (f of feriados(); track f.id) {
               <tr>
-                <td>{{ formatDate(f.fecha) }}</td>
-                <td>{{ f.descripcion || '-' }}</td>
-                <td>
-                  <button class="btn-sm btn-danger" (click)="askDelete(f)">Eliminar</button>
+                <td class="col-text-short">{{ formatDate(f.fecha) }}</td>
+                <td class="col-text">{{ f.descripcion || '-' }}</td>
+                <td class="col-actions">
+                  <button class="table-row-action table-row-action--danger" (click)="askDelete(f)">Eliminar</button>
                 </td>
               </tr>
             }
@@ -97,22 +123,52 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     }
   `,
   styles: [`
-    .section { padding: 0; }
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1rem;
-      h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+    .section {
+      padding: 0;
+      display: grid;
+      gap: 1rem;
     }
-    .header-actions { display: flex; gap: 0.45rem; align-items: center; }
+    .btn-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color .18s ease, background-color .18s ease, color .18s ease;
+    }
+    .btn-icon[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
+    }
+    .filters-panel {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: .75rem;
+      flex-wrap: wrap;
+      padding: .85rem;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius-lg, 16px) - 2px);
+      background: color-mix(in srgb, var(--white) 92%, var(--bg));
+    }
     .year-filter {
-      display: flex; gap: 0.5rem; align-items: center;
-      label { font-size: 0.85rem; font-weight: 600; }
+      display: grid;
+      gap: .35rem;
+      min-width: 180px;
+      label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
       select {
-        height: 38px;
+        min-height: 2.5rem;
         padding: 0 .68rem;
         border: 1px solid var(--border);
         border-radius: 8px;
         font-size: 0.86rem;
+        background: var(--white);
       }
     }
     .form-row { display: grid; grid-template-columns: 220px 1fr; gap: .75rem; }
@@ -125,33 +181,30 @@ import { resolveConsultorioId } from '../../utils/route-utils';
       border-radius: 8px;
       font-size: 0.86rem;
     }
-    .btn-add-header {
-      height: 38px;
-      border: none;
-      border-radius: 8px;
-      background: var(--primary);
-      padding: 0 .82rem;
-      cursor: pointer;
-      color: #fff;
-      font-weight: 400;
-      font-size: 0.86rem;
-    }
-    .btn-add-header:hover { background: var(--primary-hover); }
     .btn-primary {
-      padding: 0.4rem 0.75rem; border: none; border-radius: var(--radius);
-      background: var(--primary); color: #fff; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      min-height: 2.5rem;
+      padding: 0 .95rem;
+      border: 1px solid var(--primary);
+      border-radius: var(--radius);
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
     }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-secondary {
-      height: 38px;
-      padding: 0 .82rem;
-      border: none;
+      min-height: 2.5rem;
+      padding: 0 .95rem;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      background: var(--primary);
+      background: var(--white);
       cursor: pointer;
       font-size: 0.86rem;
-      font-weight: 400;
-      color: #fff;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
     }
     .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-cancel {
@@ -219,6 +272,7 @@ export class FeriadosListPage implements OnInit {
   private consultorioId = '';
   feriados = signal<Feriado[]>([]);
   selectedYear = signal(new Date().getFullYear());
+  filtersExpanded = signal(false);
   showForm = signal(false);
   syncing = signal(false);
   newFecha = '';
@@ -227,6 +281,10 @@ export class FeriadosListPage implements OnInit {
 
   currentYear = new Date().getFullYear();
   years = [this.currentYear - 1, this.currentYear, this.currentYear + 1];
+  headerDescription = () => {
+    const count = this.feriados().length;
+    return `${count} ${count === 1 ? 'feriado cargado' : 'feriados cargados'} para ${this.selectedYear()}.`;
+  };
 
   ngOnInit(): void {
     this.consultorioId = resolveConsultorioId(this.route) ?? '';
@@ -271,6 +329,10 @@ export class FeriadosListPage implements OnInit {
 
   openForm(): void {
     this.showForm.set(true);
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update((value) => !value);
   }
 
   closeForm(): void {

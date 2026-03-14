@@ -81,6 +81,36 @@ Cada feature debe mantener separacion clara entre:
 - no introducir librerias UI nuevas sin pedido explicito
 - responsive obligatorio para desktop, tablet y movil
 
+## 7.1 Estandar global de tablas
+- toda tabla actual y futura debe heredar un mismo sistema reutilizable de layout
+- definir tipos base de columna como minimo:
+  - `text`
+  - `textShort`
+  - `numeric`
+  - `status`
+  - `actions`
+- cada tipo debe resolver por defecto:
+  - alineacion
+  - ancho esperado
+  - comportamiento responsivo
+  - padding
+  - jerarquia visual
+- reglas obligatorias de alineacion:
+  - texto descriptivo y nombres -> izquierda
+  - valores numericos, importes y porcentajes -> derecha
+  - fechas -> criterio consistente por patron, preferentemente izquierda si son descriptivas o centradas si son dato corto
+  - estados -> consistentes y contenidos
+  - acciones -> compactas y acotadas
+- columnas descriptivas deben ocupar el espacio flexible restante
+- columnas numericas, de estado y acciones deben mantenerse acotadas y previsibles
+- encabezados deben respetar la misma alineacion que sus celdas
+- los estados visuales dentro de tablas deben ir en negrita
+- aplica a `Activo`, `Inactivo`, `Pendiente`, `Suspendido`, `Cancelado` y equivalentes
+- la negrita debe reforzar lectura y jerarquia sin cambiar el tamano general del componente
+- mantener este criterio en todas las tablas actuales y futuras
+- la implementacion debe apoyarse en infraestructura compartida: utilidades globales, configuracion compartida de columnas, componente base de tabla o equivalente
+- evitar ajustes manuales tabla por tabla cuando la regla corresponde al estandar global
+
 ## 8. Testing
 Cambios relevantes deben incluir cuando aplique:
 - pruebas de componentes

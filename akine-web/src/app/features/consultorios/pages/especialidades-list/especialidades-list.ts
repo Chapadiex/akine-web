@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
+import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { Especialidad } from '../../models/especialidad.models';
 import { EspecialidadService } from '../../services/especialidad.service';
@@ -12,43 +13,39 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 @Component({
   selector: 'app-especialidades-list',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PageSectionHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
-      <div class="header">
-        <div class="title-block">
-          <div class="title-line">
-            <h3>Especialidades</h3>
-            <p>Configuraci&oacute;n de especialidades habilitadas por consultorio.</p>
-          </div>
-        </div>
+      <app-page-section-header
+        title="Especialidades"
+        description="Configuraci&oacute;n de especialidades habilitadas por consultorio."
+        titleLevel="h3"
+      >
+        <button
+          header-actions
+          class="btn-icon"
+          type="button"
+          aria-label="Mostrar u ocultar filtros"
+          [attr.aria-expanded]="filtersExpanded()"
+          (click)="toggleFilters()"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+            <path
+              d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
 
-        <div class="header-actions">
-          <button
-            class="btn-icon"
-            type="button"
-            aria-label="Mostrar u ocultar filtros"
-            [attr.aria-expanded]="filtersExpanded()"
-            (click)="toggleFilters()"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
-              <path
-                d="M3 5h18l-7 8v5l-4 2v-7L3 5z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
-          @if (canWrite()) {
-            <button class="btn-primary" type="button" (click)="openCreate()">Agregar especialidad</button>
-          }
-        </div>
-      </div>
+        @if (canWrite()) {
+          <button header-actions class="btn-primary" type="button" (click)="openCreate()">+ Agregar especialidad</button>
+        }
+      </app-page-section-header>
 
       @if (filtersExpanded()) {
         <div class="filters-panel">
@@ -83,19 +80,19 @@ import { resolveConsultorioId } from '../../utils/route-utils';
       @if (loading()) {
         <p class="empty">Cargando especialidades...</p>
       } @else {
-        <table class="table">
+        <table class="table app-data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Estado</th>
+              <th class="col-text">Nombre</th>
+              <th class="col-status">Estado</th>
               <th class="col-actions">Accion</th>
             </tr>
           </thead>
           <tbody>
             @for (item of items(); track item.id) {
               <tr>
-                <td>{{ item.nombre }}</td>
-                <td>
+                <td class="col-text">{{ item.nombre }}</td>
+                <td class="col-status">
                   <span class="badge" [class.badge-active]="item.activo">
                     {{ item.activo ? 'Activa' : 'Inactiva' }}
                   </span>
@@ -103,7 +100,7 @@ import { resolveConsultorioId } from '../../utils/route-utils';
                 <td class="col-actions">
                   @if (canWrite()) {
                     <button
-                      class="btn-secondary"
+                      class="table-row-action"
                       type="button"
                       title="Editar especialidad"
                       aria-label="Editar especialidad"
@@ -170,30 +167,31 @@ import { resolveConsultorioId } from '../../utils/route-utils';
   `,
   styles: [`
     .page { display: grid; gap: 1rem; }
-    .header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-    .title-line { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; }
-    .header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; }
-    .header p { margin: 0; color: var(--text-muted); font-size: .9rem; }
-    .header-actions {
-      display: flex;
+    .btn-primary {
+      min-height: 2.5rem;
+      display: inline-flex;
       align-items: center;
-      gap: .65rem;
+      justify-content: center;
+      padding: 0 .95rem;
+      white-space: nowrap;
     }
     .btn-icon {
-      width: 40px;
-      height: 40px;
+      width: 2.5rem;
+      height: 2.5rem;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--white);
-      display: inline-grid;
-      place-items: center;
-      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
       cursor: pointer;
+      transition: border-color .18s ease, background-color .18s ease, color .18s ease;
+    }
+    .btn-icon[aria-expanded='true'] {
+      border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
     }
     .filters-panel {
       display: grid;
@@ -276,7 +274,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
     .table td { padding: .65rem; border-bottom: 1px solid var(--border); font-size: .86rem; }
     .table th { text-align: left; color: var(--text-muted); font-weight: 600; }
     .table tr:last-child td { border-bottom: 0; }
-    .col-actions { text-align: right; width: 150px; }
     .badge {
       padding: .2rem .55rem;
       border-radius: 999px;
@@ -368,7 +365,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
       .header .btn-primary { flex: 1; }
       .filters-panel { grid-template-columns: 1fr; }
       .toggle { width: 100%; }
-      .col-actions { width: auto; }
     }
   `],
 })

@@ -13,7 +13,7 @@ import { DayOfWeek, DIAS_SEMANA, DisponibilidadRequest } from '../../models/agen
         <h3 class="panel-title">Nueva disponibilidad</h3>
         <form [formGroup]="form" (ngSubmit)="submit()">
           <div class="field">
-            <label>Dia</label>
+            <label>Día</label>
             <select formControlName="diaSemana">
               @for (d of dias; track d.key) {
                 <option [value]="d.key">{{ d.label }}</option>
@@ -21,11 +21,11 @@ import { DayOfWeek, DIAS_SEMANA, DisponibilidadRequest } from '../../models/agen
             </select>
           </div>
           <div class="field">
-            <label>Hora inicio</label>
+            <label>Hora de inicio</label>
             <input type="time" formControlName="horaInicio" />
           </div>
           <div class="field">
-            <label>Hora fin</label>
+            <label>Hora de fin</label>
             <input type="time" formControlName="horaFin" />
           </div>
           <div class="actions">

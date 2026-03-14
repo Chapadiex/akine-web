@@ -22,7 +22,7 @@ export interface HorarioFormValue {
         <h3 class="panel-title">Configurar horario</h3>
         <form [formGroup]="form" (ngSubmit)="submit()">
           <div class="field">
-            <label>Dia</label>
+            <label>Día</label>
             <select formControlName="diaSeleccion" #diaSelect>
               @for (d of dias; track d.key) {
                 <option [value]="d.key">{{ d.label }}</option>
@@ -30,11 +30,11 @@ export interface HorarioFormValue {
             </select>
           </div>
           <div class="field">
-            <label>Hora apertura</label>
+            <label>Hora de apertura</label>
             <input type="time" formControlName="horaApertura" />
           </div>
           <div class="field">
-            <label>Hora cierre</label>
+            <label>Hora de cierre</label>
             <input type="time" formControlName="horaCierre" />
           </div>
           <div class="actions">

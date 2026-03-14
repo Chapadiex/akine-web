@@ -11,15 +11,15 @@
         class="selector-input"
         type="search"
         [formControl]="searchControl"
-        placeholder="Buscar antecedente o categoria"
-        aria-label="Buscar antecedente o categoria"
+        placeholder="Buscar antecedente o categoría"
+        aria-label="Buscar antecedente o categoría"
       />
     </div>
 
     <div class="catalog-panel">
       @if (!hasSearchQuery()) {
         <div class="selector-empty selector-empty--compact">
-          <p>Escribe un nombre o categoria para buscar antecedentes.</p>
+          <p>Escribe un nombre o categoría para buscar antecedentes.</p>
         </div>
       } @else if (catalogRows().length) {
         <div class="catalog-list" role="list">
@@ -102,7 +102,7 @@
                         <div class="editor-grid">
                           <label class="field">
                             <span>Nombre del antecedente</span>
-                            <input type="text" formControlName="label" placeholder="Ej. Dolor cronico de pie derecho" />
+                            <input type="text" formControlName="label" placeholder="Ej. Dolor crónico de pie derecho" />
                           </label>
                           <label class="field">
                             <span>Categoría</span>
@@ -164,12 +164,12 @@
                           </label>
                           <label class="field">
                             <span>Fecha aproximada</span>
-                            <input type="text" formControlName="approxDate" placeholder="Ej. 2022 / hace 5 anos" />
+                            <input type="text" formControlName="approxDate" placeholder="Ej. 2022 / hace 5 años" />
                           </label>
                         </div>
                         <label class="field">
                           <span>Observaciones</span>
-                          <textarea rows="3" formControlName="notes" placeholder="Complicaciones, evolucion o datos relevantes"></textarea>
+                          <textarea rows="3" formControlName="notes" placeholder="Complicaciones, evolución o datos relevantes"></textarea>
                         </label>
                       } @else {
                         @if (!editorState.item) {
@@ -181,7 +181,7 @@
 
                         @if (editorState.item?.valueType === 'ENUM') {
                           <label class="field">
-                            <span>Tipo de seleccion</span>
+                            <span>Tipo de selección</span>
                             <select formControlName="detail">
                               <option value="">Seleccionar</option>
                               @for (option of activeOptions(); track option.code) {
@@ -191,7 +191,7 @@
                           </label>
                         } @else if (editorState.item?.valueType === 'ENUM_MULTI') {
                           <div class="field">
-                            <span>Tipo de seleccion</span>
+                            <span>Tipo de selección</span>
                             <div class="option-grid">
                               @for (option of activeOptions(); track option.code) {
                                 <button
@@ -211,7 +211,7 @@
                             <input
                               type="text"
                               formControlName="detail"
-                              [placeholder]="editorState.descriptor.mode === 'simple' ? 'Opcional' : 'Completa una precision breve'"
+                              [placeholder]="editorState.descriptor.mode === 'simple' ? 'Opcional' : 'Completa una precisión breve'"
                             />
                           </label>
                         }
