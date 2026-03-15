@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiClient } from '../../../core/api/api-client.service';
 import { API } from '../../../core/api/api-endpoints';
 import {
+  BoxDisponibilidad,
   CambiarEstadoRequest,
   CreateTurnoRequest,
   HistorialEstadoTurno,
@@ -49,6 +50,16 @@ export class TurnoService {
     };
     if (params.profesionalId) qp['profesionalId'] = params.profesionalId;
     return this.api.get<SlotDisponible[]>(API.turnos.disponibilidad(consultorioId), qp);
+  }
+
+  boxesDisponibilidad(
+    consultorioId: string,
+    params: { fechaHoraInicio: string; duracion: number },
+  ): Observable<BoxDisponibilidad[]> {
+    return this.api.get<BoxDisponibilidad[]>(API.turnos.disponibilidadBoxes(consultorioId), {
+      fechaHoraInicio: params.fechaHoraInicio,
+      duracion: params.duracion,
+    });
   }
 
   getHistorial(consultorioId: string, turnoId: string): Observable<HistorialEstadoTurno[]> {

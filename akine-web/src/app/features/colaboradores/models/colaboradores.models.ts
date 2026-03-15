@@ -67,11 +67,11 @@ export interface EmpleadoColaboradorRequest {
   nombre: string;
   apellido: string;
   dni: string;
-  fechaNacimiento: string;
+  fechaNacimiento?: string;
   cargo: string;
   email: string;
-  telefono: string;
-  direccion: string;
+  telefono?: string;
+  direccion?: string;
   notasInternas?: string;
 }
 
@@ -87,6 +87,11 @@ export interface CargoEmpleadoCatalogo {
 export interface CargoEmpleadoUpsertRequest {
   nombre: string;
 }
+
+// Discriminated union for the unified team view
+export type EquipoMiembro =
+  | (ColaboradorProfesional & { readonly tipo: 'PROFESIONAL' })
+  | (ColaboradorEmpleado & { readonly tipo: 'ADMINISTRATIVO' });
 
 export interface ColaboradorEstadoRequest {
   activo: boolean;

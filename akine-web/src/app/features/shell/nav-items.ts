@@ -36,12 +36,12 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: ALL_STAFF,
       },
       {
-        path: '/app/turnos',
+        path: '/app/turnos/hoy',
         label: 'Agenda',
         icon: 'calendar',
         roles: ALL_STAFF,
         children: [
-          { path: '/app/turnos', label: 'Calendario', icon: 'calendar-grid', roles: ALL_STAFF },
+          { path: '/app/turnos/agenda', label: 'Calendario', icon: 'calendar-grid', roles: ALL_STAFF },
         ],
       },
       {
@@ -101,23 +101,15 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Administración',
     items: [
       {
-        path: '/app/profesionales',
+        path: '/app/equipo',
         label: 'Equipo',
         icon: 'team',
         roles: STAFF_WITH_ADMIN,
         children: [
           {
-            path: '/app/profesionales',
-            label: 'Profesionales',
-            icon: 'briefcase-medical',
-            roles: STAFF_WITH_ADMIN,
-          },
-          { path: '/app/empleados', label: 'Administrativos', icon: 'briefcase', roles: STAFF_WITH_ADMIN },
-          {
-            path: '/app/profesionales',
-            label: 'Invitaciones',
-            icon: 'mail',
-            queryParams: { estado: 'INVITADO' },
+            path: '/app/equipo',
+            label: 'Todos los miembros',
+            icon: 'users',
             roles: STAFF_WITH_ADMIN,
           },
           {
@@ -141,18 +133,9 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         path: '/app/consultorios',
-        label: 'Consultorio',
+        label: 'Consultorios 360',
         icon: 'building',
         roles: STAFF_WITH_ADMIN,
-        children: [
-          { path: '/app/consultorios', label: 'Consultorios', icon: 'building-grid', roles: STAFF_WITH_ADMIN },
-          {
-            path: '/app/consultorios/:consultorioId/boxes',
-            label: 'Espacios / boxes',
-            icon: 'door',
-            roles: STAFF_WITH_ADMIN,
-          },
-        ],
       },
       {
         path: '/app/consultorios/:consultorioId/configuracion/especialidades',

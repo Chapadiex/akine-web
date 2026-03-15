@@ -142,28 +142,18 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'colaboradores',
-        redirectTo: 'profesionales',
-        pathMatch: 'full',
-      },
-      {
-        path: 'profesionales',
+        path: 'equipo',
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
         loadComponent: () =>
-          import('./features/colaboradores/pages/profesionales-list/profesionales-list').then(
-            (m) => m.ProfesionalesListPage,
+          import('./features/colaboradores/pages/equipo-list/equipo-list').then(
+            (m) => m.EquipoListPage,
           ),
       },
-      {
-        path: 'empleados',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
-        loadComponent: () =>
-          import('./features/colaboradores/pages/empleados-list/empleados-list').then(
-            (m) => m.EmpleadosListPage,
-          ),
-      },
+      // Legacy redirects — retained for bookmarks and existing links
+      { path: 'colaboradores', redirectTo: 'equipo', pathMatch: 'full' },
+      { path: 'profesionales', redirectTo: 'equipo', pathMatch: 'full' },
+      { path: 'empleados', redirectTo: 'equipo', pathMatch: 'full' },
       {
         path: 'obras-sociales',
         loadComponent: () =>

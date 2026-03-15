@@ -7,6 +7,16 @@ export const CONSULTORIO_ROUTES: Routes = [
       import('./pages/consultorio-list/consultorio-list').then((m) => m.ConsultorioListPage),
   },
   {
+    path: 'nuevo',
+    loadComponent: () =>
+      import('./pages/consultorio-create/consultorio-create').then((m) => m.ConsultorioCreatePage),
+  },
+  {
+    path: ':id/editar',
+    loadComponent: () =>
+      import('./pages/consultorio-edit/consultorio-edit').then((m) => m.ConsultorioEditPage),
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./pages/consultorio-detail/consultorio-detail').then((m) => m.ConsultorioDetailPage),
@@ -17,6 +27,13 @@ export const CONSULTORIO_ROUTES: Routes = [
         loadComponent: () =>
           import('./pages/consultorio-resumen/consultorio-resumen').then(
             (m) => m.ConsultorioResumenPage,
+          ),
+      },
+      {
+        path: 'ficha',
+        loadComponent: () =>
+          import('./pages/consultorio-ficha/consultorio-ficha').then(
+            (m) => m.ConsultorioFichaPage,
           ),
       },
       {
@@ -47,6 +64,11 @@ export const CONSULTORIO_ROUTES: Routes = [
             path: 'feriados-cierres',
             loadComponent: () =>
               import('./pages/feriados-list/feriados-list').then((m) => m.FeriadosListPage),
+          },
+          {
+            path: 'cobertura-profesionales',
+            redirectTo: 'horarios-atencion',
+            pathMatch: 'full',
           },
           {
             path: 'profesionales/:profId/disponibilidad',
@@ -98,11 +120,14 @@ export const CONSULTORIO_ROUTES: Routes = [
           },
         ],
       },
-
-      // Legacy URLs retained for compatibility.
       { path: 'horarios', redirectTo: 'agenda/horarios-atencion', pathMatch: 'full' },
-{ path: 'duraciones', redirectTo: 'agenda/intervalo-turnos', pathMatch: 'full' },
+      { path: 'duraciones', redirectTo: 'agenda/intervalo-turnos', pathMatch: 'full' },
       { path: 'feriados', redirectTo: 'agenda/feriados-cierres', pathMatch: 'full' },
+      {
+        path: 'cobertura-profesionales',
+        redirectTo: 'agenda/horarios-atencion',
+        pathMatch: 'full',
+      },
       {
         path: 'antecedentes-catalogo',
         redirectTo: 'configuracion/plantillas-antecedentes',

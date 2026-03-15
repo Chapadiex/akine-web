@@ -5,6 +5,7 @@ import { ErrorMapperService } from '../../../../core/error/error-mapper.service'
 import { PageSectionHeaderComponent } from '../../../../shared/ui/page-section-header/page-section-header';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { ConsultorioDuracion } from '../../models/agenda.models';
+import { ConsultorioCompletenessRefreshService } from '../../services/consultorio-completeness-refresh.service';
 import { DuracionService } from '../../services/duracion.service';
 import { resolveConsultorioId } from '../../utils/route-utils';
 
@@ -126,6 +127,7 @@ export class DuracionesListPage implements OnInit {
   private svc = inject(DuracionService);
   private toast = inject(ToastService);
   private errMap = inject(ErrorMapperService);
+  private completenessRefresh = inject(ConsultorioCompletenessRefreshService);
 
   items = signal<ConsultorioDuracion[]>([]);
   filtersExpanded = signal(false);
@@ -150,7 +152,7 @@ export class DuracionesListPage implements OnInit {
 
   add(): void {
     this.svc.add(this.consultorioId, this.nuevoMinutos).subscribe({
-      next: () => { this.toast.success('Intervalo agregado'); this.load(); },
+      next: () => { this.toast.success('Intervalo agregado'); this.load(); this.completenessRefresh.notify(this.consultorioId); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }
@@ -161,7 +163,7 @@ export class DuracionesListPage implements OnInit {
 
   remove(minutos: number): void {
     this.svc.remove(this.consultorioId, minutos).subscribe({
-      next: () => { this.toast.success('Intervalo eliminado'); this.load(); },
+      next: () => { this.toast.success('Intervalo eliminado'); this.load(); this.completenessRefresh.notify(this.consultorioId); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }

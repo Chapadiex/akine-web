@@ -18,6 +18,7 @@ import {
   ProfesionalFormResult,
 } from '../../../../shared/ui/profesional-form/profesional-form';
 import { Profesional, ProfesionalEstadoRequest, ProfesionalRequest } from '../../models/consultorio.models';
+import { ConsultorioCompletenessRefreshService } from '../../services/consultorio-completeness-refresh.service';
 import { ProfesionalService } from '../../services/profesional.service';
 import { resolveConsultorioId } from '../../utils/route-utils';
 
@@ -213,6 +214,7 @@ export class ProfesionalListPage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
   private readonly fb = inject(FormBuilder);
+  private readonly completenessRefresh = inject(ConsultorioCompletenessRefreshService);
 
   readonly items = signal<Profesional[]>([]);
   readonly loading = signal(true);
@@ -322,6 +324,7 @@ export class ProfesionalListPage implements OnInit {
             }
             this.closeForm();
             this.load();
+            this.completenessRefresh.notify(this.consultorioId);
           },
           error: (err) => {
             this.saving.set(false);

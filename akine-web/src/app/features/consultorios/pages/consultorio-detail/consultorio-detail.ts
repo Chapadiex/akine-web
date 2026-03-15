@@ -1,28 +1,15 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  OnInit,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, OnInit, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import {
-  ActivatedRoute,
-  NavigationEnd,
-  Router,
-  RouterLink,
-  RouterLinkActive,
-  RouterOutlet,
-} from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { ConsultorioForm } from '../../components/consultorio-form/consultorio-form';
-import { Consultorio, ConsultorioRequest } from '../../models/consultorio.models';
+import { ConsultorioCompleteness } from '../../models/consultorio-completeness.models';
+import { Consultorio } from '../../models/consultorio.models';
+import { ConsultorioCompletenessRefreshService } from '../../services/consultorio-completeness-refresh.service';
+import { ConsultorioCompletenessService } from '../../services/consultorio-completeness.service';
 import { ConsultorioService } from '../../services/consultorio.service';
 
 interface NavItem {
@@ -31,172 +18,90 @@ interface NavItem {
   exact?: boolean;
 }
 
+interface HeaderFact {
+  label: string;
+  value: string;
+}
+
+interface HeaderStatusIcon {
+  tone: 'success' | 'warning' | 'neutral';
+  symbol: string;
+  label: string;
+}
+
 @Component({
   selector: 'app-consultorio-detail',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ConsultorioForm],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="page" (click)="closeMapPopover()">
+    <div class="page">
       @if (loading()) {
         <p class="loading-msg">Cargando...</p>
       } @else if (consultorio(); as current) {
         <section class="shell-card">
-          <div class="top-block">
-            <div class="top-row">
-              <div>
-                <a routerLink="/app/consultorios" class="back-link"><- Consultorios</a>
-                <div class="clinic-row">
-                  <div class="clinic-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="30" height="30" fill="none">
-                      <rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.8" />
-                      <path d="M10 7h4M10 11h4M10 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                      <path d="M4 21h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                  </div>
-                  <div class="clinic-copy">
-                    <div class="title-row">
-                      <h1 class="title">{{ current.name }}</h1>
-                      <span class="status-chip" [class.status-chip-active]="current.status === 'ACTIVE'">
-                        {{ current.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          <header class="header">
+            <div class="header-main">
+              <a routerLink="/app/consultorios" class="back-link"><- Consultorios</a>
+              <div class="title-row">
+                <h1>{{ current.name }}</h1>
+                @if (headerStatusIcon(); as headerIcon) {
+                  <span
+                    class="header-status-icon"
+                    [class.header-status-icon-success]="headerIcon.tone === 'success'"
+                    [class.header-status-icon-warning]="headerIcon.tone === 'warning'"
+                    [class.header-status-icon-neutral]="headerIcon.tone === 'neutral'"
+                    [attr.aria-label]="headerIcon.label"
+                    [attr.title]="headerIcon.label"
+                  >
+                    {{ headerIcon.symbol }}
+                  </span>
+                }
+                <span class="status-chip" [class.status-chip-active]="current.status === 'ACTIVE'">
+                  {{ current.status === 'ACTIVE' ? 'Activo' : 'Inactivo' }}
+                </span>
+                @if (completeness(); as summary) {
+                  @for (layer of summary.layers; track layer.key) {
+                    <span
+                      class="layer-chip"
+                      [class.layer-chip-done]="layer.isComplete"
+                      [attr.title]="layer.isComplete ? layer.helperText : layer.missingItems.join(', ')"
+                    >
+                      {{ layer.label }}
+                    </span>
+                  }
+                }
               </div>
-
-              @if (canEdit()) {
-                <button class="btn-edit" type="button" (click)="showForm.set(true)">Editar</button>
-              }
             </div>
 
-            <section class="info-panel" [class.info-panel-open]="infoExpanded()">
-              <button
-                class="info-toggle"
-                type="button"
-                [attr.aria-expanded]="infoExpanded()"
-                aria-controls="consultorio-info-panel"
-                (click)="toggleInfoPanel()"
-              >
-                <div class="info-toggle-copy">
-                  <span class="info-toggle-kicker">Datos del consultorio</span>
-                </div>
+            @if (canEdit()) {
+              <a class="btn-edit" [routerLink]="['/app/consultorios', current.id, 'editar']">Editar</a>
+            }
+          </header>
 
-                <div class="info-toggle-trailing">
-                  <span class="info-toggle-state">{{ infoExpanded() ? 'Ocultar' : 'Ver datos' }}</span>
-                  <span class="info-toggle-chevron" [class.info-toggle-chevron-open]="infoExpanded()" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                      <path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                  </span>
-                </div>
-              </button>
-
-              @if (infoExpanded()) {
-                <div id="consultorio-info-panel" class="info-strip">
-                  <article class="info-item">
-                    <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                        <path d="M5.5 4.5h3l1.6 4.3-1.9 1.9a15 15 0 0 0 5.6 5.6l1.9-1.9 4.3 1.6v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 3.5 6.5a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span class="info-label">Telefono</span>
-                      <strong class="info-value">{{ current.phone || '-' }}</strong>
-                    </div>
+          @if (headerFacts().length > 0 || canOpenMap()) {
+            <section class="header-summary">
+              <div class="facts-row">
+                @for (fact of headerFacts(); track fact.label) {
+                  <article class="fact-chip">
+                    <span>{{ fact.label }}</span>
+                    <strong>{{ fact.value }}</strong>
                   </article>
+                }
+              </div>
 
-                  <article class="info-item">
-                    <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
-                        <path d="m4.5 7 7.5 5 7.5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span class="info-label">Email</span>
-                      <strong class="info-value">{{ current.email || '-' }}</strong>
-                    </div>
-                  </article>
-
-                  <article class="info-item">
-                    <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                        <rect x="3.8" y="6" width="16.4" height="12" rx="2" stroke="currentColor" stroke-width="1.8" />
-                        <path d="M7 10h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                      </svg>
-                    </div>
-                    <div>
-                      <span class="info-label">CUIT</span>
-                      <strong class="info-value">{{ current.cuit || '-' }}</strong>
-                    </div>
-                  </article>
-
-                  <article class="info-item info-item-address">
-                    <div class="info-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-                        <path d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z" stroke="currentColor" stroke-width="1.8" />
-                        <circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8" />
-                      </svg>
-                    </div>
-                    <div class="address-content">
-                      <span class="info-label">Direccion</span>
-                      <strong class="info-value">{{ current.address || '-' }}</strong>
-                      <button
-                        class="btn-map"
-                        type="button"
-                        title="Ver mapa"
-                        aria-label="Ver mapa del consultorio"
-                        (click)="onMapButtonClick($event)"
-                      >
-                        <span class="btn-map-icon" aria-hidden="true">
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
-                            <path d="M12 20s6-4.6 6-9.7a6 6 0 1 0-12 0C6 15.4 12 20 12 20Z" stroke="currentColor" stroke-width="1.8" />
-                            <circle cx="12" cy="10.2" r="2.1" stroke="currentColor" stroke-width="1.8" />
-                          </svg>
-                        </span>
-                        <span>{{ hasCoordinates() ? 'Ver mapa' : 'Buscar mapa' }}</span>
-                      </button>
-
-                      @if (showMapPopover()) {
-                        <div class="map-popover" role="dialog" aria-label="Vista previa del mapa" (click)="$event.stopPropagation()">
-                          <div class="map-popover-head">
-                            <strong>Mapa del local</strong>
-                            <button type="button" class="map-close" (click)="closeMapPopover()">Cerrar</button>
-                          </div>
-
-                          @if (mapEmbedUrl()) {
-                            <iframe
-                              class="map-frame"
-                              [src]="mapEmbedUrl()"
-                              loading="lazy"
-                              referrerpolicy="no-referrer-when-downgrade"
-                              title="Mapa del consultorio"
-                            ></iframe>
-                          } @else {
-                            <p class="map-empty">No hay coordenadas cargadas para mostrar la vista previa.</p>
-                          }
-
-                          <div class="map-actions">
-                            <button type="button" class="btn-map-open" (click)="openGoogleMaps($event)">
-                              Abrir en Google Maps
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </article>
-                </div>
+              @if (canOpenMap()) {
+                <button type="button" class="btn-map" (click)="openGoogleMaps()">Ver / Buscar en mapa</button>
               }
             </section>
-          </div>
+          }
 
           <div class="card-divider"></div>
 
           <div class="body-block">
             @if (current.status !== 'ACTIVE') {
               <div class="inactive-alert">
-                <p>Este consultorio esta inactivo. No se puede operar ni editar hasta reactivarlo.</p>
+                <p>Este consultorio esta inactivo. No se puede operar hasta reactivarlo.</p>
                 @if (isAdmin()) {
                   <button class="btn-reactivate" type="button" (click)="reactivate()">Reactivar consultorio</button>
                 }
@@ -239,377 +144,126 @@ interface NavItem {
         </section>
       }
     </div>
-
-    @if (showForm() && consultorio()) {
-      <app-consultorio-form
-        [editItem]="consultorio()"
-        (saved)="onSaved($event)"
-        (cancelled)="showForm.set(false)"
-      />
-    }
   `,
   styles: [`
-    .page {
-      width: 100%;
-      padding: 0;
-      margin: 0;
-    }
-
-    .loading-msg {
-      color: var(--text-muted);
-      text-align: center;
-      margin-top: 3rem;
-    }
-
+    .page { width: 100%; }
+    .loading-msg { text-align: center; color: var(--text-muted); margin-top: 3rem; }
     .shell-card {
       border: 1px solid var(--border);
-      border-radius: 18px;
-      background: color-mix(in srgb, var(--white) 94%, var(--bg) 6%);
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--white) 95%, var(--bg) 5%);
       box-shadow: var(--shadow-sm);
       overflow: hidden;
-      width: 100%;
     }
-
-    .top-block {
-      padding: .9rem 1.2rem .8rem;
-    }
-
-    .top-row {
+    .header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 1rem;
-      margin-bottom: .75rem;
+      padding: 1rem 1.2rem .7rem;
     }
-
-    .back-link {
-      color: var(--text-muted);
-      font-size: .8rem;
-      text-decoration: none;
-      display: inline-flex;
-      margin-bottom: .4rem;
-    }
-
-    .back-link:hover { color: var(--primary); }
-
-    .clinic-row {
+    .header-main { display: grid; gap: .35rem; }
+    .header h1 { margin: 0; font-size: clamp(1.6rem, 2.5vw, 2.2rem); line-height: 1.1; }
+    .back-link { color: var(--text-muted); text-decoration: none; font-size: .82rem; }
+    .title-row,
+    .facts-row {
       display: flex;
-      align-items: flex-start;
-      gap: .65rem;
-    }
-
-    .clinic-icon {
-      color: var(--primary);
-      display: inline-grid;
-      place-items: center;
-      padding-top: .18rem;
-    }
-
-    .clinic-copy { min-width: 0; }
-
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
       flex-wrap: wrap;
+      align-items: center;
+      gap: .45rem;
     }
-
-    .title {
-      margin: 0;
-      font-size: clamp(1.4rem, 2.35vw, 2rem);
-      line-height: 1;
-      letter-spacing: .01em;
-      text-transform: uppercase;
-      color: var(--text);
-      font-weight: 800;
-    }
-
-    .status-chip {
+    .header-status-icon {
+      width: 1.7rem;
+      height: 1.7rem;
       display: inline-flex;
-      width: fit-content;
-      padding: .15rem .55rem;
+      align-items: center;
+      justify-content: center;
       border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--text-muted);
       font-size: .82rem;
-      font-weight: 700;
-      background: color-mix(in srgb, var(--border) 55%, transparent);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      line-height: 1.2;
+      font-weight: 600;
+      flex: 0 0 auto;
     }
-
-    .status-chip-active {
+    .header-status-icon-success {
       background: var(--success-bg);
-      color: var(--success);
       border-color: var(--success-border);
+      color: var(--success);
     }
-
-    .btn-edit {
-      padding: .48rem .85rem;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      background: var(--white);
-      color: var(--text);
-      cursor: pointer;
-      font-size: .95rem;
-      font-weight: 600;
-      flex-shrink: 0;
-      box-shadow: var(--shadow-sm);
+    .header-status-icon-warning {
+      background: color-mix(in srgb, #f59e0b 16%, var(--white));
+      border-color: color-mix(in srgb, #f59e0b 34%, var(--border));
+      color: #b45309;
     }
-
-    .btn-edit:hover {
-      background: color-mix(in srgb, var(--border) 22%, var(--white) 78%);
+    .header-status-icon-neutral {
+      background: color-mix(in srgb, var(--bg) 72%, var(--white));
+      border-color: var(--border);
+      color: var(--text-muted);
     }
-
-    .info-panel {
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      background:
-        linear-gradient(180deg, color-mix(in srgb, var(--primary) 4%, var(--white)), var(--white));
-      overflow: visible;
-    }
-
-    .info-panel-open {
-      box-shadow: var(--shadow-sm);
-    }
-
-    .info-toggle {
-      width: 100%;
-      border: 0;
-      background: transparent;
-      display: flex;
+    .status-chip,
+    .layer-chip {
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
+      padding: .25rem .62rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: .74rem;
+      font-weight: 500;
+      letter-spacing: .01em;
+      background: color-mix(in srgb, var(--white) 70%, var(--bg) 30%);
+      color: var(--text-muted);
+    }
+    .status-chip-active,
+    .layer-chip-done {
+      background: var(--success-bg);
+      border-color: var(--success-border);
+      color: var(--success);
+    }
+    .btn-edit,
+    .btn-map,
+    .btn-reactivate {
+      padding: .62rem .92rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--white);
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .header-summary {
+      display: flex;
       justify-content: space-between;
+      align-items: center;
       gap: 1rem;
-      padding: .58rem .82rem;
-      cursor: pointer;
-      text-align: left;
-      color: inherit;
+      padding: 0 1.2rem .95rem;
     }
-
-    .info-toggle:hover .info-toggle-chevron {
-      background: color-mix(in srgb, var(--primary) 10%, var(--white));
-    }
-
-    .info-toggle:focus-visible,
-    .btn-map:focus-visible,
-    .map-close:focus-visible,
-    .btn-map-open:focus-visible,
-    .btn-edit:focus-visible,
-    .btn-reactivate:focus-visible {
-      outline: 2px solid color-mix(in srgb, var(--primary) 44%, transparent);
-      outline-offset: 2px;
-    }
-
-    .info-toggle-copy {
-      display: grid;
+    .fact-chip {
       min-width: 0;
-    }
-
-    .info-toggle-kicker {
-      font-size: .66rem;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--primary);
-      font-weight: 800;
-    }
-
-    .info-toggle-trailing {
-      display: inline-flex;
-      align-items: center;
-      gap: .55rem;
-      flex: 0 0 auto;
-      color: var(--text-muted);
-      font-weight: 700;
-      font-size: .74rem;
-    }
-
-    .info-toggle-chevron {
-      display: inline-grid;
-      place-items: center;
-      width: 1.65rem;
-      height: 1.65rem;
-      border-radius: 999px;
-      border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
-      background: var(--white);
-      color: var(--primary);
-      transition: transform .16s ease;
-    }
-
-    .info-toggle-chevron-open {
-      transform: rotate(180deg);
-    }
-
-    .info-strip {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      column-gap: .85rem;
-      row-gap: .45rem;
-      padding: 0 .82rem .75rem;
-      align-items: start;
-    }
-
-    .info-item {
-      display: flex;
-      align-items: flex-start;
-      gap: .55rem;
-      min-width: 0;
-    }
-
-    .info-item-address {
-      position: relative;
-    }
-
-    .address-content {
-      min-width: 0;
-      width: 100%;
-      display: grid;
-      gap: .28rem;
-    }
-
-    .info-icon {
-      color: var(--text-muted);
-      display: inline-grid;
-      place-items: center;
-      flex: 0 0 auto;
-      padding-top: .08rem;
-    }
-
-    .info-label {
-      display: block;
-      color: var(--text-muted);
-      font-size: .68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .02em;
-      margin-bottom: 0;
-    }
-
-    .info-value {
-      display: block;
-      color: var(--text);
-      font-size: .8rem;
-      font-weight: 600;
-      overflow-wrap: break-word;
-      word-break: normal;
-      line-height: 1.3;
-    }
-
-    .btn-map {
-      border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border));
-      background: color-mix(in srgb, var(--primary) 10%, var(--white));
-      color: color-mix(in srgb, var(--primary) 88%, var(--text) 12%);
-      border-radius: 999px;
-      font-size: .74rem;
-      font-weight: 700;
-      padding: .24rem .55rem;
-      cursor: pointer;
-      flex: 0 0 auto;
-      display: inline-flex;
-      align-items: center;
-      gap: .34rem;
-      white-space: nowrap;
-      width: fit-content;
-      margin-top: .12rem;
-      box-shadow: 0 10px 22px -18px color-mix(in srgb, var(--primary) 45%, transparent);
-    }
-
-    .btn-map:hover {
-      background: color-mix(in srgb, var(--primary) 16%, var(--white));
-      border-color: color-mix(in srgb, var(--primary) 48%, var(--border));
-    }
-
-    .btn-map-icon {
-      display: inline-grid;
-      place-items: center;
-    }
-
-    .map-popover {
-      position: absolute;
-      z-index: 20;
-      right: 0;
-      left: auto;
-      top: calc(100% + .55rem);
-      width: min(380px, 90vw);
-      border: 1px solid var(--border);
+      gap: .12rem;
+      padding: .55rem .7rem;
       border-radius: 14px;
-      background: var(--white);
-      box-shadow: var(--shadow-lg);
-      padding: .65rem;
-    }
-
-    .map-popover-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: .45rem;
-      gap: .5rem;
-    }
-
-    .map-popover-head strong {
-      font-size: .9rem;
-      color: var(--text);
-    }
-
-    .map-close {
       border: 1px solid var(--border);
       background: var(--white);
-      color: var(--text-muted);
-      border-radius: 8px;
-      font-size: .75rem;
-      font-weight: 700;
-      padding: .2rem .45rem;
-      cursor: pointer;
     }
-
-    .map-close:hover {
-      background: var(--bg);
+    .fact-chip span {
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .fact-chip strong {
       color: var(--text);
+      font-size: .86rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
     }
-
-    .map-frame {
-      width: 100%;
-      height: 210px;
-      border: 0;
-      border-radius: 10px;
-      display: block;
-    }
-
-    .map-empty {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: .85rem;
-      padding: .35rem 0 .15rem;
-    }
-
-    .map-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: .55rem;
-    }
-
-    .btn-map-open {
-      border: 1px solid var(--primary);
-      background: var(--white);
-      color: var(--primary);
-      border-radius: 9px;
-      font-size: .8rem;
-      font-weight: 700;
-      padding: .3rem .65rem;
-      cursor: pointer;
-    }
-
-    .btn-map-open:hover {
-      background: var(--bg);
-    }
-
-    .card-divider {
-      border-top: 1px solid var(--border);
-    }
-
-    .body-block {
-      padding: .75rem 1.2rem .95rem;
-    }
-
+    .card-divider { border-top: 1px solid var(--border); }
+    .body-block { padding: .85rem 1.2rem 1rem; }
     .tabs {
       display: flex;
       gap: .15rem;
@@ -620,7 +274,6 @@ interface NavItem {
       padding: .18rem;
       margin-bottom: .3rem;
     }
-
     .tab {
       padding: .36rem .64rem;
       text-decoration: none;
@@ -629,41 +282,9 @@ interface NavItem {
       font-size: .86rem;
       border-radius: 10px;
       border: 1px solid transparent;
-      white-space: nowrap;
-      position: relative;
     }
-
-    .tab:hover {
-      background: color-mix(in srgb, var(--border) 22%, var(--white) 78%);
-      color: var(--text);
-    }
-
-    .tab-active {
-      background: var(--white);
-      border-color: var(--border);
-      color: var(--text);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .tab-active::after {
-      content: '';
-      position: absolute;
-      left: .46rem;
-      right: .46rem;
-      bottom: -.16rem;
-      height: 2px;
-      border-radius: 999px;
-      background: var(--primary);
-    }
-
-    .sub-tabs {
-      display: flex;
-      gap: .35rem;
-      padding: .1rem 0 .5rem;
-      overflow-x: auto;
-      scrollbar-width: thin;
-    }
-
+    .tab-active { background: var(--white); border-color: var(--border); box-shadow: var(--shadow-sm); }
+    .sub-tabs { display: flex; gap: .35rem; padding: .1rem 0 .5rem; overflow-x: auto; }
     .sub-tab {
       white-space: nowrap;
       text-decoration: none;
@@ -674,92 +295,47 @@ interface NavItem {
       padding: .28rem .58rem;
       font-size: .75rem;
       font-weight: 700;
-      transition: background .15s ease, border-color .15s ease, color .15s ease;
     }
-
-    .sub-tab:hover {
-      color: var(--text);
-      background: color-mix(in srgb, var(--border) 20%, var(--white));
-    }
-
     .sub-tab-active {
       color: var(--primary);
       border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
       background: color-mix(in srgb, var(--primary) 12%, var(--white));
     }
-
     .inactive-alert {
       border: 1px solid var(--border);
       background: var(--bg);
-      border-radius: var(--radius);
+      border-radius: 16px;
       padding: 1rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       gap: 1rem;
     }
-
     .inactive-alert p { margin: 0; color: var(--text); }
-
-    .btn-reactivate {
-      padding: .5rem .9rem;
-      border: 1px solid var(--primary);
-      background: var(--white);
-      color: var(--primary);
-      border-radius: var(--radius);
-      cursor: pointer;
-      white-space: nowrap;
-      font-weight: 700;
-    }
-
-    .btn-reactivate:hover { background: var(--bg); }
-
-    @media (max-width: 1180px) {
-      .info-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 760px) {
-      .top-block,
-      .body-block { padding: .8rem; }
-
-      .top-row {
+    @media (max-width: 900px) {
+      .header-summary {
         flex-direction: column;
         align-items: stretch;
       }
-
-      .btn-edit {
-        width: fit-content;
-        align-self: flex-end;
+    }
+    @media (max-width: 760px) {
+      .header,
+      .body-block,
+      .header-summary {
+        padding-left: .9rem;
+        padding-right: .9rem;
       }
-
-      .clinic-icon {
-        padding-top: .08rem;
-      }
-
-      .title-row { gap: .55rem; }
-      .title { font-size: 1.32rem; }
-      .status-chip { font-size: .76rem; }
-
-      .info-toggle {
-        align-items: flex-start;
+      .header {
         flex-direction: column;
       }
-
-      .info-toggle-trailing {
+      .title-row {
+        align-items: flex-start;
+      }
+      .btn-edit,
+      .btn-map {
         width: 100%;
-        justify-content: space-between;
+        text-align: center;
       }
-
-      .info-strip {
-        grid-template-columns: 1fr;
-      }
-
-      .map-popover { width: min(100%, 95vw); }
-      .tabs { border-radius: 14px; }
-      .tab { font-size: .82rem; }
-      .tab-active::after { bottom: -.14rem; }
     }
   `],
 })
@@ -770,45 +346,77 @@ export class ConsultorioDetailPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
-  private readonly sanitizer = inject(DomSanitizer);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly completenessSvc = inject(ConsultorioCompletenessService);
+  private readonly completenessRefresh = inject(ConsultorioCompletenessRefreshService);
 
   readonly consultorio = signal<Consultorio | null>(null);
+  readonly completeness = signal<ConsultorioCompleteness | null>(null);
   readonly loading = signal(true);
-  readonly showForm = signal(false);
-  readonly infoExpanded = signal(false);
-  readonly showMapPopover = signal(false);
 
   readonly mainTabs: NavItem[] = [
     { label: 'Resumen', path: 'resumen', exact: true },
+    { label: 'Ficha', path: 'ficha', exact: true },
     { label: 'Boxes', path: 'boxes', exact: true },
     { label: 'Profesionales', path: 'profesionales', exact: true },
     { label: 'Agenda', path: 'agenda', exact: false },
-    { label: 'Configuración', path: 'configuracion', exact: false },
+    { label: 'Configuracion', path: 'configuracion', exact: false },
   ];
-
   readonly agendaTabs: NavItem[] = [
     { label: 'Horarios de atencion', path: 'agenda/horarios-atencion' },
     { label: 'Intervalo de turnos', path: 'agenda/intervalo-turnos' },
     { label: 'Feriados y cierres', path: 'agenda/feriados-cierres' },
   ];
-
   readonly configurationTabs: NavItem[] = [
     { label: 'Especialidades', path: 'configuracion/especialidades' },
     { label: 'Cargos del personal', path: 'configuracion/cargos-personal' },
     { label: 'Antecedentes', path: 'configuracion/plantillas-antecedentes' },
-    { label: 'Diagnósticos médicos', path: 'configuracion/diagnosticos-medicos' },
+    { label: 'Diagnosticos medicos', path: 'configuracion/diagnosticos-medicos' },
     { label: 'Tratamientos', path: 'configuracion/tratamientos' },
   ];
 
   readonly isAdmin = computed(() => this.auth.hasRole('ADMIN'));
-  readonly canEdit = computed(() =>
-    !!this.consultorio() &&
-    this.consultorio()!.status === 'ACTIVE' &&
-    this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN'),
-  );
-  readonly hasCoordinates = computed(
-    () => this.consultorio()?.mapLatitude != null && this.consultorio()?.mapLongitude != null,
-  );
+  readonly canEdit = computed(() => !!this.consultorio() && this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN'));
+  readonly headerStatusIcon = computed<HeaderStatusIcon>(() => {
+    const summary = this.completeness();
+    if (!summary) {
+      return {
+        tone: 'neutral',
+        symbol: '•',
+        label: 'Estado general sin evaluar',
+      };
+    }
+
+    if (summary.isComplete) {
+      return {
+        tone: 'success',
+        symbol: '✓',
+        label: 'Consultorio completo',
+      };
+    }
+
+    return {
+      tone: 'warning',
+      symbol: '!',
+      label: summary.hasCriticalMissing
+        ? 'Consultorio incompleto con faltantes importantes'
+        : 'Consultorio con informacion pendiente',
+    };
+  });
+  readonly headerFacts = computed<HeaderFact[]>(() => {
+    const current = this.consultorio();
+    if (!current) return [];
+
+    return [
+      this.buildFact('Telefono', current.phone),
+      this.buildFact('Email', current.email),
+      this.buildFact('Direccion', current.address),
+    ].filter((item): item is HeaderFact => item !== null);
+  });
+  readonly canOpenMap = computed(() => {
+    const current = this.consultorio();
+    return !!current && !!(current.address || (current.mapLatitude != null && current.mapLongitude != null));
+  });
 
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -818,23 +426,21 @@ export class ConsultorioDetailPage implements OnInit {
     ),
     { initialValue: this.router.url },
   );
-
   readonly isAgendaSection = computed(() => this.currentUrl().includes('/agenda'));
   readonly isConfigurationSection = computed(() => this.currentUrl().includes('/configuracion'));
 
-  readonly mapEmbedUrl = computed<SafeResourceUrl | null>(() => {
-    const current = this.consultorio();
-    if (!current || current.mapLatitude == null || current.mapLongitude == null) return null;
-    const src = `https://www.google.com/maps?q=${current.mapLatitude},${current.mapLongitude}&z=16&output=embed`;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(src);
-  });
-
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id')!;
+    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.completenessRefresh
+      .onConsultorioChange(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.reloadCompleteness());
+
     this.svc.getById(id).subscribe({
-      next: (c) => {
-        this.consultorio.set(c);
+      next: (consultorio) => {
+        this.consultorio.set(consultorio);
         this.loading.set(false);
+        this.reloadCompleteness(consultorio);
       },
       error: (err) => {
         this.loading.set(false);
@@ -848,78 +454,40 @@ export class ConsultorioDetailPage implements OnInit {
     });
   }
 
-  onSaved(req: ConsultorioRequest): void {
+  openGoogleMaps(): void {
     const current = this.consultorio();
-    if (!current || current.status !== 'ACTIVE') {
-      this.toast.error('No se puede editar un consultorio inactivo.');
-      return;
-    }
-
-    this.svc.update(current.id, req).subscribe({
-      next: (updated) => {
-        this.consultorio.set(updated);
-        this.showMapPopover.set(false);
-        this.showForm.set(false);
-        this.toast.success('Consultorio actualizado');
-      },
-      error: (err) => this.toast.error(this.errMap.toMessage(err)),
-    });
-  }
-
-  onMapButtonClick(event: Event): void {
-    event.stopPropagation();
-    if (!this.hasCoordinates()) {
-      this.openGoogleMaps(event);
-      return;
-    }
-    this.infoExpanded.set(true);
-    this.showMapPopover.update((open) => !open);
-  }
-
-  toggleInfoPanel(): void {
-    this.infoExpanded.update((open) => {
-      const next = !open;
-      if (!next) this.showMapPopover.set(false);
-      return next;
-    });
-  }
-
-  closeMapPopover(): void {
-    if (!this.showMapPopover()) return;
-    this.showMapPopover.set(false);
-  }
-
-  openGoogleMaps(event?: Event): void {
-    event?.stopPropagation();
-    const url = this.resolveGoogleMapsUrl();
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (!current) return;
+    const query = current.mapLatitude != null && current.mapLongitude != null
+      ? `${current.mapLatitude},${current.mapLongitude}`
+      : current.address || current.name;
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
   }
 
   reactivate(): void {
     const current = this.consultorio();
     if (!current || !this.auth.hasRole('ADMIN')) return;
-
     this.svc.activate(current.id).subscribe({
       next: (updated) => {
         this.consultorio.set(updated);
+        this.reloadCompleteness(updated);
+        this.completenessRefresh.notify(updated.id);
         this.toast.success('Consultorio reactivado');
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }
 
-  private resolveGoogleMapsUrl(): string {
-    const current = this.consultorio();
-    if (!current) return 'https://www.google.com/maps';
+  private buildFact(label: string, value?: string): HeaderFact | null {
+    const normalized = value?.trim();
+    return normalized ? { label, value: normalized } : null;
+  }
 
-    const explicitUrl = current.googleMapsUrl?.trim();
-    if (explicitUrl) return explicitUrl;
-
-    if (current.mapLatitude != null && current.mapLongitude != null) {
-      return `https://www.google.com/maps/search/?api=1&query=${current.mapLatitude},${current.mapLongitude}`;
-    }
-
-    const query = current.address?.trim() || current.name?.trim() || 'consultorio';
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  private reloadCompleteness(current: Consultorio | null = this.consultorio()): void {
+    const consultorioId = current?.id ?? this.route.snapshot.paramMap.get('id');
+    if (!consultorioId) return;
+    this.completenessSvc.loadCompleteness(consultorioId, current).subscribe({
+      next: (result) => this.completeness.set(result),
+      error: () => this.completeness.set(null),
+    });
   }
 }

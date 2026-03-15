@@ -5,22 +5,20 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { BoxCapacidadForm, BoxCapacidadPayload } from '../../components/box-capacidad-form/box-capacidad-form';
 import { BoxForm } from '../../components/box-form/box-form';
-import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 import { Box, BoxRequest } from '../../models/consultorio.models';
+import { ConsultorioCompletenessRefreshService } from '../../services/consultorio-completeness-refresh.service';
 import { BoxService } from '../../services/box.service';
 import { resolveConsultorioId } from '../../utils/route-utils';
 
 @Component({
   selector: 'app-box-list',
   standalone: true,
-  imports: [BoxForm, ConfirmDialog, BoxCapacidadForm],
+  imports: [BoxForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="sub-page">
@@ -72,32 +70,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
                         </svg>
                         <span>Editar</span>
                       </button>
-                    }
-
-                    @if (canWrite() && b.activo) {
-                      <button
-                        class="table-row-action"
-                        title="Configurar capacidad"
-                        aria-label="Configurar capacidad"
-                        (click)="startCapacidad(b)"
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-                          <path d="M4 19.5h16M7 17V10M12 17V6M17 17v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        <span>Capacidad</span>
-                      </button>
-                      <button
-                        class="table-row-action table-row-action--danger"
-                        title="Dar de baja"
-                        aria-label="Dar de baja"
-                        (click)="startDelete(b)"
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-                          <path d="M4 7h16M9 7V5h6v2M8 7l.7 11h6.6L16 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-                          <path d="M10.5 10.5v5M13.5 10.5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                        </svg>
-                        <span>Baja</span>
-                      </button>
                     } @else if (!canWrite()) {
                       <span class="actions-empty">-</span>
                     }
@@ -115,24 +87,6 @@ import { resolveConsultorioId } from '../../utils/route-utils';
         [editItem]="editTarget()"
         (saved)="onSaved($event)"
         (cancelled)="closeForm()"
-      />
-    }
-
-    @if (deleteTarget()) {
-      <app-confirm-dialog
-        title="Dar de baja box"
-        [message]="'Dar de baja ' + deleteTarget()!.nombre + '?'"
-        (confirmed)="confirmDelete()"
-        (cancelled)="deleteTarget.set(null)"
-      />
-    }
-
-    @if (capacityTarget()) {
-      <app-box-capacidad-form
-        [capacityType]="capacityTarget()!.capacityType"
-        [capacity]="capacityTarget()!.capacity"
-        (saved)="confirmCapacidad($event)"
-        (cancelled)="capacityTarget.set(null)"
       />
     }
   `,
@@ -165,13 +119,12 @@ export class BoxListPage implements OnInit {
   private auth    = inject(AuthService);
   private toast   = inject(ToastService);
   private errMap  = inject(ErrorMapperService);
+  private completenessRefresh = inject(ConsultorioCompletenessRefreshService);
 
   items        = signal<Box[]>([]);
   loading      = signal(true);
   showForm     = signal(false);
   editTarget   = signal<Box | null>(null);
-  deleteTarget = signal<Box | null>(null);
-  capacityTarget = signal<Box | null>(null);
 
   private consultorioId = '';
 
@@ -217,62 +170,13 @@ export class BoxListPage implements OnInit {
       : this.svc.create(this.consultorioId, req);
 
     request$.subscribe({
-      next: (updated) => {
-        if (target && req.activo !== undefined && req.activo !== updated.activo) {
-          if (req.activo) {
-            this.svc.activate(this.consultorioId, target.id).subscribe({
-              next: () => {
-                this.toast.success('Box actualizado');
-                this.closeForm();
-                this.load();
-              },
-              error: (err: unknown) => {
-                if (err instanceof HttpErrorResponse && err.status === 404) {
-                  this.toast.error('No se pudo activar el box: falta endpoint /activar en backend. Reinicia/actualiza API.');
-                  return;
-                }
-                this.toast.error(this.errMap.toMessage(err));
-              },
-            });
-          } else {
-            this.svc.inactivate(this.consultorioId, target.id).subscribe({
-              next: () => {
-                this.toast.success('Box actualizado');
-                this.closeForm();
-                this.load();
-              },
-              error: (err: unknown) => this.toast.error(this.errMap.toMessage(err)),
-            });
-          }
-          return;
-        }
-
+      next: () => {
         this.toast.success(target ? 'Box actualizado' : 'Box creado');
         this.closeForm();
         this.load();
+        this.completenessRefresh.notify(this.consultorioId);
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
-    });
-  }
-
-  startDelete(b: Box): void { this.deleteTarget.set(b); }
-  startCapacidad(b: Box): void { this.capacityTarget.set(b); }
-
-  confirmDelete(): void {
-    const t = this.deleteTarget();
-    if (!t) return;
-    this.svc.inactivate(this.consultorioId, t.id).subscribe({
-      next: () => { this.toast.success('Box dado de baja'); this.deleteTarget.set(null); this.load(); },
-      error: (err) => { this.toast.error(this.errMap.toMessage(err)); this.deleteTarget.set(null); },
-    });
-  }
-
-  confirmCapacidad(payload: BoxCapacidadPayload): void {
-    const t = this.capacityTarget();
-    if (!t) return;
-    this.svc.updateCapacidad(this.consultorioId, t.id, payload.capacityType, payload.capacity).subscribe({
-      next: () => { this.toast.success('Capacidad actualizada'); this.capacityTarget.set(null); this.load(); },
-      error: (err) => { this.toast.error(this.errMap.toMessage(err)); this.capacityTarget.set(null); },
     });
   }
 }

@@ -6,6 +6,7 @@ import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { Profesional } from '../../models/consultorio.models';
 import { ProfesionalAsignado } from '../../models/agenda.models';
 import { AsignacionService } from '../../services/asignacion.service';
+import { ConsultorioCompletenessRefreshService } from '../../services/consultorio-completeness-refresh.service';
 import { ProfesionalService } from '../../services/profesional.service';
 import { resolveConsultorioId } from '../../utils/route-utils';
 
@@ -61,6 +62,7 @@ export class AsignacionesListPage implements OnInit {
   private profesionalSvc = inject(ProfesionalService);
   private toast = inject(ToastService);
   private errMap = inject(ErrorMapperService);
+  private completenessRefresh = inject(ConsultorioCompletenessRefreshService);
 
   items = signal<ProfesionalAsignado[]>([]);
   profesionales = signal<Profesional[]>([]);
@@ -83,14 +85,14 @@ export class AsignacionesListPage implements OnInit {
   asignar(): void {
     if (!this.selectedProfesionalId) return;
     this.svc.asignar(this.consultorioId, this.selectedProfesionalId).subscribe({
-      next: () => { this.toast.success('Cobertura asignada'); this.selectedProfesionalId = ''; this.load(); },
+      next: () => { this.toast.success('Cobertura asignada'); this.selectedProfesionalId = ''; this.load(); this.completenessRefresh.notify(this.consultorioId); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }
 
   desasignar(profesionalId: string): void {
     this.svc.desasignar(this.consultorioId, profesionalId).subscribe({
-      next: () => { this.toast.success('Cobertura eliminada'); this.load(); },
+      next: () => { this.toast.success('Cobertura eliminada'); this.load(); this.completenessRefresh.notify(this.consultorioId); },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
   }

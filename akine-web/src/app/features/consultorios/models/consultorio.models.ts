@@ -1,36 +1,82 @@
-// ─── Enums ────────────────────────────────────────────────────────────────────
+import { BoxCapacidadTipo } from './agenda.models';
 
 export type BoxTipo = 'BOX' | 'GIMNASIO' | 'OFICINA';
-
-// ─── Consultorio ──────────────────────────────────────────────────────────────
+export type ConsultorioStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface Consultorio {
   id: string;
   name: string;
+  description?: string;
+  logoUrl?: string;
   cuit?: string;
+  legalName?: string;
   address?: string;
+  accessReference?: string;
+  floorUnit?: string;
   phone?: string;
   email?: string;
+  administrativeContact?: string;
+  internalNotes?: string;
   mapLatitude?: number;
   mapLongitude?: number;
   googleMapsUrl?: string;
-  status: string;
+  documentDisplayName?: string;
+  documentSubtitle?: string;
+  documentLogoUrl?: string;
+  documentFooter?: string;
+  documentShowAddress?: boolean;
+  documentShowPhone?: boolean;
+  documentShowEmail?: boolean;
+  documentShowCuit?: boolean;
+  documentShowLegalName?: boolean;
+  documentShowLogo?: boolean;
+  licenseNumber?: string;
+  licenseType?: string;
+  licenseExpirationDate?: string;
+  professionalDirectorName?: string;
+  professionalDirectorLicense?: string;
+  legalDocumentSummary?: string;
+  legalNotes?: string;
+  status: ConsultorioStatus;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface ConsultorioRequest {
   name: string;
+  description?: string;
+  logoUrl?: string;
   cuit?: string;
+  legalName?: string;
   address?: string;
+  accessReference?: string;
+  floorUnit?: string;
   phone?: string;
   email?: string;
+  administrativeContact?: string;
+  internalNotes?: string;
   mapLatitude?: number;
   mapLongitude?: number;
   googleMapsUrl?: string;
+  documentDisplayName?: string;
+  documentSubtitle?: string;
+  documentLogoUrl?: string;
+  documentFooter?: string;
+  documentShowAddress?: boolean;
+  documentShowPhone?: boolean;
+  documentShowEmail?: boolean;
+  documentShowCuit?: boolean;
+  documentShowLegalName?: boolean;
+  documentShowLogo?: boolean;
+  licenseNumber?: string;
+  licenseType?: string;
+  licenseExpirationDate?: string;
+  professionalDirectorName?: string;
+  professionalDirectorLicense?: string;
+  legalDocumentSummary?: string;
+  legalNotes?: string;
+  status?: ConsultorioStatus;
 }
-
-// ─── Box ──────────────────────────────────────────────────────────────────────
 
 export interface Box {
   id: string;
@@ -49,10 +95,10 @@ export interface BoxRequest {
   nombre: string;
   codigo?: string;
   tipo: BoxTipo;
+  capacityType: BoxCapacidadTipo;
+  capacity?: number;
   activo?: boolean;
 }
-
-// ─── Profesional ──────────────────────────────────────────────────────────────
 
 export interface Profesional {
   id: string;
@@ -94,4 +140,3 @@ export interface ProfesionalEstadoRequest {
   fechaDeBaja?: string;
   motivoDeBaja?: string;
 }
-import { BoxCapacidadTipo } from './agenda.models';

@@ -1,32 +1,28 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   inject,
   OnInit,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { catchError, forkJoin, Observable, of } from 'rxjs';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { Feriado } from '../../../turnos/models/turno.models';
-import { AntecedenteCatalog, AntecedenteCatalogCategory } from '../../models/antecedente-catalog.models';
-import { Box, Profesional } from '../../models/consultorio.models';
-import {
-  ConsultorioDuracion,
-  ConsultorioHorario,
-  ProfesionalAsignado,
-} from '../../models/agenda.models';
-import { Especialidad } from '../../models/especialidad.models';
-import { AntecedenteCatalogService } from '../../services/antecedente-catalog.service';
-import { AsignacionService } from '../../services/asignacion.service';
+import { Box, Consultorio, Profesional } from '../../models/consultorio.models';
+import { ConsultorioDuracion, ConsultorioHorario } from '../../models/agenda.models';
 import { BoxService } from '../../services/box.service';
+import { ConsultorioCompletenessRefreshService } from '../../services/consultorio-completeness-refresh.service';
+import { ConsultorioService } from '../../services/consultorio.service';
 import { DuracionService } from '../../services/duracion.service';
-import { EspecialidadService } from '../../services/especialidad.service';
 import { FeriadoService } from '../../services/feriado.service';
 import { HorarioService } from '../../services/horario.service';
 import { ProfesionalService } from '../../services/profesional.service';
+import { evaluateConsultorioCompletenessSnapshot } from '../../utils/consultorio-completeness';
 import { resolveConsultorioId } from '../../utils/route-utils';
 
 interface ResumenKpi {
@@ -34,6 +30,7 @@ interface ResumenKpi {
   value: string;
   helper: string;
   route: string;
+  tone: 'success' | 'warning';
 }
 
 interface ConfigAlert {
@@ -43,15 +40,24 @@ interface ConfigAlert {
 }
 
 interface ResumenData {
+  consultorio: Consultorio;
   boxes: Box[];
   profesionales: Profesional[];
   horarios: ConsultorioHorario[];
   duraciones: ConsultorioDuracion[];
-  asignaciones: ProfesionalAsignado[];
   feriados: Feriado[];
-  especialidades: Especialidad[];
-  antecedentes: AntecedenteCatalog | null;
 }
+
+const EMPTY_CONSULTORIO: Consultorio = {
+  id: '',
+  name: '',
+  address: '',
+  phone: '',
+  email: '',
+  status: 'INACTIVE',
+  createdAt: '',
+  updatedAt: '',
+};
 
 @Component({
   selector: 'app-consultorio-resumen',
@@ -65,7 +71,12 @@ interface ResumenData {
       } @else {
         <div class="kpi-grid">
           @for (kpi of kpis(); track kpi.label) {
-            <a class="kpi-card" [routerLink]="kpi.route">
+            <a
+              class="kpi-card"
+              [class.kpi-card-success]="kpi.tone === 'success'"
+              [class.kpi-card-warning]="kpi.tone === 'warning'"
+              [routerLink]="kpi.route"
+            >
               <span class="kpi-label">{{ kpi.label }}</span>
               <strong class="kpi-value">{{ kpi.value }}</strong>
               <small class="kpi-helper">{{ kpi.helper }}</small>
@@ -77,18 +88,18 @@ interface ResumenData {
           <article class="panel">
             <header class="panel-head">
               <h3>Alertas de configuración</h3>
-              <a [routerLink]="path('configuracion/especialidades')">Ir a configuración</a>
+              <a [routerLink]="path('agenda/horarios-atencion')">Ir a configuración</a>
             </header>
 
             @if (alerts().length === 0) {
               <div class="state-ok">
                 <strong>Configuración principal completa</strong>
-                <p>No hay bloqueos operativos detectados para agenda y catálogos.</p>
+                <p>No hay bloqueos operativos detectados en los datos y la operación principal del consultorio.</p>
               </div>
             } @else {
               <ul class="alerts-list">
                 @for (alert of alerts(); track alert.title) {
-                  <li>
+                  <li class="pending-card">
                     <div>
                       <strong>{{ alert.title }}</strong>
                       <p>{{ alert.detail }}</p>
@@ -147,18 +158,33 @@ interface ResumenData {
       text-decoration: none;
       color: inherit;
       border: 1px solid var(--border);
+      border-left-width: 3px;
       border-radius: 10px;
-      padding: .58rem .68rem;
+      padding: .62rem .7rem .62rem .8rem;
       background: var(--white);
       display: grid;
       gap: .14rem;
-      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+      transition: box-shadow .16s ease, border-color .16s ease;
     }
 
     .kpi-card:hover {
-      transform: translateY(-1px);
-      border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
       box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-card-success {
+      border-left-color: var(--success);
+    }
+
+    .kpi-card-success .kpi-value {
+      color: var(--success);
+    }
+
+    .kpi-card-warning {
+      border-left-color: var(--warning, #d97706);
+    }
+
+    .kpi-card-warning .kpi-value {
+      color: var(--warning, #d97706);
     }
 
     .kpi-label {
@@ -274,6 +300,12 @@ interface ResumenData {
       gap: .6rem;
     }
 
+    .alerts-list li.pending-card {
+      border-left-width: 4px;
+      border-left-color: var(--warning);
+      background: var(--white);
+    }
+
     .alerts-list strong,
     .holiday-list strong {
       color: var(--text);
@@ -320,14 +352,14 @@ interface ResumenData {
 })
 export class ConsultorioResumenPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly consultorioSvc = inject(ConsultorioService);
   private readonly boxSvc = inject(BoxService);
   private readonly profesionalSvc = inject(ProfesionalService);
   private readonly horarioSvc = inject(HorarioService);
   private readonly duracionSvc = inject(DuracionService);
-  private readonly asignacionSvc = inject(AsignacionService);
   private readonly feriadoSvc = inject(FeriadoService);
-  private readonly especialidadSvc = inject(EspecialidadService);
-  private readonly antecedenteSvc = inject(AntecedenteCatalogService);
+  private readonly completenessRefresh = inject(ConsultorioCompletenessRefreshService);
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
 
@@ -345,6 +377,11 @@ export class ConsultorioResumenPage implements OnInit {
       this.toast.error('No se pudo resolver el consultorio para el resumen.');
       return;
     }
+
+    this.completenessRefresh
+      .onConsultorioChange(this.consultorioId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadResumen());
 
     this.loadResumen();
   }
@@ -374,14 +411,12 @@ export class ConsultorioResumenPage implements OnInit {
     const year = new Date().getFullYear();
 
     forkJoin({
+      consultorio: safe(this.consultorioSvc.getById(this.consultorioId), EMPTY_CONSULTORIO),
       boxes: safe(this.boxSvc.list(this.consultorioId), [] as Box[]),
       profesionales: safe(this.profesionalSvc.list(this.consultorioId), [] as Profesional[]),
       horarios: safe(this.horarioSvc.list(this.consultorioId), [] as ConsultorioHorario[]),
       duraciones: safe(this.duracionSvc.list(this.consultorioId), [] as ConsultorioDuracion[]),
-      asignaciones: safe(this.asignacionSvc.list(this.consultorioId), [] as ProfesionalAsignado[]),
       feriados: safe(this.feriadoSvc.list(this.consultorioId, year), [] as Feriado[]),
-      especialidades: safe(this.especialidadSvc.list(this.consultorioId), [] as Especialidad[]),
-      antecedentes: safe(this.antecedenteSvc.get(this.consultorioId), null as AntecedenteCatalog | null),
     }).subscribe({
       next: (data) => {
         this.buildViewModel(data);
@@ -399,10 +434,15 @@ export class ConsultorioResumenPage implements OnInit {
   }
 
   private buildViewModel(data: ResumenData): void {
-    const activeBoxes = data.boxes.filter((item) => item.activo).length;
-    const activeProfessionals = data.profesionales.filter((item) => item.activo).length;
-    const activeSpecialties = data.especialidades.filter((item) => item.activo).length;
-    const antecedentesActivos = this.countActiveAntecedentes(data.antecedentes?.categories ?? []);
+    const completeness = evaluateConsultorioCompletenessSnapshot({
+      consultorio: data.consultorio,
+      boxes: data.boxes,
+      profesionales: data.profesionales,
+      horarios: data.horarios,
+      duraciones: data.duraciones,
+    });
+    const activeBoxes = data.boxes.filter((item) => item.activo !== false).length;
+    const activeProfessionals = data.profesionales.filter((item) => item.activo !== false).length;
 
     const sortedDurations = data.duraciones
       .map((item) => item.minutos)
@@ -413,95 +453,47 @@ export class ConsultorioResumenPage implements OnInit {
         ? sortedDurations.map((minutes) => `${minutes} min`).join(' | ')
         : 'Sin definir';
 
-    const upcomingHolidays = this.resolveUpcomingHolidays(data.feriados);
-
     this.kpis.set([
       {
         label: 'Boxes',
         value: String(activeBoxes),
         helper: `${data.boxes.length} total`,
         route: this.path('boxes'),
+        tone: this.resolveKpiTone(completeness, 'boxes'),
       },
       {
         label: 'Profesionales',
         value: String(activeProfessionals),
         helper: `${data.profesionales.length} total`,
         route: this.path('profesionales'),
+        tone: this.resolveKpiTone(completeness, 'profesionales'),
       },
       {
         label: 'Horarios',
-        value: String(data.horarios.length),
+        value: String(data.horarios.filter((item) => item.activo !== false).length),
         helper: 'Tramos semanales activos',
         route: this.path('agenda/horarios-atencion'),
-      },
-      {
-        label: 'Cobertura',
-        value: String(data.asignaciones.length),
-        helper: 'Profesionales asignados',
-        route: this.path('agenda/cobertura-profesionales'),
+        tone: this.resolveKpiTone(completeness, 'horarios'),
       },
       {
         label: 'Intervalos',
         value: String(data.duraciones.length),
         helper: intervalSummary,
         route: this.path('agenda/intervalo-turnos'),
+        tone: this.resolveKpiTone(completeness, 'intervalos'),
       },
     ]);
 
-    this.upcomingHolidays.set(upcomingHolidays);
-
-    const alerts: ConfigAlert[] = [];
-    if (activeBoxes === 0) {
-      alerts.push({
-        title: 'Sin boxes activos',
-        detail: 'Configura al menos un box para habilitar operación de agenda.',
-        route: this.path('boxes'),
-      });
-    }
-    if (activeProfessionals === 0) {
-      alerts.push({
-        title: 'Sin profesionales activos',
-        detail: 'No hay profesionales activos para asignar turnos.',
-        route: this.path('profesionales'),
-      });
-    }
-    if (data.horarios.length === 0) {
-      alerts.push({
-        title: 'Horarios de atención incompletos',
-        detail: 'Debes cargar horarios para habilitar disponibilidad de turnos.',
-        route: this.path('agenda/horarios-atencion'),
-      });
-    }
-    if (data.asignaciones.length === 0) {
-      alerts.push({
-        title: 'Cobertura profesional sin configurar',
-        detail: 'Asigna profesionales para completar la cobertura por consultorio.',
-        route: this.path('agenda/cobertura-profesionales'),
-      });
-    }
-    if (data.duraciones.length === 0) {
-      alerts.push({
-        title: 'Intervalo de turnos no definido',
-        detail: 'Define al menos una duración para bloquear turnos inválidos.',
-        route: this.path('agenda/intervalo-turnos'),
-      });
-    }
-    if (activeSpecialties === 0) {
-      alerts.push({
-        title: 'Sin especialidades activas',
-        detail: 'Activa especialidades para completar la configuración clínica.',
-        route: this.path('configuracion/especialidades'),
-      });
-    }
-    if (antecedentesActivos === 0) {
-      alerts.push({
-        title: 'Catálogo de antecedentes vacío',
-        detail: 'No hay plantillas activas para antecedentes clínicos.',
-        route: this.path('configuracion/plantillas-antecedentes'),
-      });
-    }
-
-    this.alerts.set(alerts);
+    this.upcomingHolidays.set(this.resolveUpcomingHolidays(data.feriados));
+    this.alerts.set(
+      completeness.sections
+        .filter((section) => !section.isComplete)
+        .map((section) => ({
+          title: `${section.label} incompleta`,
+          detail: section.missingItems.join(', '),
+          route: this.path(section.route ?? 'resumen'),
+        })),
+    );
   }
 
   private resolveUpcomingHolidays(feriados: Feriado[]): Feriado[] {
@@ -518,10 +510,12 @@ export class ConsultorioResumenPage implements OnInit {
       .slice(0, 5);
   }
 
-  private countActiveAntecedentes(categories: AntecedenteCatalogCategory[]): number {
-    return categories.reduce((acc, category) => {
-      const activeItems = (category.items ?? []).filter((item) => item.active).length;
-      return acc + activeItems;
-    }, 0);
+  private resolveKpiTone(
+    completeness: ReturnType<typeof evaluateConsultorioCompletenessSnapshot>,
+    sectionKey: string,
+  ): 'success' | 'warning' {
+    return completeness.sections.find((section) => section.key === sectionKey)?.isComplete
+      ? 'success'
+      : 'warning';
   }
 }

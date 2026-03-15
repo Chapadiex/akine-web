@@ -148,8 +148,9 @@ export const API = {
     create:         (cid: string) => `/api/v1/consultorios/${cid}/turnos`,
     reprogramar:    (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/reprogramar`,
     cambiarEstado:  (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/estado`,
-    disponibilidad: (cid: string) => `/api/v1/consultorios/${cid}/turnos/disponibilidad`,
-    historial:      (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/historial`,
+    disponibilidad:      (cid: string) => `/api/v1/consultorios/${cid}/turnos/disponibilidad`,
+    disponibilidadBoxes: (cid: string) => `/api/v1/consultorios/${cid}/turnos/disponibilidad-boxes`,
+    historial:           (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/historial`,
   },
   feriados: {
     list:            (cid: string) => `/api/v1/consultorios/${cid}/feriados`,

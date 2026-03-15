@@ -15,14 +15,16 @@ import { ErrorMapperService } from '../../../../core/error/error-mapper.service'
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { AsignacionService } from '../../../consultorios/services/asignacion.service';
+import { BoxService } from '../../../consultorios/services/box.service';
 import { DuracionService } from '../../../consultorios/services/duracion.service';
 import { FeriadoService } from '../../../consultorios/services/feriado.service';
 import { ProfesionalAsignado, ConsultorioDuracion } from '../../../consultorios/models/agenda.models';
+import { Box } from '../../../consultorios/models/consultorio.models';
 import { PacienteService } from '../../../pacientes/services/paciente.service';
 import { Paciente, PacienteRequest, PacienteSearchResult } from '../../../pacientes/models/paciente.models';
 import { PacienteForm } from '../../../pacientes/components/paciente-form/paciente-form';
 import { TurnoService } from '../../services/turno.service';
-import { Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno.models';
+import { BoxDisponibilidad, Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno.models';
 
 @Component({
   selector: 'app-turno-dialog',
@@ -85,15 +87,26 @@ import { Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno
             }
           </div>
 
-          <!-- 3. Profesional (opcional) -->
-          <div class="field">
-            <label>Profesional (opcional)</label>
-            <select formControlName="profesionalId">
-              <option value="">Sin profesional (turno del consultorio)</option>
-              @for (p of profesionales(); track p.profesionalId) {
-                <option [value]="p.profesionalId">{{ p.profesionalNombre }} {{ p.profesionalApellido }}</option>
-              }
-            </select>
+          <!-- 3. Profesional + Box (misma fila) -->
+          <div class="row-2">
+            <div class="field">
+              <label>Profesional (opcional)</label>
+              <select formControlName="profesionalId">
+                <option value="">Sin profesional</option>
+                @for (p of profesionales(); track p.profesionalId) {
+                  <option [value]="p.profesionalId">{{ p.profesionalNombre }} {{ p.profesionalApellido }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label>Box</label>
+              <select formControlName="boxId" (change)="onBoxManualChange()">
+                <option value="">Sin box</option>
+                @for (b of boxes(); track b.id) {
+                  <option [value]="b.id">{{ b.nombre }}</option>
+                }
+              </select>
+            </div>
           </div>
 
           <!-- 4. Fecha / Hora / Duracion (fila) -->
@@ -129,12 +142,23 @@ import { Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno
             </div>
           </div>
 
-          @if (slotWarning()) {
+          @if (slotWarning() && !isBoxUnlimitedAndAvailable()) {
             <div class="slot-warning">
-              <span>Horario no disponible.</span>
+              <span>Fuera del horario de atención.</span>
               @if (nextSlot()) {
                 <button type="button" class="btn-link" (click)="useNextSlot()">
                   Usar {{ nextSlot()!.inicio.substring(11, 16) }}
+                </button>
+              }
+            </div>
+          }
+
+          @if (boxWarning()) {
+            <div class="box-warning">
+              <span>{{ boxWarning() }}</span>
+              @if (suggestedBox()) {
+                <button type="button" class="btn-link" (click)="useSuggestedBox()">
+                  Usar {{ suggestedBox()!.nombre }}
                 </button>
               }
             </div>
@@ -250,6 +274,11 @@ import { Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno
       font-size: 0.8rem; color: var(--primary); font-weight: 500; margin-top: 0.15rem;
     }
 
+    /* Profesional + Box row */
+    .row-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+    }
+
     /* Fecha/Hora/Duracion row */
     .row-3 {
       display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;
@@ -260,6 +289,12 @@ import { Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno
       padding: 0.5rem 0.75rem; border-radius: var(--radius);
       font-size: 0.85rem; margin-bottom: 0.75rem;
       display: flex; align-items: center; gap: 0.5rem;
+    }
+    .box-warning {
+      background: #fff7ed; color: #9a3412;
+      padding: 0.5rem 0.75rem; border-radius: var(--radius);
+      font-size: 0.85rem; margin-bottom: 0.75rem;
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
     }
     .holiday-warning {
       display: flex;
@@ -276,6 +311,7 @@ import { Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno
     .btn-link {
       background: none; border: none; color: var(--primary);
       cursor: pointer; font-weight: 600; font-size: 0.85rem; padding: 0;
+      white-space: nowrap;
     }
     .error-msg {
       color: var(--error); font-size: 0.85rem; margin-bottom: 0.75rem;
@@ -306,6 +342,7 @@ export class TurnoDialog implements OnInit {
   private fb = inject(FormBuilder);
   private turnoSvc = inject(TurnoService);
   private asignacionSvc = inject(AsignacionService);
+  private boxSvc = inject(BoxService);
   private duracionSvc = inject(DuracionService);
   private feriadoSvc = inject(FeriadoService);
   private pacienteSvc = inject(PacienteService);
@@ -321,11 +358,18 @@ export class TurnoDialog implements OnInit {
   cancelled = output<void>();
 
   profesionales = signal<ProfesionalAsignado[]>([]);
+  boxes = signal<Box[]>([]);
   duraciones = signal<ConsultorioDuracion[]>([]);
   slotWarning = signal(false);
   nextSlot = signal<SlotDisponible | null>(null);
   errorMsg = signal('');
   submitting = signal(false);
+
+  // Box selection state
+  boxManuallySelected = signal(false);
+  boxesDisponibilidad = signal<BoxDisponibilidad[]>([]);
+  boxWarning = signal('');
+  suggestedBox = signal<BoxDisponibilidad | null>(null);
 
   // Date/time controls
   selectedDate = signal('');
@@ -370,6 +414,7 @@ export class TurnoDialog implements OnInit {
 
   form = this.fb.nonNullable.group({
     profesionalId: [''],
+    boxId: [''],
     fechaHoraInicio: ['', Validators.required],
     duracionMinutos: [30, Validators.required],
     tipoConsulta: ['PARTICULAR' as string],
@@ -408,7 +453,7 @@ export class TurnoDialog implements OnInit {
 
     this.form.valueChanges.pipe(
       debounceTime(250),
-    ).subscribe(() => this.checkDisponibilidad());
+    ).subscribe(() => this.onFormChange());
   }
 
   ngOnInit(): void {
@@ -421,6 +466,13 @@ export class TurnoDialog implements OnInit {
     const cid = this.consultorioId();
     this.asignacionSvc.list(cid).subscribe({
       next: (p) => this.profesionales.set(p),
+    });
+    this.boxSvc.list(cid).subscribe({
+      next: (allBoxes) => {
+        const active = allBoxes.filter((b) => b.activo);
+        this.boxes.set(active);
+        this.applyDefaultBox(active);
+      },
     });
     this.duracionSvc.list(cid).subscribe({
       next: (d) => {
@@ -441,6 +493,108 @@ export class TurnoDialog implements OnInit {
         this.form.patchValue({ fechaHoraInicio: '' });
       }
     });
+  }
+
+  // -- Box selection --
+
+  onBoxManualChange(): void {
+    this.boxManuallySelected.set(true);
+    this.checkBoxDisponibilidad();
+  }
+
+  useSuggestedBox(): void {
+    const suggested = this.suggestedBox();
+    if (suggested) {
+      this.form.patchValue({ boxId: suggested.id });
+      this.boxManuallySelected.set(true);
+      this.boxWarning.set('');
+      this.suggestedBox.set(null);
+    }
+  }
+
+  private applyDefaultBox(activeBoxes: Box[]): void {
+    if (this.boxManuallySelected() || activeBoxes.length === 0) return;
+
+    const unlimited = activeBoxes.filter((b) => b.capacityType === 'UNLIMITED');
+    let defaultBox: Box | null = null;
+
+    if (unlimited.length > 0) {
+      defaultBox = unlimited.sort((a, b) => a.nombre.localeCompare(b.nombre))[0];
+    } else {
+      defaultBox = activeBoxes
+        .filter((b) => b.capacity != null)
+        .sort((a, b) => {
+          const diff = (b.capacity ?? 0) - (a.capacity ?? 0);
+          return diff !== 0 ? diff : a.nombre.localeCompare(b.nombre);
+        })[0] ?? null;
+    }
+
+    if (defaultBox) {
+      this.form.patchValue({ boxId: defaultBox.id }, { emitEvent: false });
+    }
+  }
+
+  private checkBoxDisponibilidad(): void {
+    const { fechaHoraInicio, duracionMinutos, boxId } = this.form.getRawValue();
+    if (!fechaHoraInicio || !boxId) {
+      this.boxWarning.set('');
+      this.suggestedBox.set(null);
+      return;
+    }
+    if (this.isDateHoliday(fechaHoraInicio.substring(0, 10))) {
+      this.boxWarning.set('');
+      this.suggestedBox.set(null);
+      return;
+    }
+
+    this.turnoSvc.boxesDisponibilidad(this.consultorioId(), {
+      fechaHoraInicio,
+      duracion: duracionMinutos,
+    }).subscribe({
+      next: (items) => {
+        this.boxesDisponibilidad.set(items);
+        const selected = items.find((i) => i.id === boxId);
+
+        if (!selected || selected.disponible) {
+          this.boxWarning.set('');
+          this.suggestedBox.set(null);
+          return;
+        }
+
+        // Selected box is at capacity — find a suggestion
+        const alternative = this.findBestAvailableBox(items, boxId);
+        if (alternative) {
+          this.boxWarning.set(
+            `El box seleccionado no tiene disponibilidad para ese horario. Se encontró disponible: ${alternative.nombre}.`,
+          );
+          this.suggestedBox.set(alternative);
+        } else {
+          this.boxWarning.set('No hay boxes disponibles para el horario seleccionado.');
+          this.suggestedBox.set(null);
+        }
+      },
+      error: () => {
+        this.boxWarning.set('');
+        this.suggestedBox.set(null);
+      },
+    });
+  }
+
+  private findBestAvailableBox(items: BoxDisponibilidad[], excludeId: string): BoxDisponibilidad | null {
+    const available = items.filter((i) => i.disponible && i.id !== excludeId);
+    if (available.length === 0) return null;
+
+    // Prefer unlimited (capacidadTotal === null), then highest remaining capacity, then name asc
+    const unlimited = available.filter((i) => i.capacidadTotal === null);
+    if (unlimited.length > 0) {
+      return unlimited.sort((a, b) => a.nombre.localeCompare(b.nombre))[0];
+    }
+    return available.sort((a, b) => {
+      const remA = (a.capacidadTotal ?? 0) - (a.capacidadUsada ?? 0);
+      const remB = (b.capacidadTotal ?? 0) - (b.capacidadUsada ?? 0);
+      const diff = remB - remA;
+      return diff !== 0 ? diff : a.nombre.localeCompare(b.nombre);
+    })[0];
   }
 
   // -- Patient search --
@@ -572,7 +726,12 @@ export class TurnoDialog implements OnInit {
     return horarios;
   }
 
-  // -- Disponibilidad --
+  // -- Disponibilidad (slot) --
+
+  private onFormChange(): void {
+    this.checkDisponibilidad();
+    this.checkBoxDisponibilidad();
+  }
 
   checkDisponibilidad(): void {
     const { fechaHoraInicio, duracionMinutos, profesionalId } = this.form.getRawValue();
@@ -630,18 +789,33 @@ export class TurnoDialog implements OnInit {
         : 'No se pueden crear turnos en dia feriado.');
       return;
     }
-    if (this.slotWarning()) {
-      this.errorMsg.set('El horario seleccionado no esta disponible.');
+    const { boxId } = this.form.getRawValue();
+    const boxInfo = boxId ? this.boxesDisponibilidad().find((b) => b.id === boxId) : null;
+    const isUnlimitedAndAvailable = boxInfo?.disponible === true && boxInfo?.capacidadTotal === null;
+
+    if (this.slotWarning() && !isUnlimitedAndAvailable) {
+      this.errorMsg.set('El horario seleccionado está fuera del horario de atención del consultorio.');
       return;
     }
+
+    // Bloquear si el box seleccionado no tiene capacidad (y hay datos de disponibilidad)
+    if (boxId && this.boxesDisponibilidad().length > 0) {
+      if (boxInfo && !boxInfo.disponible) {
+        this.errorMsg.set('El box seleccionado no tiene capacidad disponible para el horario indicado.');
+        return;
+      }
+    }
+
     this.submitting.set(true);
     this.errorMsg.set('');
 
     const val = this.form.getRawValue();
     const paciente = this.selectedPaciente();
     const profesionalId = val.profesionalId?.trim() ? val.profesionalId : undefined;
+    const selectedBoxId = val.boxId?.trim() ? val.boxId : undefined;
     const req = {
       profesionalId,
+      boxId: selectedBoxId,
       fechaHoraInicio: val.fechaHoraInicio,
       duracionMinutos: val.duracionMinutos,
       motivoConsulta: val.motivoConsulta || undefined,
@@ -680,6 +854,15 @@ export class TurnoDialog implements OnInit {
         this.errorMsg.set(this.errMap.toMessage(err));
       },
     });
+  }
+
+  // -- Box capacity helpers --
+
+  isBoxUnlimitedAndAvailable(): boolean {
+    const boxId = this.form.getRawValue().boxId;
+    if (!boxId || this.boxesDisponibilidad().length === 0) return false;
+    const info = this.boxesDisponibilidad().find((b) => b.id === boxId);
+    return info?.disponible === true && info?.capacidadTotal === null;
   }
 
   // -- Helpers --

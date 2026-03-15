@@ -1,12 +1,26 @@
-﻿<div class="page">
-  <!-- HEADER ROW 1 -->
+<div class="page">
   <header class="page-header">
     <div class="header-left">
       <h1 class="page-title">Turnos</h1>
+
       <div class="date-nav">
-        <button class="date-btn" (click)="prevDay()" title="Día anterior" aria-label="Ir al día anterior">&lsaquo;</button>
-        <button class="date-btn today-btn" [class.active]="isToday()" (click)="goToday()">Hoy</button>
-        <button class="date-btn" (click)="nextDay()" title="Día siguiente" aria-label="Ir al día siguiente">&rsaquo;</button>
+        <button
+          class="date-btn"
+          (click)="prevDay()"
+          title="Día anterior"
+          aria-label="Ir al día anterior">
+          &lsaquo;
+        </button>
+        <button class="date-btn today-btn" [class.active]="isToday()" (click)="goToday()">
+          Hoy
+        </button>
+        <button
+          class="date-btn"
+          (click)="nextDay()"
+          title="Día siguiente"
+          aria-label="Ir al día siguiente">
+          &rsaquo;
+        </button>
         <span class="date-display">{{ formattedDate() }}</span>
         <input
           type="date"
@@ -15,87 +29,115 @@
           (ngModelChange)="onDateChange($event)" />
       </div>
     </div>
+
     <div class="header-right">
       @if (canCrearTurno()) {
         <button class="btn-outline" (click)="irACalendario()">Calendario</button>
-        <button class="btn-primary" [disabled]="!selectedConsultorioId()" (click)="abrirAltaTurno()">
+      }
+
+      <button
+        class="btn-icon"
+        type="button"
+        [class.active]="showFilters()"
+        (click)="toggleFilters()"
+        [attr.aria-expanded]="showFilters()"
+        aria-controls="turnos-filters-panel"
+        aria-label="Mostrar u ocultar filtros">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M4 6h16M7 12h10m-7 6h4"
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="1.8" />
+        </svg>
+      </button>
+
+      @if (canCrearTurno()) {
+        <button
+          class="btn-primary"
+          [disabled]="!selectedConsultorioId()"
+          (click)="abrirAltaTurno()">
           + Nuevo turno
         </button>
       }
     </div>
   </header>
 
-  <!-- FILTERS ROW 2 -->
-  <div class="filters-row">
-    <select
-      [ngModel]="filterProfesionalId()"
-      (ngModelChange)="onFilterProfesional($event)">
-      <option value="">Todos los profesionales</option>
-      @for (p of profesionales(); track p.profesionalId) {
-        <option [value]="p.profesionalId">{{ p.profesionalNombre }} {{ p.profesionalApellido }}</option>
-      }
-    </select>
-
-    <select
-      [ngModel]="filterBoxId()"
-      (ngModelChange)="onFilterBox($event)">
-      <option value="">Todos los boxes</option>
-      @for (b of boxes(); track b.id) {
-        <option [value]="b.id">{{ b.nombre }}</option>
-      }
-    </select>
-
-    <select
-      [ngModel]="filterEstado()"
-      (ngModelChange)="onFilterEstado($event)">
-      <option value="TODOS">Todos los estados</option>
-      <option value="PENDIENTES">Pendientes</option>
-      <option value="PROGRAMADO">Programado</option>
-      <option value="CONFIRMADO">Confirmado</option>
-      <option value="EN_ESPERA">En espera</option>
-      <option value="EN_CURSO">En curso</option>
-      <option value="COMPLETADO">Completado</option>
-      <option value="CANCELADO">Cancelado</option>
-      <option value="AUSENTE">Ausente</option>
-    </select>
-
-    <div class="search-input">
-      <span class="search-icon">&#128269;</span>
-      <input
-        type="text"
-        placeholder="Buscar paciente..."
-        [ngModel]="searchPaciente()"
-        (ngModelChange)="onSearchPaciente($event)" />
-    </div>
-  </div>
-
-  <!-- MAIN CONTENT -->
-  <div class="main-content">
-    <!-- LEFT: list area -->
-    <div class="content-left">
-      <!-- SUMMARY CHIPS -->
-      <div class="summary-chips">
-        <button class="chip" [class.active]="filterEstado() === 'TODOS'" (click)="filterByKpi('TODOS')">
-          Total <strong>{{ daySummary().total }}</strong>
-        </button>
-        <button class="chip chip-pending" [class.active]="filterEstado() === 'PENDIENTES'" (click)="filterByKpi('PENDIENTES')">
-          Pendientes <strong>{{ daySummary().pendientes }}</strong>
-        </button>
-        <button class="chip chip-espera" [class.active]="filterEstado() === 'EN_ESPERA'" (click)="filterByKpi('EN_ESPERA')">
-          En espera <strong>{{ daySummary().enEspera }}</strong>
-        </button>
-        <button class="chip chip-atencion" [class.active]="filterEstado() === 'EN_CURSO'" (click)="filterByKpi('EN_CURSO')">
-          En atenci&oacute;n <strong>{{ daySummary().enAtencion }}</strong>
-        </button>
-        <button class="chip chip-fin" [class.active]="filterEstado() === 'COMPLETADO'" (click)="filterByKpi('COMPLETADO')">
-          Finalizados <strong>{{ daySummary().finalizados }}</strong>
-        </button>
-        <button class="chip chip-ausente" [class.active]="filterEstado() === 'AUSENTE'" (click)="filterByKpi('AUSENTE')">
-          Ausentes <strong>{{ daySummary().ausentes }}</strong>
-        </button>
+  @if (showFilters()) {
+    <div class="filters-row" id="turnos-filters-panel">
+      <div class="search-input filter-paciente">
+        <span class="search-icon" aria-hidden="true">&#128269;</span>
+        <input
+          type="text"
+          placeholder="Buscar paciente..."
+          [ngModel]="searchPaciente()"
+          (ngModelChange)="onSearchPaciente($event)" />
       </div>
 
-      <!-- NEXT TURNO (compact) -->
+      <select
+        class="filter-select"
+        [ngModel]="filterProfesionalId()"
+        (ngModelChange)="onFilterProfesional($event)">
+        <option value="">Todos los profesionales</option>
+        @for (p of profesionales(); track p.profesionalId) {
+          <option [value]="p.profesionalId">
+            {{ p.profesionalNombre }} {{ p.profesionalApellido }}
+          </option>
+        }
+      </select>
+
+      <select
+        class="filter-select"
+        [ngModel]="filterBoxId()"
+        (ngModelChange)="onFilterBox($event)">
+        <option value="">Todos los boxes</option>
+        @for (b of boxes(); track b.id) {
+          <option [value]="b.id">{{ b.nombre }}</option>
+        }
+      </select>
+    </div>
+  }
+
+  <div class="summary-chips">
+    <button class="chip" [class.active]="filterEstado() === 'TODOS'" (click)="filterByKpi('TODOS')">
+      Total <strong>{{ daySummary().total }}</strong>
+    </button>
+    <button
+      class="chip chip-pending"
+      [class.active]="filterEstado() === 'PENDIENTES'"
+      (click)="filterByKpi('PENDIENTES')">
+      Pendientes <strong>{{ daySummary().pendientes }}</strong>
+    </button>
+    <button
+      class="chip chip-espera"
+      [class.active]="filterEstado() === 'EN_ESPERA'"
+      (click)="filterByKpi('EN_ESPERA')">
+      En espera <strong>{{ daySummary().enEspera }}</strong>
+    </button>
+    <button
+      class="chip chip-atencion"
+      [class.active]="filterEstado() === 'EN_CURSO'"
+      (click)="filterByKpi('EN_CURSO')">
+      En atención <strong>{{ daySummary().enAtencion }}</strong>
+    </button>
+    <button
+      class="chip chip-fin"
+      [class.active]="filterEstado() === 'COMPLETADO'"
+      (click)="filterByKpi('COMPLETADO')">
+      Finalizados <strong>{{ daySummary().finalizados }}</strong>
+    </button>
+    <button
+      class="chip chip-ausente"
+      [class.active]="filterEstado() === 'AUSENTE'"
+      (click)="filterByKpi('AUSENTE')">
+      Ausentes <strong>{{ daySummary().ausentes }}</strong>
+    </button>
+  </div>
+
+  <div class="main-content">
+    <section class="content-left">
       @if (proximoTurno(); as next) {
         <div class="next-turno-compact">
           <div class="next-info">
@@ -103,47 +145,69 @@
               @if (minutesUntilNext() !== null) {
                 <span class="countdown-badge">En {{ minutesUntilNext() }} min</span>
               }
-              <span class="next-time">{{ formatTime(next.fechaHoraInicio) }} - {{ formatTime(next.fechaHoraFin) }}</span>
+              <span class="next-time">
+                {{ formatTime(next.fechaHoraInicio) }} - {{ formatTime(next.fechaHoraFin) }}
+              </span>
             </div>
             <span class="next-paciente">{{ pacienteNombreCompleto(next) }}</span>
-            <span class="next-meta">{{ profesionalNombreCompleto(next) }}@if (next.boxNombre) { &middot; {{ next.boxNombre }} }</span>
+            <span class="next-meta">
+              {{ profesionalNombreCompleto(next) }}@if (next.boxNombre) { &middot; {{ next.boxNombre }} }
+            </span>
           </div>
           <div class="next-actions">
-            <button class="btn-sm btn-success" (click)="executePrimaryAction(next, $event)">Lleg&oacute;</button>
+            @if (accionPrimaria(next); as accion) {
+              <button
+                class="btn-sm"
+                [class.btn-success]="accion.variant === 'success'"
+                [class.btn-primary]="accion.variant === 'primary'"
+                [class.btn-warning]="accion.variant === 'warning'"
+                (click)="executePrimaryAction(next, $event)">
+                {{ accion.label }}
+              </button>
+            }
             <button class="btn-sm btn-ghost" (click)="selectTurno(next)">Ver ficha</button>
           </div>
         </div>
-      } @else if (!loading() && turnos().length > 0) {
+      } @else if (!loading() && operationalTurnos().length > 0) {
         <div class="next-turno-empty">No quedan turnos pendientes hoy.</div>
       }
 
-      <!-- TURNO TABLE -->
-      @if (loading()) {
-        <p class="loading-msg">Cargando turnos...</p>
-      } @else if (filteredTurnos().length === 0) {
-        <p class="empty-msg">
-          @if (turnos().length === 0) {
-            No hay turnos para este d&iacute;a.
-          } @else {
-            No hay turnos que coincidan con los filtros.
-          }
-        </p>
-      } @else {
-        @for (group of groupedTurnos(); track group.label) {
-          <div class="group-header">
-            <span class="group-label">{{ group.label }}</span>
-            <span class="group-count">{{ group.count }} turnos</span>
-          </div>
+      <div class="table-panel">
+        <div class="panel-head">
+          <h2 class="panel-title">
+            @if (filterEstado() === 'COMPLETADO') {
+              Finalizados
+            } @else {
+              Agenda operativa
+            }
+          </h2>
+          <span class="panel-count">{{ operationalTurnos().length }} turnos</span>
+        </div>
 
+        @if (loading()) {
+          <p class="loading-msg">Cargando turnos...</p>
+        } @else if (operationalTurnos().length === 0) {
+          <p class="empty-msg">
+            @if (turnos().length === 0) {
+              No hay turnos para este día.
+            } @else if (filterEstado() === 'EN_CURSO') {
+              No hay turnos operativos mientras el filtro está en En atención.
+            } @else if (filterEstado() === 'COMPLETADO') {
+              No hay turnos finalizados para el rango visible.
+            } @else {
+              No hay turnos que coincidan con los filtros.
+            }
+          </p>
+        } @else {
           <div class="turno-table">
-            @for (t of group.turnos; track t.id) {
+            @for (t of operationalTurnos(); track t.id) {
               <div
                 class="turno-row"
-                [class.now]="isCurrentTurno(t)"
                 [class.selected]="selectedTurno()?.id === t.id"
-                [class.terminal]="t.estado === 'COMPLETADO' || t.estado === 'CANCELADO' || t.estado === 'AUSENTE'"
+                [class.terminal]="
+                  t.estado === 'COMPLETADO' || t.estado === 'CANCELADO' || t.estado === 'AUSENTE'
+                "
                 (click)="selectTurno(t)">
-
                 <span class="col-time">
                   <strong>{{ formatTime(t.fechaHoraInicio) }}</strong>
                   <small>{{ t.duracionMinutos }}m</small>
@@ -151,19 +215,26 @@
 
                 <span class="col-paciente">
                   <span class="paciente-name">{{ pacienteNombreCompleto(t) }}</span>
+                  <small class="paciente-meta">
+                    {{ resumenOperativo(t) }}
+                  </small>
                   @if (t.telefonoContacto || t.tipoConsulta) {
-                    <small class="paciente-meta">
-                      @if (t.telefonoContacto) { {{ t.telefonoContacto }} }
-                      @if (t.telefonoContacto && t.tipoConsulta) { &middot; }
-                      @if (t.tipoConsulta === 'OBRA_SOCIAL') { OS }
-                      @if (t.tipoConsulta === 'PARTICULAR') { Part. }
+                    <small class="paciente-meta paciente-meta--secondary">
+                      @if (t.telefonoContacto) {
+                        {{ t.telefonoContacto }}
+                      }
+                      @if (t.telefonoContacto && t.tipoConsulta) {
+                        &middot;
+                      }
+                      @if (t.tipoConsulta === 'OBRA_SOCIAL') {
+                        OS
+                      }
+                      @if (t.tipoConsulta === 'PARTICULAR') {
+                        Part.
+                      }
                     </small>
                   }
                 </span>
-
-                <span class="col-prof">{{ profesionalNombreCompleto(t) }}</span>
-
-                <span class="col-box">{{ t.boxNombre || '-' }}</span>
 
                 <span class="col-estado">
                   <span
@@ -188,14 +259,28 @@
 
                   @if (canCancelar(t) || canMarcarAusente(t)) {
                     <div class="overflow-menu-wrap">
-                      <button class="btn-overflow" (click)="toggleOverflow(t.id, $event)" title="Más acciones" aria-label="Mostrar más acciones del turno">&ctdot;</button>
+                      <button
+                        class="btn-overflow"
+                        (click)="toggleOverflow(t.id, $event)"
+                        title="Más acciones"
+                        aria-label="Mostrar más acciones del turno">
+                        &ctdot;
+                      </button>
                       @if (overflowMenuTurnoId() === t.id) {
                         <div class="overflow-dropdown">
                           @if (canCancelar(t)) {
-                            <button class="dropdown-item danger" (click)="startDestructiveAction(t, 'CANCELADO', 'Cancelar', $event)">Cancelar turno</button>
+                            <button
+                              class="dropdown-item danger"
+                              (click)="startDestructiveAction(t, 'CANCELADO', 'Cancelar', $event)">
+                              Cancelar turno
+                            </button>
                           }
                           @if (canMarcarAusente(t)) {
-                            <button class="dropdown-item danger" (click)="startDestructiveAction(t, 'AUSENTE', 'Marcar ausente', $event)">Marcar ausente</button>
+                            <button
+                              class="dropdown-item danger"
+                              (click)="startDestructiveAction(t, 'AUSENTE', 'Marcar ausente', $event)">
+                              Marcar ausente
+                            </button>
                           }
                         </div>
                       }
@@ -206,18 +291,51 @@
             }
           </div>
         }
-      }
-    </div>
+      </div>
+    </section>
 
-    <!-- RIGHT: KPI Panel (desktop) -->
+    <aside class="attention-panel">
+      <div class="panel-head panel-head--stacked">
+        <h3 class="panel-title">En atención</h3>
+        <span class="panel-count">{{ enAtencionTurnos().length }} activos</span>
+      </div>
+
+      @if (loading()) {
+        <p class="panel-empty">Actualizando panel...</p>
+      } @else if (enAtencionTurnos().length === 0) {
+        <div class="attention-empty">
+          <strong>Sin turnos en atención</strong>
+          <p>Cuando un profesional inicie la atención, el turno aparecerá acá.</p>
+        </div>
+      } @else {
+        <div class="attention-list">
+          @for (turno of enAtencionTurnos(); track turno.id) {
+            <article class="attention-card" (click)="selectTurno(turno)">
+              <div class="attention-card__body">
+                <strong>{{ pacienteNombreCompleto(turno) }}</strong>
+                <span>{{ formatTime(turno.fechaHoraInicioReal || turno.fechaHoraInicio) }}</span>
+              </div>
+              <button class="btn-sm btn-primary" (click)="finalizeEnAtencion(turno, $event)">
+                Finalizar
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </aside>
+
     <aside class="kpi-panel">
-      <h3 class="kpi-title">Resumen del d&iacute;a</h3>
+      <h3 class="kpi-title">Resumen del día</h3>
 
       <div class="kpi-card kpi-main" (click)="filterByKpi('COMPLETADO')">
         <span class="kpi-number">{{ daySummary().finalizados }}</span>
         <span class="kpi-label">Atendidos</span>
         @if (daySummary().total > 0) {
-          <span class="kpi-sub">de {{ daySummary().total }} programados ({{ (daySummary().finalizados * 100 / daySummary().total) | number:'1.0-0' }}%)</span>
+          <span class="kpi-sub">
+            de {{ daySummary().total }} programados ({{
+              (daySummary().finalizados * 100) / daySummary().total | number: '1.0-0'
+            }}%)
+          </span>
         }
       </div>
 
@@ -234,7 +352,6 @@
   </div>
 </div>
 
-<!-- DETAIL DRAWER -->
 @if (selectedTurno(); as t) {
   <div class="drawer-backdrop" (click)="closeSidebar()"></div>
   <div class="drawer-panel">
@@ -245,24 +362,27 @@
   </div>
 }
 
-<!-- CONFIRM DIALOG -->
 @if (confirmAction(); as action) {
   <app-confirm-dialog
     [title]="action.label + ' turno'"
-    [message]="'¿' + action.label + ' el turno de ' + pacienteNombreCompleto(action.turno) + ' a las ' + formatTime(action.turno.fechaHoraInicio) + '?'"
+    [message]="
+      '¿' +
+      action.label +
+      ' el turno de ' +
+      pacienteNombreCompleto(action.turno) +
+      ' a las ' +
+      formatTime(action.turno.fechaHoraInicio) +
+      '?'
+    "
     [variant]="action.variant"
     [confirmLabel]="action.label"
     (confirmed)="confirmarCambioEstado()"
-    (cancelled)="confirmAction.set(null)"
-  />
+    (cancelled)="confirmAction.set(null)" />
 }
 
-<!-- CREATE DIALOG -->
 @if (showCreateDialog()) {
   <app-turno-dialog
     [consultorioId]="selectedConsultorioId()"
     (saved)="onTurnoCreado()"
-    (cancelled)="showCreateDialog.set(false)"
-  />
+    (cancelled)="showCreateDialog.set(false)" />
 }
-

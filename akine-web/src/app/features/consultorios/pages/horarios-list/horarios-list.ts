@@ -6,6 +6,7 @@ import { ErrorMapperService } from '../../../../core/error/error-mapper.service'
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import { HorarioForm, HorarioFormValue } from '../../components/horario-form/horario-form';
 import { ConsultorioHorario, DayOfWeek, DIAS_SEMANA, HorarioRequest } from '../../models/agenda.models';
+import { ConsultorioCompletenessRefreshService } from '../../services/consultorio-completeness-refresh.service';
 import { HorarioService } from '../../services/horario.service';
 import { resolveConsultorioId } from '../../utils/route-utils';
 
@@ -60,6 +61,7 @@ export class HorariosListPage implements OnInit {
   private svc = inject(HorarioService);
   private toast = inject(ToastService);
   private errMap = inject(ErrorMapperService);
+  private completenessRefresh = inject(ConsultorioCompletenessRefreshService);
 
   items = signal<ConsultorioHorario[]>([]);
   sortedItems = signal<ConsultorioHorario[]>([]);
@@ -102,6 +104,7 @@ export class HorariosListPage implements OnInit {
         this.toast.success('Horario guardado');
         this.showForm.set(false);
         this.load();
+        this.completenessRefresh.notify(this.consultorioId);
       },
       error: (err) => {
         const httpErr = err as HttpErrorResponse;
@@ -116,13 +119,13 @@ export class HorariosListPage implements OnInit {
 
   remove(horarioId: string, diaSemana: DayOfWeek): void {
     this.svc.deleteById(this.consultorioId, horarioId).subscribe({
-      next: () => { this.toast.success('Horario eliminado'); this.load(); },
+      next: () => { this.toast.success('Horario eliminado'); this.load(); this.completenessRefresh.notify(this.consultorioId); },
       error: (err) => {
         // Compatibilidad: si backend no expone delete por tramo, intentar borrado por dia.
         const httpErr = err as HttpErrorResponse;
         if (httpErr.status === 404 || httpErr.status === 405) {
           this.svc.delete(this.consultorioId, diaSemana).subscribe({
-            next: () => { this.toast.success('Horario eliminado'); this.load(); },
+            next: () => { this.toast.success('Horario eliminado'); this.load(); this.completenessRefresh.notify(this.consultorioId); },
             error: (fallbackErr) => this.toast.error(this.errMap.toMessage(fallbackErr)),
           });
           return;
@@ -168,6 +171,7 @@ export class HorariosListPage implements OnInit {
         this.toast.success('Horario guardado');
         this.showForm.set(false);
         this.load();
+        this.completenessRefresh.notify(this.consultorioId);
       },
       error: (err) => {
         const httpErr = err as HttpErrorResponse;
@@ -177,6 +181,7 @@ export class HorariosListPage implements OnInit {
               this.toast.success('Horario guardado');
               this.showForm.set(false);
               this.load();
+              this.completenessRefresh.notify(this.consultorioId);
             },
             error: (fallbackErr) => this.toast.error(this.errMap.toMessage(fallbackErr)),
           });
