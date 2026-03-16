@@ -22,14 +22,14 @@ import { ProfesionalAsignado, ConsultorioDuracion } from '../../../consultorios/
 import { Box } from '../../../consultorios/models/consultorio.models';
 import { PacienteService } from '../../../pacientes/services/paciente.service';
 import { Paciente, PacienteRequest, PacienteSearchResult } from '../../../pacientes/models/paciente.models';
-import { PacienteForm } from '../../../pacientes/components/paciente-form/paciente-form';
+import { PacienteQuickForm } from '../../../pacientes/components/paciente-quick-form/paciente-quick-form';
 import { TurnoService } from '../../services/turno.service';
 import { BoxDisponibilidad, Feriado, Turno, SlotDisponible, TipoConsulta } from '../../models/turno.models';
 
 @Component({
   selector: 'app-turno-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, PacienteForm],
+  imports: [ReactiveFormsModule, PacienteQuickForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="overlay" (click)="cancelled.emit()">
@@ -189,10 +189,11 @@ import { BoxDisponibilidad, Feriado, Turno, SlotDisponible, TipoConsulta } from 
 
     <!-- Mini-modal alta rapida paciente -->
     @if (showPacienteForm()) {
-      <div class="overlay overlay-top" (click)="showPacienteForm.set(false)">
-        <div class="dialog dialog-sm" (click)="$event.stopPropagation()">
+      <div class="overlay overlay-top">
+        <div class="dialog dialog-sm">
           <h3 class="dialog-title">Alta r&aacute;pida de paciente</h3>
-          <app-paciente-form
+          <app-paciente-quick-form
+            [consultorioId]="consultorioId()"
             [initialDni]="pacienteSearchQuery()"
             (saved)="onPacienteCreated($event)"
             (cancelled)="showPacienteForm.set(false)"

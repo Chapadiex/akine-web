@@ -11,6 +11,7 @@ export interface Consultorio {
   cuit?: string;
   legalName?: string;
   address?: string;
+  geoAddress?: string;
   accessReference?: string;
   floorUnit?: string;
   phone?: string;
@@ -49,6 +50,7 @@ export interface ConsultorioRequest {
   cuit?: string;
   legalName?: string;
   address?: string;
+  geoAddress?: string;
   accessReference?: string;
   floorUnit?: string;
   phone?: string;

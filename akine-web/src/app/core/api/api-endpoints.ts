@@ -158,6 +158,15 @@ export const API = {
     delete:          (cid: string, id: string) => `/api/v1/consultorios/${cid}/feriados/${id}`,
     syncNacionales:  (cid: string, year: number) => `/api/v1/consultorios/${cid}/feriados/sync-nacionales?year=${year}`,
   },
+  casosAtencion: {
+    byLegajo: (cid: string, legajoId: string) => `/api/v1/consultorios/${cid}/historia-clinica/legajos/${legajoId}/casos`,
+    create: (cid: string, legajoId: string) => `/api/v1/consultorios/${cid}/historia-clinica/legajos/${legajoId}/casos`,
+    byId: (cid: string, id: string) => `/api/v1/consultorios/${cid}/casos-atencion/${id}`,
+    update: (cid: string, id: string) => `/api/v1/consultorios/${cid}/casos-atencion/${id}`,
+    cambiarEstado: (cid: string, id: string) => `/api/v1/consultorios/${cid}/casos-atencion/${id}/estado`,
+    activosByPaciente: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/casos-activos`,
+    byPaciente: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/casos`,
+  },
   obrasSociales: {
     list: (cid: string, params?: { q?: string; estado?: string; conPlanes?: boolean; page?: number; size?: number }) => {
       const query = new URLSearchParams();

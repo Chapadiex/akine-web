@@ -215,6 +215,7 @@ export interface SesionClinicaResponse {
   pacienteId: string;
   profesionalId: string;
   turnoId?: string | null;
+  casoAtencionId?: string | null;
   boxId?: string | null;
   fechaAtencion: string;
   estado: HistoriaClinicaSesionEstado;
@@ -241,6 +242,7 @@ export interface SesionClinicaResponse {
 export interface SesionClinicaRequest {
   profesionalId: string;
   turnoId?: string | null;
+  casoAtencionId?: string | null;
   boxId?: string | null;
   fechaAtencion: string;
   tipoAtencion: HistoriaClinicaTipoAtencion;
@@ -432,4 +434,65 @@ export interface SesionIntervencionDTO {
   profesionalId?: string | null;
   observaciones?: string | null;
   orderIndex: number;
+}
+
+// ── CasoAtencion ──────────────────────────────────────────────────────
+
+export type CasoAtencionEstado =
+  | 'BORRADOR'
+  | 'EN_EVALUACION'
+  | 'ACTIVO'
+  | 'EN_TRATAMIENTO'
+  | 'EN_PAUSA'
+  | 'CERRADO_ALTA'
+  | 'CERRADO_ABANDONO'
+  | 'CERRADO_DERIVACION';
+
+export interface CasoAtencionSummary {
+  id: string;
+  legajoId: string;
+  consultorioId: string;
+  pacienteId: string;
+  profesionalResponsableId?: string | null;
+  profesionalResponsableNombre?: string | null;
+  tipoOrigen: string;
+  fechaApertura: string;
+  motivoConsulta?: string | null;
+  diagnosticoMedico?: string | null;
+  afeccionPrincipal?: string | null;
+  estado: CasoAtencionEstado;
+  prioridad: string;
+  cantidadSesiones: number;
+  cantidadPlanes: number;
+}
+
+export interface CasoAtencionDetalle extends CasoAtencionSummary {
+  diagnosticoFuncional?: string | null;
+  coberturaId?: string | null;
+  atencionInicialId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCasoAtencionRequest {
+  profesionalResponsableId?: string | null;
+  tipoOrigen?: string | null;
+  motivoConsulta?: string | null;
+  diagnosticoMedico?: string | null;
+  diagnosticoFuncional?: string | null;
+  afeccionPrincipal?: string | null;
+  prioridad?: string | null;
+}
+
+export interface UpdateCasoAtencionRequest {
+  profesionalResponsableId?: string | null;
+  motivoConsulta?: string | null;
+  diagnosticoMedico?: string | null;
+  diagnosticoFuncional?: string | null;
+  afeccionPrincipal?: string | null;
+  prioridad?: string | null;
+}
+
+export interface CambiarEstadoCasoAtencionRequest {
+  nuevoEstado: CasoAtencionEstado;
 }

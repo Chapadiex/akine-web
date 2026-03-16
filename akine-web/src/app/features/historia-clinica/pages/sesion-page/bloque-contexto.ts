@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
+  CasoAtencionSummary,
   HistoriaClinicaOverview,
   HistoriaClinicaSesionEstado,
   HistoriaClinicaTipoAtencion,
@@ -38,8 +39,8 @@ import {
       </div>
 
       <div class="context-row context-row--secondary">
-        @if (casoActivo(); as caso) {
-          <span class="context-chip context-chip--case">{{ caso.descripcion }}</span>
+        @if (casoLabel(); as label) {
+          <span class="context-chip context-chip--case">{{ label }}</span>
         }
         <span class="context-chip">{{ tipoLabel(sesion()?.tipoAtencion) }}</span>
         @if (sesion()?.fechaAtencion) {
@@ -143,8 +144,19 @@ import {
 export class BloqueContextoComponent {
   readonly sesion = input<SesionClinicaResponse | null>(null);
   readonly overview = input<HistoriaClinicaOverview | null>(null);
-  readonly casoActivo = input<{ descripcion: string } | null>(null);
+  readonly casoActivo = input<CasoAtencionSummary | { descripcion: string } | null>(null);
   readonly sesionNumero = input<number | null>(null);
+
+  readonly casoLabel = computed<string | null>(() => {
+    const caso = this.casoActivo();
+    if (!caso) return null;
+    if ('motivoConsulta' in caso) {
+      return (caso as CasoAtencionSummary).motivoConsulta
+        ?? (caso as CasoAtencionSummary).afeccionPrincipal
+        ?? 'Caso en curso';
+    }
+    return (caso as { descripcion: string }).descripcion ?? null;
+  });
 
   calcEdad(fechaNac: string): number {
     const birth = new Date(fechaNac);

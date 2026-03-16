@@ -37,7 +37,9 @@ import { PacienteRequest, PacienteSearchResult } from '../../../pacientes/models
 import { PacienteService } from '../../../pacientes/services/paciente.service';
 import {
   AtencionInicialTipoIngreso,
+  CasoAtencionSummary,
   CreateAtencionInicialRequest,
+  CreateCasoAtencionRequest,
   DiagnosticoClinicoResponse,
   HistoriaClinicaActiveCaseSummary,
   HistoriaClinicaAntecedenteItem,
@@ -129,6 +131,7 @@ export class HistoriaClinicaPacientePage {
   readonly antecedentes = signal<HistoriaClinicaAntecedenteItem[]>([]);
   readonly diagnosticos = signal<DiagnosticoClinicoResponse[]>([]);
   readonly sesiones = signal<SesionClinicaResponse[]>([]);
+  readonly casosClinicos = signal<CasoAtencionSummary[]>([]);
   readonly backgroundLatestSesion = signal<SesionClinicaResponse | null>(null);
   readonly patientMatches = signal<PacienteSearchResult[]>([]);
   readonly patientContextPreview = signal('');
@@ -229,13 +232,12 @@ export class HistoriaClinicaPacientePage {
   });
 
   readonly casoForm = new FormGroup({
-    profesionalId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    diagnosticoCodigo: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    fechaInicio: new FormControl(this.todayForInput(), {
-      nonNullable: true,
-      validators: [Validators.required],
-    }),
-    notas: new FormControl('', { nonNullable: true }),
+    profesionalResponsableId: new FormControl('', { nonNullable: true }),
+    tipoOrigen: new FormControl('CONSULTA_DIRECTA', { nonNullable: true, validators: [Validators.required] }),
+    motivoConsulta: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    diagnosticoMedico: new FormControl('', { nonNullable: true }),
+    afeccionPrincipal: new FormControl('', { nonNullable: true }),
+    prioridad: new FormControl('NORMAL', { nonNullable: true }),
   });
 
   readonly antecedentesForm = new FormGroup({
@@ -394,6 +396,12 @@ export class HistoriaClinicaPacientePage {
         ultimaEvolucionResumen: item.notas,
         isActive: false,
       })),
+  );
+  readonly activeCasosClinicos = computed<CasoAtencionSummary[]>(() =>
+    this.casosClinicos().filter((c) => !c.estado.startsWith('CERRADO')),
+  );
+  readonly closedCasosClinicos = computed<CasoAtencionSummary[]>(() =>
+    this.casosClinicos().filter((c) => c.estado.startsWith('CERRADO')),
   );
   readonly selectedCase = computed<CasePanelItem | null>(() => {
     const selectedId = this.selectedCaseId();
@@ -847,21 +855,22 @@ export class HistoriaClinicaPacientePage {
   openCasoDrawer(defaultProfesionalId?: string): void {
     this.casoForm.reset(
       {
-        profesionalId: defaultProfesionalId ?? this.defaultProfesionalId(),
-        diagnosticoCodigo: '',
-        fechaInicio: this.todayForInput(),
-        notas: '',
+        profesionalResponsableId: defaultProfesionalId ?? this.defaultProfesionalId() ?? '',
+        tipoOrigen: 'CONSULTA_DIRECTA',
+        motivoConsulta: '',
+        diagnosticoMedico: '',
+        afeccionPrincipal: '',
+        prioridad: 'NORMAL',
       },
       { emitEvent: false },
     );
-    this.loadDiagnosticosMedicos();
     this.showCasoDrawer.set(true);
   }
 
   saveCaso(): void {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
-    const pacienteId = this.selectedPatient()?.id;
-    if (!consultorioId || !pacienteId) {
+    const legajoId = this.overview()?.legajo.legajoId;
+    if (!consultorioId || !legajoId) {
       return;
     }
     if (this.casoForm.invalid) {
@@ -869,21 +878,23 @@ export class HistoriaClinicaPacientePage {
       return;
     }
     const raw = this.casoForm.getRawValue();
+    const body: CreateCasoAtencionRequest = {
+      profesionalResponsableId: this.emptyToUndefined(raw.profesionalResponsableId) ?? null,
+      tipoOrigen: raw.tipoOrigen || 'CONSULTA_DIRECTA',
+      motivoConsulta: this.emptyToUndefined(raw.motivoConsulta) ?? null,
+      diagnosticoMedico: this.emptyToUndefined(raw.diagnosticoMedico) ?? null,
+      afeccionPrincipal: this.emptyToUndefined(raw.afeccionPrincipal) ?? null,
+      prioridad: raw.prioridad || 'NORMAL',
+    };
     this.isSavingCaso.set(true);
     this.historiaSvc
-      .createDiagnostico(consultorioId, pacienteId, {
-        profesionalId: raw.profesionalId,
-        sesionId: this.selectedSesion()?.id ?? null,
-        diagnosticoCodigo: raw.diagnosticoCodigo,
-        fechaInicio: raw.fechaInicio,
-        notas: this.emptyToUndefined(raw.notas) ?? null,
-      })
+      .createCasoAtencion(consultorioId, legajoId, body)
       .subscribe({
         next: () => {
           this.isSavingCaso.set(false);
           this.showCasoDrawer.set(false);
           this.toast.success('Caso clínico creado.');
-          this.reloadSelectedPatient();
+          this.ensureCasesTabData(true);
         },
         error: (err) => {
           this.isSavingCaso.set(false);
@@ -1264,10 +1275,12 @@ export class HistoriaClinicaPacientePage {
         page: 0,
         size: SESSION_PAGE_SIZE,
       }),
+      casos: this.historiaSvc.getCasosPorPaciente(consultorioId, pacienteId),
     }).subscribe({
-      next: ({ diagnosticos, sesiones }) => {
+      next: ({ diagnosticos, sesiones, casos }) => {
         this.diagnosticos.set(diagnosticos);
         this.sesiones.set(sesiones);
+        this.casosClinicos.set(casos);
         if (!this.selectedCaseId()) {
           this.selectedCaseId.set(this.activeCaseCards()[0]?.id ?? diagnosticos[0]?.id ?? null);
         }
@@ -1361,6 +1374,7 @@ export class HistoriaClinicaPacientePage {
     this.antecedentes.set([]);
     this.diagnosticos.set([]);
     this.sesiones.set([]);
+    this.casosClinicos.set([]);
     this.backgroundLatestSesion.set(null);
     this.selectedCaseId.set(null);
     this.timelineVisibleCount.set(TIMELINE_BATCH_SIZE);
@@ -1535,7 +1549,7 @@ export class HistoriaClinicaPacientePage {
     }
     this.createLegajoForm.controls.profesionalId.setValue(profesionalId, { emitEvent: false });
     this.sesionForm.controls.profesionalId.setValue(profesionalId, { emitEvent: false });
-    this.casoForm.controls.profesionalId.setValue(profesionalId, { emitEvent: false });
+    this.casoForm.controls.profesionalResponsableId.setValue(profesionalId, { emitEvent: false });
   }
 
   private defaultProfesionalId(): string {

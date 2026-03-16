@@ -111,17 +111,21 @@ interface ConfirmCtx {
                 <th>Apellido</th>
                 <th>Nombre</th>
                 <th>Tipo</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Mat. / Cargo</th>
+                <th class="th-icon"></th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               @for (m of filteredRows(); track m.id) {
-                <tr>
-                  <td><span class="dni-text">{{ getDni(m) || '—' }}</span></td>
+                <tr [class.row-expanded]="expandedMiembroId() === m.id">
+                  <td>
+                    @if (canWrite()) {
+                      <button type="button" class="btn-dni" (click)="openEdit(m)">{{ getDni(m) || '—' }}</button>
+                    } @else {
+                      <span class="dni-text">{{ getDni(m) || '—' }}</span>
+                    }
+                  </td>
                   <td>{{ m.apellido }}</td>
                   <td>{{ m.nombre }}</td>
                   <td>
@@ -129,9 +133,24 @@ interface ConfirmCtx {
                       {{ m.tipo === 'PROFESIONAL' ? 'Profesional' : 'Administrativo' }}
                     </span>
                   </td>
-                  <td>{{ m.telefono || '—' }}</td>
-                  <td>{{ m.email || '—' }}</td>
-                  <td>{{ datoEspecifico(m) }}</td>
+                  <td class="td-icon">
+                    @if (canWrite() && (m.cuentaStatus === 'PENDING' || m.cuentaStatus === 'REJECTED')) {
+                      <button type="button" class="btn-icon-action" title="Reenviar invitación" (click)="reenviarActivacion(m)">
+                        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <rect x="2" y="4" width="16" height="12" rx="2"/>
+                          <path d="M2 7l8 5 8-5"/>
+                        </svg>
+                      </button>
+                    }
+                    @if (canWrite() && m.cuentaStatus === 'NONE' && m.tipo === 'PROFESIONAL') {
+                      <button type="button" class="btn-icon-action" title="Crear cuenta" (click)="crearCuenta(m)">
+                        <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <rect x="2" y="4" width="16" height="12" rx="2"/>
+                          <path d="M2 7l8 5 8-5"/>
+                        </svg>
+                      </button>
+                    }
+                  </td>
                   <td>
                     <span class="badge"
                       [class.ok]="m.estadoColaborador === 'ACTIVO'"
@@ -140,20 +159,18 @@ interface ConfirmCtx {
                       [class.badge-muted]="m.estadoColaborador === 'INACTIVO'">
                       <strong>{{ labelEstado(m.estadoColaborador) }}</strong>
                     </span>
-                    @if (m.cuentaStatus === 'PENDING') {
-                      <span class="badge badge-info" style="margin-left:.3rem">Pend. activación</span>
-                    }
                   </td>
                   <td class="actions-cell">
-                    @if (canWrite()) {
-                      <button type="button" class="btn-link" (click)="openEdit(m)">Editar</button>
-                    }
+                    <button type="button" class="btn-link" (click)="toggleExpanded(m)">
+                      {{ expandedMiembroId() === m.id ? 'Ocultar' : 'Ver' }}
+                    </button>
                     @if (canWrite() || m.tipo === 'PROFESIONAL') {
                       <div class="menu-wrap" (click)="$event.stopPropagation()">
                         <button type="button" class="btn-menu-trigger" (click)="toggleMenu(m.id)" [attr.aria-expanded]="openMenuId() === m.id" aria-label="Más acciones">•••</button>
                         @if (openMenuId() === m.id) {
                           <div class="menu-dropdown" role="menu">
                             @if (canWrite()) {
+                              <button type="button" class="menu-item" role="menuitem" (click)="openEdit(m); closeMenu()">Editar</button>
                               @if (m.estadoColaborador === 'ACTIVO') {
                                 <button type="button" class="menu-item danger" role="menuitem" (click)="askToggle(m, false); closeMenu()">Inactivar</button>
                               }
@@ -176,6 +193,52 @@ interface ConfirmCtx {
                     }
                   </td>
                 </tr>
+                @if (expandedMiembroId() === m.id) {
+                  <tr class="detail-row">
+                    <td colspan="7">
+                      <div class="detail-panel">
+                        <div class="detail-grid">
+                          <div class="detail-item">
+                            <div>
+                              <div class="detail-label">Email</div>
+                              <strong>{{ m.email || '—' }}</strong>
+                            </div>
+                          </div>
+                          <div class="detail-item">
+                            <div>
+                              <div class="detail-label">Teléfono</div>
+                              <strong>{{ m.telefono || '—' }}</strong>
+                            </div>
+                          </div>
+                          <div class="detail-item">
+                            <div>
+                              <div class="detail-label">{{ m.tipo === 'PROFESIONAL' ? 'Matrícula' : 'Cargo' }}</div>
+                              <strong>{{ datoEspecifico(m) }}</strong>
+                            </div>
+                          </div>
+                          <div class="detail-item">
+                            <div>
+                              <div class="detail-label">Dirección</div>
+                              <strong>{{ getDireccion(m) || '—' }}</strong>
+                            </div>
+                          </div>
+                          <div class="detail-item">
+                            <div>
+                              <div class="detail-label">Estado de acceso</div>
+                              <span class="badge"
+                                [class.ok]="m.cuentaStatus === 'ACTIVE'"
+                                [class.badge-info]="m.cuentaStatus === 'PENDING'"
+                                [class.badge-warning]="m.cuentaStatus === 'REJECTED'"
+                                [class.badge-muted]="m.cuentaStatus === 'NONE'">
+                                <strong>{{ labelCuenta(m.cuentaStatus) }}</strong>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                }
               }
             </tbody>
           </table>
@@ -468,6 +531,41 @@ interface ConfirmCtx {
     }
     .btn-link:hover { text-decoration: underline; }
 
+    /* DNI clickable */
+    .btn-dni {
+      border: none; background: transparent; color: var(--text); font-weight: 700;
+      font: inherit; padding: 0; cursor: pointer; font-weight: 700;
+    }
+    .btn-dni:hover { color: var(--primary); text-decoration: underline; }
+
+    /* Icon action column */
+    .th-icon { width: 2.5rem; padding-left: .4rem; padding-right: .4rem; }
+    .td-icon { width: 2.5rem; text-align: center; padding-left: .4rem; padding-right: .4rem; }
+    .btn-icon-action {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.8rem; height: 1.8rem; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--white);
+      color: var(--text-muted); cursor: pointer; padding: 0;
+    }
+    .btn-icon-action:hover { background: color-mix(in srgb, var(--primary) 8%, var(--white)); color: var(--primary); border-color: color-mix(in srgb, var(--primary) 30%, var(--border)); }
+
+    /* Expanded row */
+    tr.row-expanded td { background: color-mix(in srgb, var(--primary) 2%, var(--white)); }
+    .detail-row td { padding: 0; background: color-mix(in srgb, var(--primary) 1.5%, var(--white)); border-top: none; }
+    .detail-panel {
+      padding: .95rem 1rem 1rem;
+      border-top: 1px solid color-mix(in srgb, var(--primary) 10%, var(--border));
+    }
+    .detail-grid {
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .85rem 1.1rem;
+    }
+    .detail-item { display: flex; align-items: flex-start; }
+    .detail-label {
+      color: var(--text-muted); font-size: .72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .03em; margin-bottom: .18rem;
+    }
+    .detail-item strong { font-size: .88rem; color: var(--text); display: block; }
+
     /* "..." dropdown menu */
     .menu-wrap { position: relative; }
     .btn-menu-trigger {
@@ -647,6 +745,7 @@ interface ConfirmCtx {
       .acceso-row { flex-direction: column; align-items: flex-start; gap: .35rem; }
       .acceso-sep { display: none; }
       .menu-dropdown { right: auto; left: 0; }
+      .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   `],
   host: { '(document:click)': 'onDocumentClick()' },
@@ -675,6 +774,7 @@ export class EquipoListPage {
   readonly formSubmitted = signal(false);
   readonly confirmCtx = signal<ConfirmCtx | null>(null);
   readonly openMenuId = signal<string | null>(null);
+  readonly expandedMiembroId = signal<string | null>(null);
 
   // ── especialidades combobox ────────────────────────────────────────
   readonly especialidades = signal<string[]>([]);
@@ -796,6 +896,10 @@ export class EquipoListPage {
     this.openMenuId.set(null);
   }
 
+  toggleExpanded(m: EquipoMiembro): void {
+    this.expandedMiembroId.update((id) => (id === m.id ? null : m.id));
+  }
+
   // ── helpers ────────────────────────────────────────────────────────
   labelEstado(estado: ColaboradorEstado): string {
     const labels: Record<ColaboradorEstado, string> = {
@@ -823,6 +927,13 @@ export class EquipoListPage {
       return (m as ColaboradorProfesional & { tipo: 'PROFESIONAL' }).nroDocumento ?? null;
     }
     return (m as ColaboradorEmpleado & { tipo: 'ADMINISTRATIVO' }).dni ?? null;
+  }
+
+  getDireccion(m: EquipoMiembro): string | null {
+    if (m.tipo === 'PROFESIONAL') {
+      return (m as ColaboradorProfesional & { tipo: 'PROFESIONAL' }).domicilio ?? null;
+    }
+    return (m as ColaboradorEmpleado & { tipo: 'ADMINISTRATIVO' }).direccion ?? null;
   }
 
   isInvalid(name: keyof typeof this.form.controls): boolean {

@@ -32,6 +32,9 @@ type PrintTabKey = 'identidad' | 'visibles';
 interface StepDefinition {
   key: StepKey;
   title: string;
+  description: string;
+  contentTitle: string;
+  contentSubtitle: string;
 }
 
 interface DocumentToggle {
@@ -50,18 +53,30 @@ const STEPS: StepDefinition[] = [
   {
     key: 'general',
     title: 'General',
+    description: 'Identidad operativa y datos institucionales base.',
+    contentTitle: 'Identidad del consultorio',
+    contentSubtitle: 'Solo los datos institucionales que sostienen la cabecera y la referencia operativa.',
   },
   {
     key: 'contacto',
     title: 'Contacto',
+    description: 'Canales de contacto y datos de llegada.',
+    contentTitle: 'Contacto y acceso',
+    contentSubtitle: 'Direccion visible, canales de contacto y referencias para llegar sin friccion.',
   },
   {
     key: 'mapa',
     title: 'Ubicacion en mapa',
+    description: 'Pin visible y respaldo tecnico de coordenadas.',
+    contentTitle: 'Ubicacion visual del consultorio',
+    contentSubtitle: 'La referencia georreferenciada y el pin del mapa quedan separados de la direccion visible.',
   },
   {
     key: 'impresion',
     title: 'Impresion',
+    description: 'Identidad documental y datos visibles.',
+    contentTitle: 'Configuracion de impresion',
+    contentSubtitle: 'Define identidad documental y visibilidad sin sumar configuraciones accesorias.',
   },
 ];
 
@@ -135,6 +150,7 @@ export class ConsultorioEditPage implements OnInit {
     cuit: ['', [optionalCuitValidator]],
     administrativeContact: [''],
     address: ['', [trimmedRequiredValidator]],
+    geoAddress: [''],
     phone: ['', [phoneValidator]],
     email: ['', [trimmedRequiredValidator, Validators.email]],
     accessReference: [''],
@@ -197,6 +213,14 @@ export class ConsultorioEditPage implements OnInit {
     return this.steps[this.currentIndex()];
   }
 
+  completedStepsCount(): number {
+    return this.steps.filter((step) => this.isStepComplete(step.key)).length;
+  }
+
+  stepNumber(step: StepKey): number {
+    return this.steps.findIndex((item) => item.key === step) + 1;
+  }
+
   goTo(step: StepKey): void {
     this.activeStep.set(step);
     if (step === 'general') {
@@ -240,10 +264,12 @@ export class ConsultorioEditPage implements OnInit {
     return this.form.controls[controlName].value;
   }
 
+  hasPendingChanges(): boolean {
+    return this.form.dirty;
+  }
+
   documentPreviewTitle(): string {
-    return this.form.controls.documentDisplayName.value.trim()
-      || this.form.controls.name.value.trim()
-      || 'Nombre del consultorio';
+    return this.form.controls.name.value.trim() || 'Nombre del consultorio';
   }
 
   documentPreviewSubtitle(): string {
@@ -252,6 +278,10 @@ export class ConsultorioEditPage implements OnInit {
 
   documentPreviewFooter(): string {
     return this.form.controls.documentFooter.value.trim() || 'Pie institucional opcional.';
+  }
+
+  hasInstitutionalLogo(): boolean {
+    return !!this.form.controls.logoUrl.value.trim();
   }
 
   documentPreviewFields(): string {
@@ -274,7 +304,9 @@ export class ConsultorioEditPage implements OnInit {
   }
 
   async searchMapLocations(): Promise<void> {
-    const query = this.mapSearchQuery().trim() || this.form.controls.address.value.trim();
+    const query = this.mapSearchQuery().trim()
+      || this.form.controls.geoAddress.value.trim()
+      || this.form.controls.address.value.trim();
     if (!query) {
       this.searchError.set('Ingresa una direccion para buscar el pin.');
       return;
@@ -301,9 +333,11 @@ export class ConsultorioEditPage implements OnInit {
       return;
     }
 
-    const label = hit.display_name?.trim() || this.form.controls.address.value.trim();
+    const label = hit.display_name?.trim()
+      || this.form.controls.geoAddress.value.trim()
+      || this.form.controls.address.value.trim();
     this.form.patchValue({
-      address: label,
+      geoAddress: label,
       mapLatitude: lat.toFixed(6),
       mapLongitude: lng.toFixed(6),
       googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
@@ -314,18 +348,20 @@ export class ConsultorioEditPage implements OnInit {
   }
 
   save(mode: 'draft' | 'final'): void {
-    if (this.form.invalid) {
+    if (mode === 'final' && this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
     this.saving.set(true);
-    this.consultorioSvc.update(this.consultorioId, this.buildRequest()).subscribe({
+    this.consultorioSvc.update(this.consultorioId, this.buildRequest(mode)).subscribe({
       next: (updated) => {
         this.loadedConsultorio.set(updated);
+        this.patchForm(updated);
+        this.form.markAsPristine();
         this.saving.set(false);
         this.completenessRefresh.notify(this.consultorioId);
-        this.toast.success(mode === 'draft' ? 'Borrador guardado.' : 'Cambios guardados.');
+        this.toast.success(mode === 'draft' ? 'Cambios guardados.' : 'Cambios guardados.');
         if (mode === 'final') {
           void this.router.navigate(['/app/consultorios', this.consultorioId]);
         }
@@ -360,6 +396,7 @@ export class ConsultorioEditPage implements OnInit {
       cuit: consultorio.cuit ?? '',
       administrativeContact: consultorio.administrativeContact ?? '',
       address: consultorio.address ?? '',
+      geoAddress: consultorio.geoAddress ?? '',
       phone: consultorio.phone ?? '',
       email: consultorio.email ?? '',
       accessReference: consultorio.accessReference ?? '',
@@ -378,33 +415,64 @@ export class ConsultorioEditPage implements OnInit {
       documentShowLegalName: consultorio.documentShowLegalName ?? false,
       documentShowLogo: consultorio.documentShowLogo ?? false,
     });
-    this.mapSearchQuery.set(consultorio.address ?? '');
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+    this.mapSearchQuery.set(consultorio.geoAddress ?? consultorio.address ?? '');
   }
 
-  private buildRequest(): ConsultorioRequest {
+  private buildRequest(mode: 'draft' | 'final'): ConsultorioRequest {
     const values = this.form.getRawValue();
     const current = this.loadedConsultorio();
+    const useDraftFallback = mode === 'draft';
+    const controlValue = <K extends keyof typeof this.form.controls>(name: K): string => String(this.form.controls[name].value ?? '');
+    const controlInvalid = <K extends keyof typeof this.form.controls>(name: K): boolean => this.form.controls[name].invalid;
+    const draftString = <K extends keyof typeof this.form.controls>(name: K, fallback?: string): string | undefined => {
+      const trimmed = controlValue(name).trim();
+      if (useDraftFallback && controlInvalid(name)) {
+        return fallback;
+      }
+      return trimmed || undefined;
+    };
+    const draftRequiredString = <K extends keyof typeof this.form.controls>(name: K, fallback = ''): string => {
+      const trimmed = controlValue(name).trim();
+      if (useDraftFallback && controlInvalid(name)) {
+        return fallback;
+      }
+      return trimmed;
+    };
+    const draftNumber = <K extends keyof typeof this.form.controls>(name: K, fallback?: number): number | undefined => {
+      const raw = controlValue(name).trim().replace(',', '.');
+      if (!raw) {
+        return useDraftFallback ? fallback : undefined;
+      }
+      const parsed = Number(raw);
+      if (Number.isNaN(parsed) || (useDraftFallback && controlInvalid(name))) {
+        return fallback;
+      }
+      return parsed;
+    };
 
     return {
-      name: values.name.trim(),
+      name: draftRequiredString('name', current?.name ?? ''),
       status: values.isActive ? 'ACTIVE' : 'INACTIVE',
       description: current?.description ?? undefined,
       logoUrl: values.logoUrl.trim() || undefined,
-      address: values.address.trim(),
-      phone: values.phone.trim(),
-      email: values.email.trim(),
+      address: draftRequiredString('address', current?.address ?? ''),
+      geoAddress: draftString('geoAddress', current?.geoAddress),
+      phone: draftRequiredString('phone', current?.phone ?? ''),
+      email: draftRequiredString('email', current?.email ?? ''),
       accessReference: values.accessReference.trim() || undefined,
       floorUnit: values.floorUnit.trim() || undefined,
-      mapLatitude: Number(values.mapLatitude.replace(',', '.')),
-      mapLongitude: Number(values.mapLongitude.replace(',', '.')),
-      googleMapsUrl: values.googleMapsUrl.trim() || undefined,
+      mapLatitude: draftNumber('mapLatitude', current?.mapLatitude),
+      mapLongitude: draftNumber('mapLongitude', current?.mapLongitude),
+      googleMapsUrl: draftString('googleMapsUrl', current?.googleMapsUrl),
       legalName: values.legalName.trim() || undefined,
       cuit: values.cuit.trim() || undefined,
       administrativeContact: current?.administrativeContact ?? undefined,
       internalNotes: current?.internalNotes ?? undefined,
-      documentDisplayName: values.documentDisplayName.trim() || undefined,
+      documentDisplayName: draftRequiredString('name', current?.name ?? '') || undefined,
       documentSubtitle: values.documentSubtitle.trim() || undefined,
-      documentLogoUrl: values.documentLogoUrl.trim() || undefined,
+      documentLogoUrl: values.logoUrl.trim() || undefined,
       documentFooter: values.documentFooter.trim() || undefined,
       documentShowAddress: values.documentShowAddress,
       documentShowPhone: values.documentShowPhone,
@@ -426,8 +494,16 @@ export class ConsultorioEditPage implements OnInit {
     const lat = Number(this.form.controls.mapLatitude.value.replace(',', '.'));
     const lng = Number(this.form.controls.mapLongitude.value.replace(',', '.'));
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      if (this.form.controls.googleMapsUrl.value) {
+        this.form.controls.googleMapsUrl.setValue('', { emitEvent: false });
+      }
       this.mapPreviewUrl.set(null);
       return;
+    }
+
+    const syncedGoogleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    if (this.form.controls.googleMapsUrl.value !== syncedGoogleMapsUrl) {
+      this.form.controls.googleMapsUrl.setValue(syncedGoogleMapsUrl, { emitEvent: false });
     }
 
     this.mapPreviewUrl.set(

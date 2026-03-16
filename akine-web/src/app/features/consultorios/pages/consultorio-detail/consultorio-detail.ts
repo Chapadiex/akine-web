@@ -21,6 +21,7 @@ interface NavItem {
 interface HeaderFact {
   label: string;
   value: string;
+  icon: 'phone' | 'email' | 'location';
 }
 
 interface HeaderStatusIcon {
@@ -81,11 +82,34 @@ interface HeaderStatusIcon {
 
           @if (headerFacts().length > 0 || canOpenMap()) {
             <section class="header-summary">
-              <div class="facts-row">
+              <div class="info-strip">
                 @for (fact of headerFacts(); track fact.label) {
-                  <article class="fact-chip">
-                    <span>{{ fact.label }}</span>
-                    <strong>{{ fact.value }}</strong>
+                  <article class="info-item">
+                    <div class="info-icon" aria-hidden="true">
+                      @switch (fact.icon) {
+                        @case ('phone') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                            <path d="M5.5 4.5h3l1.6 4.3-1.9 1.9a15 15 0 0 0 5.6 5.6l1.9-1.9 4.3 1.6v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 3.5 6.5a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                          </svg>
+                        }
+                        @case ('email') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                            <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
+                            <path d="m4.5 7 7.5 5 7.5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        }
+                        @default {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                            <path d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z" stroke="currentColor" stroke-width="1.8" />
+                            <circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8" />
+                          </svg>
+                        }
+                      }
+                    </div>
+                    <div>
+                      <span class="info-label">{{ fact.label }}</span>
+                      <strong class="info-value">{{ fact.value }}</strong>
+                    </div>
                   </article>
                 }
               </div>
@@ -236,31 +260,48 @@ interface HeaderStatusIcon {
     .header-summary {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 1rem;
       padding: 0 1.2rem .95rem;
     }
-    .fact-chip {
-      min-width: 0;
+    .info-strip {
       display: grid;
-      gap: .12rem;
-      padding: .55rem .7rem;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--white);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: .45rem 1.1rem;
+      flex: 1 1 auto;
+      min-width: 0;
     }
-    .fact-chip span {
-      font-size: .68rem;
-      font-weight: 800;
-      letter-spacing: .04em;
-      text-transform: uppercase;
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .55rem;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+    .info-icon {
       color: var(--text-muted);
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      padding-top: .08rem;
     }
-    .fact-chip strong {
+    .info-label {
+      display: block;
+      color: var(--text-muted);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      margin-bottom: 0;
+    }
+    .info-value {
+      display: block;
       color: var(--text);
-      font-size: .86rem;
-      line-height: 1.35;
+      font-size: .8rem;
+      font-weight: 600;
       overflow-wrap: anywhere;
+      word-break: normal;
+      line-height: 1.3;
     }
     .card-divider { border-top: 1px solid var(--border); }
     .body-block { padding: .85rem 1.2rem 1rem; }
@@ -317,6 +358,9 @@ interface HeaderStatusIcon {
         flex-direction: column;
         align-items: stretch;
       }
+      .info-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
     @media (max-width: 760px) {
       .header,
@@ -335,6 +379,9 @@ interface HeaderStatusIcon {
       .btn-map {
         width: 100%;
         text-align: center;
+      }
+      .info-strip {
+        grid-template-columns: 1fr;
       }
     }
   `],
@@ -408,14 +455,14 @@ export class ConsultorioDetailPage implements OnInit {
     if (!current) return [];
 
     return [
-      this.buildFact('Telefono', current.phone),
-      this.buildFact('Email', current.email),
-      this.buildFact('Direccion', current.address),
+      this.buildFact('Telefono', current.phone, 'phone'),
+      this.buildFact('Email', current.email, 'email'),
+      this.buildFact('Direccion', current.address, 'location'),
     ].filter((item): item is HeaderFact => item !== null);
   });
   readonly canOpenMap = computed(() => {
     const current = this.consultorio();
-    return !!current && !!(current.address || (current.mapLatitude != null && current.mapLongitude != null));
+    return !!current && !!(current.geoAddress || current.googleMapsUrl || current.address || (current.mapLatitude != null && current.mapLongitude != null));
   });
 
   private readonly currentUrl = toSignal(
@@ -457,9 +504,14 @@ export class ConsultorioDetailPage implements OnInit {
   openGoogleMaps(): void {
     const current = this.consultorio();
     if (!current) return;
+    const directUrl = current.googleMapsUrl?.trim();
+    if (directUrl) {
+      window.open(directUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
     const query = current.mapLatitude != null && current.mapLongitude != null
       ? `${current.mapLatitude},${current.mapLongitude}`
-      : current.address || current.name;
+      : current.geoAddress || current.address || current.name;
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
   }
 
@@ -477,9 +529,9 @@ export class ConsultorioDetailPage implements OnInit {
     });
   }
 
-  private buildFact(label: string, value?: string): HeaderFact | null {
+  private buildFact(label: string, value: string | undefined, icon: HeaderFact['icon']): HeaderFact | null {
     const normalized = value?.trim();
-    return normalized ? { label, value: normalized } : null;
+    return normalized ? { label, value: normalized, icon } : null;
   }
 
   private reloadCompleteness(current: Consultorio | null = this.consultorio()): void {

@@ -2,296 +2,326 @@
   @if (loading()) {
     <p class="loading-msg">Cargando consultorio...</p>
   } @else {
-    <header class="page-header">
-      <a [routerLink]="['/app/consultorios', consultorioId]" class="back-link"><- Volver al detalle</a>
-      <div class="header-main">
-        <div class="header-copy">
-          <h1>{{ form.controls.name.value.trim() || 'Consultorio' }}</h1>
-          <p>Completa los datos clave del consultorio sin salir del detalle.</p>
+    <section class="shell-card">
+      <header class="page-header">
+        <div class="header-top">
+          <div class="header-main">
+            <a [routerLink]="['/app/consultorios', consultorioId]" class="back-link"><- Consultorios</a>
+            <div class="title-row">
+              <h1>{{ form.controls.name.value.trim() || 'Consultorio' }}</h1>
+              <span class="status-chip" [class.status-chip-active]="form.controls.isActive.value">
+                {{ form.controls.isActive.value ? 'Activo' : 'Inactivo' }}
+              </span>
+              <span class="layer-chip">Paso {{ currentIndex() + 1 }} de {{ steps.length }}</span>
+              <span class="layer-chip">Completos {{ completedStepsCount() }}/{{ steps.length }}</span>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <button
+              type="button"
+              class="header-status-toggle"
+              [class.header-status-toggle-on]="form.controls.isActive.value"
+              (click)="toggleActiveStatus()"
+              [attr.aria-pressed]="form.controls.isActive.value"
+              aria-label="Cambiar estado activo del consultorio"
+            >
+              <span class="header-status-toggle-track">
+                <span class="header-status-toggle-thumb"></span>
+              </span>
+              <span class="header-status-toggle-label">{{ form.controls.isActive.value ? 'Activo' : 'Inactivo' }}</span>
+            </button>
+          </div>
         </div>
 
-        <button
-          type="button"
-          class="header-status-toggle"
-          [class.header-status-toggle-on]="form.controls.isActive.value"
-          (click)="toggleActiveStatus()"
-          [attr.aria-pressed]="form.controls.isActive.value"
-          aria-label="Cambiar estado activo del consultorio"
-        >
-          <span class="header-status-toggle-track">
-            <span class="header-status-toggle-thumb"></span>
-          </span>
-          <span class="header-status-toggle-label">{{ form.controls.isActive.value ? 'Activo' : 'Inactivo' }}</span>
-        </button>
-      </div>
+        <div class="header-divider"></div>
 
-      <nav class="steps-nav" aria-label="Pasos de edicion completa">
-        @for (step of steps; track step.key) {
-          <button
-            type="button"
-            class="step-tab"
-            [class.step-tab-active]="activeStep() === step.key"
-            [class.step-tab-done]="stepState(step.key) === 'done'"
-            (click)="goTo(step.key)"
-          >
-            <span class="step-title">{{ step.title }}</span>
-          </button>
-        }
-      </nav>
-    </header>
-
-    <form class="editor-panel" [formGroup]="form" (ngSubmit)="save('final')">
-      @if (activeStep() === 'general') {
-        <section class="section-grid section-grid-compact">
-          <article class="surface">
-            <div class="grid two">
-              <label class="field">
-                <span>Nombre del consultorio *</span>
-                <input #nameInput type="text" formControlName="name" placeholder="Ej: Consultorio Central" />
-              </label>
-
-              <label class="field">
-                <span>Razon social</span>
-                <input type="text" formControlName="legalName" />
-              </label>
-
-              <label class="field field-cuit">
-                <span>CUIT *</span>
-                <input type="text" formControlName="cuit" placeholder="20-12345678-9" />
-              </label>
-
-              <label class="field full">
-                <span>Logo</span>
-                <input type="url" formControlName="logoUrl" placeholder="https://..." />
-              </label>
-            </div>
-          </article>
-        </section>
-      }
-
-      @if (activeStep() === 'contacto') {
-        <article class="surface">
-          <header class="surface-head">
-            <h3>Contacto y acceso</h3>
-            <p>Solo informacion de contacto y llegada, sin mezclar la ubicacion visual del mapa.</p>
-          </header>
-
-          <div class="grid two">
-            <label class="field full">
-              <span>Direccion completa *</span>
-              <textarea rows="4" formControlName="address" placeholder="Carga la direccion tal como debe verse en pantalla y documentos."></textarea>
-            </label>
-
-            <label class="field">
-              <span>Telefono *</span>
-              <input type="tel" formControlName="phone" placeholder="Ej: 1155550000" />
-            </label>
-
-            <label class="field">
-              <span>Email *</span>
-              <input type="email" formControlName="email" placeholder="info@consultorio.com" />
-            </label>
-
-            <label class="field">
-              <span>Referencia de acceso</span>
-              <input type="text" formControlName="accessReference" placeholder="Ej: puerta lateral, timbre 2" />
-            </label>
-
-            <label class="field">
-              <span>Piso / unidad / box general</span>
-              <input type="text" formControlName="floorUnit" placeholder="Ej: Piso 2, Unidad B" />
-            </label>
-          </div>
-        </article>
-      }
-
-      @if (activeStep() === 'mapa') {
-        <section class="section-grid map-stage">
-          <article class="surface surface-map-main">
-            <header class="surface-head">
-              <h3>Ubicacion visual del consultorio</h3>
-              <p>Busca una direccion, aplica el pin y usa el mapa como referencia principal.</p>
-            </header>
-
-            <div class="map-search-box">
-              <label class="field">
-                <span>Busqueda de direccion</span>
-                <div class="search-row">
-                  <input
-                    [value]="mapSearchQuery()"
-                    (input)="onMapQueryInput($event)"
-                    placeholder="Ej: Av. Siempreviva 123, Buenos Aires"
-                  />
-                  <button type="button" class="btn-secondary" (click)="searchMapLocations()" [disabled]="isSearchingLocations()">
-                    {{ isSearchingLocations() ? 'Buscando...' : 'Buscar direccion' }}
-                  </button>
-                </div>
-              </label>
-
-              @if (searchError()) {
-                <p class="inline-error">{{ searchError() }}</p>
-              }
-
-              @if (locationResults().length > 0) {
-                <div class="result-list">
-                  @for (hit of locationResults(); track hit.lat + '-' + hit.lon + '-' + $index) {
-                    <button type="button" class="result-card" (click)="selectLocation(hit)">
-                      <strong>{{ hit.display_name || 'Ubicacion encontrada' }}</strong>
-                      <span>Usar esta ubicacion</span>
-                    </button>
-                  }
-                </div>
-              }
-            </div>
-
-            <div class="map-panel">
-              @if (mapPreviewUrl(); as mapUrl) {
-                <iframe
-                  class="map-frame"
-                  [src]="mapUrl"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  title="Mapa del consultorio"
-                ></iframe>
-              } @else {
-                <div class="map-empty">
-                  Busca una direccion o completa coordenadas validas para mostrar el mapa.
-                </div>
-              }
-            </div>
-          </article>
-
-          <article class="surface surface-map-side">
-            <header class="surface-head">
-              <h3>Datos tecnicos</h3>
-              <p>Las coordenadas quedan disponibles para ajuste fino con menor jerarquia visual.</p>
-            </header>
-
-            <div class="tech-card">
-              <label class="field">
-                <span>Latitud *</span>
-                <input type="text" formControlName="mapLatitude" placeholder="-34.603722" />
-              </label>
-
-              <label class="field">
-                <span>Longitud *</span>
-                <input type="text" formControlName="mapLongitude" placeholder="-58.381592" />
-              </label>
-
-              <label class="field">
-                <span>URL de Google Maps</span>
-                <input type="url" formControlName="googleMapsUrl" placeholder="https://maps.google.com/..." />
-              </label>
-            </div>
-          </article>
-        </section>
-      }
-
-      @if (activeStep() === 'impresion') {
-        <section class="section-grid print-stage">
-          <article class="surface">
-            <header class="surface-head">
-              <h3>Configuracion de impresion</h3>
-              <p>Identidad documental y visibilidad de datos dentro del mismo paso.</p>
-            </header>
-
-            <div class="inner-tabs" role="tablist" aria-label="Configuracion documental">
-              <button
-                type="button"
-                class="inner-tab"
-                [class.inner-tab-active]="activePrintTab() === 'identidad'"
-                (click)="activePrintTab.set('identidad')"
-              >
-                Identidad documental
-              </button>
-              <button
-                type="button"
-                class="inner-tab"
-                [class.inner-tab-active]="activePrintTab() === 'visibles'"
-                (click)="activePrintTab.set('visibles')"
-              >
-                Datos visibles
-              </button>
-            </div>
-
-            @if (activePrintTab() === 'identidad') {
-              <div class="grid two">
-                <label class="field">
-                  <span>Nombre para documentos</span>
-                  <input type="text" formControlName="documentDisplayName" placeholder="Ej: Consultorio Central" />
-                </label>
-
-                <label class="field">
-                  <span>Subtitulo para documentos</span>
-                  <input type="text" formControlName="documentSubtitle" placeholder="Ej: Medicina integral" />
-                </label>
-
-                <label class="field full">
-                  <span>Logo para documentos</span>
-                  <input type="url" formControlName="documentLogoUrl" placeholder="https://..." />
-                </label>
-
-                <label class="field full">
-                  <span>Pie institucional</span>
-                  <textarea rows="4" formControlName="documentFooter" placeholder="Texto opcional para el pie de pagina."></textarea>
-                </label>
-              </div>
-            } @else {
-              <div class="toggle-grid">
-                @for (toggle of documentToggles; track toggle.control) {
-                  <label class="toggle-card" [class.toggle-card-on]="controlEnabled(toggle.control)">
-                    <input class="sr-only" type="checkbox" [formControlName]="toggle.control" />
-                    <span class="toggle-switch">
-                      <span class="toggle-switch-thumb"></span>
-                    </span>
-                    <span class="toggle-copy">
-                      <strong>{{ toggle.label }}</strong>
-                      <small>{{ toggle.hint }}</small>
-                    </span>
-                  </label>
-                }
-              </div>
-            }
-          </article>
-
-          <article class="surface">
-            <header class="surface-head">
-              <h3>Vista previa simple</h3>
-              <p>Chequeo rapido de como quedaria la cabecera documental.</p>
-            </header>
-
-            <div class="doc-preview">
-              <div class="doc-preview-head">
-                <div class="doc-logo" [class.doc-logo-on]="controlEnabled('documentShowLogo')">Logo</div>
-                <div class="doc-heading">
-                  <strong>{{ documentPreviewTitle() }}</strong>
-                  <span>{{ documentPreviewSubtitle() }}</span>
-                </div>
-              </div>
-
-              <div class="doc-preview-body">{{ documentPreviewFields() }}</div>
-              <div class="doc-preview-foot">{{ documentPreviewFooter() }}</div>
-            </div>
-          </article>
-        </section>
-      }
-
-      <footer class="editor-footer">
-        <button type="button" class="btn-ghost" (click)="goBack()">Salir</button>
-
-        <div class="footer-actions">
-          <button type="button" class="btn-secondary" (click)="prev()" [disabled]="currentIndex() === 0">Anterior</button>
-          <button type="button" class="btn-secondary" (click)="save('draft')" [disabled]="saving()">Guardar borrador</button>
-
-          @if (currentIndex() < steps.length - 1) {
-            <button type="button" class="btn-primary" (click)="next()">Siguiente</button>
-          } @else {
-            <button type="submit" class="btn-primary" [disabled]="saving()">
-              {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
+        <nav class="steps-nav" aria-label="Pasos de edicion completa">
+          @for (step of steps; track step.key) {
+            <button
+              type="button"
+              class="step-tab"
+              [class.step-tab-active]="activeStep() === step.key"
+              [class.step-tab-done]="stepState(step.key) === 'done'"
+              (click)="goTo(step.key)"
+            >
+              <span class="step-index">{{ stepNumber(step.key) }}</span>
+              <span class="step-copy">
+                <span class="step-title">{{ step.title }}</span>
+              </span>
             </button>
           }
-        </div>
-      </footer>
-    </form>
+        </nav>
+      </header>
+
+      <form class="editor-panel" [formGroup]="form" (ngSubmit)="save('final')">
+        @if (activeStep() === 'general') {
+          <section class="step-block">
+            <header class="step-content-head">
+              <h3>{{ currentStep().contentTitle }}</h3>
+              <p>{{ currentStep().contentSubtitle }}</p>
+            </header>
+
+            <article class="surface">
+
+              <div class="grid two">
+                <label class="field">
+                  <span>Nombre del consultorio *</span>
+                  <input #nameInput type="text" formControlName="name" placeholder="Ej: Consultorio Central" />
+                </label>
+
+                <label class="field">
+                  <span>Razon social</span>
+                  <input type="text" formControlName="legalName" />
+                </label>
+
+                <label class="field field-cuit">
+                  <span>CUIT *</span>
+                  <input type="text" formControlName="cuit" placeholder="20-12345678-9" />
+                </label>
+
+                <label class="field">
+                  <span>Logo</span>
+                  <input type="url" formControlName="logoUrl" placeholder="https://..." />
+                </label>
+              </div>
+            </article>
+          </section>
+        }
+
+        @if (activeStep() === 'contacto') {
+          <section class="step-block">
+            <header class="step-content-head">
+              <h3>{{ currentStep().contentTitle }}</h3>
+              <p>{{ currentStep().contentSubtitle }}</p>
+            </header>
+
+            <article class="surface">
+
+              <div class="grid two">
+                <label class="field">
+                  <span>Telefono *</span>
+                  <input type="tel" formControlName="phone" placeholder="Ej: 1155550000" />
+                </label>
+
+                <label class="field">
+                  <span>Email *</span>
+                  <input type="email" formControlName="email" placeholder="info@consultorio.com" />
+                </label>
+
+                <label class="field full">
+                  <span>Direccion visible *</span>
+                  <textarea rows="4" formControlName="address" placeholder="Ej: Av. Corrientes 1234, Piso 2, CABA"></textarea>
+                </label>
+
+                <label class="field">
+                  <span>Piso / unidad / box general</span>
+                  <input type="text" formControlName="floorUnit" placeholder="Ej: Piso 2, Unidad B" />
+                </label>
+
+                <label class="field">
+                  <span>Referencia de acceso</span>
+                  <input type="text" formControlName="accessReference" placeholder="Ej: puerta lateral, timbre 2" />
+                </label>
+              </div>
+            </article>
+          </section>
+        }
+
+        @if (activeStep() === 'mapa') {
+          <section class="step-block">
+            <header class="step-content-head">
+              <h3>{{ currentStep().contentTitle }}</h3>
+              <p>{{ currentStep().contentSubtitle }}</p>
+            </header>
+
+            <article class="surface surface-map-main">
+              <div class="map-stage-split">
+                <div class="map-search-box">
+                  <label class="field">
+                    <span>Busqueda de direccion</span>
+                    <div class="search-row">
+                      <input
+                        [value]="mapSearchQuery()"
+                        (input)="onMapQueryInput($event)"
+                        placeholder="Ej: Av. Siempreviva 123, Buenos Aires"
+                      />
+                      <button type="button" class="btn-secondary" (click)="searchMapLocations()" [disabled]="isSearchingLocations()">
+                        {{ isSearchingLocations() ? 'Buscando...' : 'Buscar direccion' }}
+                      </button>
+                    </div>
+                  </label>
+
+                  @if (searchError()) {
+                    <p class="inline-error">{{ searchError() }}</p>
+                  }
+
+                  @if (locationResults().length > 0) {
+                    <div class="result-list">
+                      @for (hit of locationResults(); track hit.lat + '-' + hit.lon + '-' + $index) {
+                        <button type="button" class="result-card" (click)="selectLocation(hit)">
+                          <strong>{{ hit.display_name || 'Ubicacion encontrada' }}</strong>
+                          <span>Usar esta ubicacion</span>
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+                <div class="map-panel map-panel-prominent">
+                  @if (mapPreviewUrl(); as mapUrl) {
+                    <iframe
+                      class="map-frame"
+                      [src]="mapUrl"
+                      loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade"
+                      title="Mapa del consultorio"
+                    ></iframe>
+                  } @else {
+                    <div class="map-empty">
+                      Busca una direccion o completa coordenadas validas para mostrar el mapa.
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <details class="geo-advanced">
+                <summary>Editar georreferenciacion manualmente</summary>
+                <div class="tech-card geo-advanced-body">
+                  <p class="geo-advanced-copy">
+                    Estos datos tecnicos se usan para el mapa y no reemplazan la direccion visible del consultorio.
+                  </p>
+
+                  <div class="grid two">
+                    <label class="field full">
+                      <span>Direccion Google / georreferenciada</span>
+                      <input
+                        type="text"
+                        formControlName="geoAddress"
+                        placeholder="Se completa desde la busqueda o puede ajustarse manualmente."
+                      />
+                    </label>
+
+                    <label class="field">
+                      <span>Latitud *</span>
+                      <input type="text" formControlName="mapLatitude" placeholder="-34.603722" />
+                    </label>
+
+                    <label class="field">
+                      <span>Longitud *</span>
+                      <input type="text" formControlName="mapLongitude" placeholder="-58.381592" />
+                    </label>
+
+                    <label class="field full">
+                      <span>URL de Google Maps</span>
+                      <input type="url" formControlName="googleMapsUrl" placeholder="https://maps.google.com/..." />
+                    </label>
+                  </div>
+                </div>
+              </details>
+            </article>
+          </section>
+        }
+
+        @if (activeStep() === 'impresion') {
+          <section class="step-block">
+            <header class="step-content-head">
+              <h3>{{ currentStep().contentTitle }}</h3>
+              <p>{{ currentStep().contentSubtitle }}</p>
+            </header>
+
+            <div class="section-grid print-stage">
+              <article class="surface">
+                <div class="inner-tabs" role="tablist" aria-label="Configuracion documental">
+                  <button
+                    type="button"
+                    class="inner-tab"
+                    [class.inner-tab-active]="activePrintTab() === 'identidad'"
+                    (click)="activePrintTab.set('identidad')"
+                  >
+                    Identidad documental
+                  </button>
+                  <button
+                    type="button"
+                    class="inner-tab"
+                    [class.inner-tab-active]="activePrintTab() === 'visibles'"
+                    (click)="activePrintTab.set('visibles')"
+                  >
+                    Datos visibles
+                  </button>
+                </div>
+
+                @if (activePrintTab() === 'identidad') {
+                  <div class="grid">
+                    <p class="geo-advanced-copy">
+                      El nombre y el logo institucional se toman automaticamente desde General.
+                    </p>
+                    <label class="field">
+                      <span>Subtitulo para documentos</span>
+                      <input type="text" formControlName="documentSubtitle" placeholder="Ej: Medicina integral" />
+                    </label>
+
+                    <label class="field">
+                      <span>Pie institucional</span>
+                      <textarea rows="4" formControlName="documentFooter" placeholder="Texto opcional para el pie de pagina."></textarea>
+                    </label>
+                  </div>
+                } @else {
+                  <div class="grid two">
+                    @for (toggle of documentToggles; track toggle.control) {
+                      <label class="doc-toggle-item" [class.doc-toggle-item-on]="controlEnabled(toggle.control)">
+                        <input class="sr-only" type="checkbox" [formControlName]="toggle.control" />
+                        <span class="toggle-switch">
+                          <span class="toggle-switch-thumb"></span>
+                        </span>
+                        <span class="toggle-copy">
+                          <strong>{{ toggle.label }}</strong>
+                          <small>{{ toggle.hint }}</small>
+                        </span>
+                      </label>
+                    }
+                  </div>
+                }
+              </article>
+
+              <article class="surface">
+                <div class="doc-preview">
+                  <div class="doc-preview-head">
+                    <div class="doc-logo" [class.doc-logo-on]="controlEnabled('documentShowLogo') && hasInstitutionalLogo()">
+                      {{ hasInstitutionalLogo() ? 'Logo' : 'Sin logo' }}
+                    </div>
+                    <div class="doc-heading">
+                      <strong>{{ documentPreviewTitle() }}</strong>
+                      <span>{{ documentPreviewSubtitle() }}</span>
+                    </div>
+                  </div>
+
+                  <div class="doc-preview-body">{{ documentPreviewFields() }}</div>
+                  <div class="doc-preview-foot">{{ documentPreviewFooter() }}</div>
+                </div>
+              </article>
+            </div>
+          </section>
+        }
+
+        <footer class="editor-footer">
+          <button type="button" class="btn-ghost" (click)="goBack()">Salir</button>
+
+          <div class="footer-actions">
+            <button type="button" class="btn-secondary" (click)="prev()" [disabled]="currentIndex() === 0">Anterior</button>
+            <button type="button" class="btn-secondary btn-secondary-muted" (click)="save('draft')" [disabled]="saving() || !hasPendingChanges()">
+              {{ saving() ? 'Guardando...' : 'Guardar' }}
+            </button>
+
+            @if (currentIndex() < steps.length - 1) {
+              <button type="button" class="btn-primary" (click)="next()">Siguiente</button>
+            } @else {
+              <button type="submit" class="btn-primary" [disabled]="saving()">
+                {{ saving() ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
+            }
+          </div>
+        </footer>
+      </form>
+    </section>
   }
 </div>

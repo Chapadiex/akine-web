@@ -6,8 +6,12 @@ import { ApiClient } from '../../../core/api/api-client.service';
 import { API } from '../../../core/api/api-endpoints';
 import {
   AdjuntoClinicoResponse,
+  CambiarEstadoCasoAtencionRequest,
+  CasoAtencionDetalle,
+  CasoAtencionSummary,
   ClinicalDownload,
   CreateAtencionInicialRequest,
+  CreateCasoAtencionRequest,
   CreateHistoriaClinicaRequest,
   DiagnosticoClinicoEstadoRequest,
   DiagnosticoClinicoRequest,
@@ -22,6 +26,7 @@ import {
   HistoriaClinicaWorkspaceQuery,
   SesionClinicaRequest,
   SesionClinicaResponse,
+  UpdateCasoAtencionRequest,
 } from '../models/historia-clinica.models';
 
 @Injectable({ providedIn: 'root' })
@@ -250,6 +255,48 @@ export class HistoriaClinicaService {
 
   deleteAdjunto(consultorioId: string, pacienteId: string, adjuntoId: string): Observable<void> {
     return this.api.delete<void>(API.historiaClinicaGlobal.adjunto(consultorioId, pacienteId, adjuntoId));
+  }
+
+  // ── CasoAtencion ─────────────────────────────────────────────────────
+
+  getCasosPorLegajo(consultorioId: string, legajoId: string): Observable<CasoAtencionSummary[]> {
+    return this.api.get<CasoAtencionSummary[]>(API.casosAtencion.byLegajo(consultorioId, legajoId));
+  }
+
+  createCasoAtencion(
+    consultorioId: string,
+    legajoId: string,
+    body: CreateCasoAtencionRequest,
+  ): Observable<CasoAtencionDetalle> {
+    return this.api.post<CasoAtencionDetalle>(API.casosAtencion.create(consultorioId, legajoId), body);
+  }
+
+  getCasoAtencion(consultorioId: string, casoId: string): Observable<CasoAtencionDetalle> {
+    return this.api.get<CasoAtencionDetalle>(API.casosAtencion.byId(consultorioId, casoId));
+  }
+
+  updateCasoAtencion(
+    consultorioId: string,
+    casoId: string,
+    body: UpdateCasoAtencionRequest,
+  ): Observable<CasoAtencionDetalle> {
+    return this.api.put<CasoAtencionDetalle>(API.casosAtencion.update(consultorioId, casoId), body);
+  }
+
+  cambiarEstadoCaso(
+    consultorioId: string,
+    casoId: string,
+    body: CambiarEstadoCasoAtencionRequest,
+  ): Observable<CasoAtencionDetalle> {
+    return this.api.patch<CasoAtencionDetalle>(API.casosAtencion.cambiarEstado(consultorioId, casoId), body);
+  }
+
+  getCasosActivosPorPaciente(consultorioId: string, pacienteId: string): Observable<CasoAtencionSummary[]> {
+    return this.api.get<CasoAtencionSummary[]>(API.casosAtencion.activosByPaciente(consultorioId, pacienteId));
+  }
+
+  getCasosPorPaciente(consultorioId: string, pacienteId: string): Observable<CasoAtencionSummary[]> {
+    return this.api.get<CasoAtencionSummary[]>(API.casosAtencion.byPaciente(consultorioId, pacienteId));
   }
 
   private cleanParams<T extends object>(params?: T): Record<string, string | number> | undefined {

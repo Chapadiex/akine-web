@@ -4,7 +4,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { PacienteForm } from '../../components/paciente-form/paciente-form';
+import { PacienteQuickForm } from '../../components/paciente-quick-form/paciente-quick-form';
 import { PacienteSearch } from '../../components/paciente-search/paciente-search';
 import { Paciente, PacienteRequest, PacienteSearchResult } from '../../models/paciente.models';
 import { PacienteService } from '../../services/paciente.service';
@@ -12,7 +12,7 @@ import { PacienteService } from '../../services/paciente.service';
 @Component({
   selector: 'app-pacientes-backoffice',
   standalone: true,
-  imports: [PacienteSearch, PacienteForm],
+  imports: [PacienteSearch, PacienteQuickForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="page">
@@ -245,10 +245,11 @@ import { PacienteService } from '../../services/paciente.service';
       }
 
       @if (showAlta()) {
-        <div class="overlay" (click)="showAlta.set(false)">
-          <div class="panel" (click)="$event.stopPropagation()">
+        <div class="overlay">
+          <div class="panel">
             <h3>Nueva ficha paciente</h3>
-            <app-paciente-form
+            <app-paciente-quick-form
+              [consultorioId]="consultorioId()"
               [initialDni]="prefillDni()"
               (saved)="crearPaciente($event)"
               (cancelled)="showAlta.set(false)"
@@ -412,8 +413,8 @@ import { PacienteService } from '../../services/paciente.service';
       display: flex; justify-content: center; align-items: flex-start; padding-top: 8vh; z-index: 900;
     }
     .panel {
-      width: min(920px, 96vw); background: var(--white);
-      border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 1.2rem;
+      width: min(520px, 92vw); background: var(--white);
+      border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 1.5rem;
     }
     @media (max-width: 960px) {
       .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -498,18 +499,7 @@ export class PacientesBackofficePage {
       next: (paciente) => {
         this.toast.success('Paciente registrado');
         this.showAlta.set(false);
-        const createdItem: PacienteSearchResult = {
-          id: paciente.id,
-          dni: paciente.dni,
-          nombre: paciente.nombre,
-          apellido: paciente.apellido,
-          telefono: paciente.telefono,
-          email: paciente.email,
-          activo: paciente.activo,
-          linkedToConsultorio: true,
-        };
-        this.items.update((curr) => [createdItem, ...curr.filter((x) => x.id !== createdItem.id)]);
-        this.patientDetails.update((curr) => ({ ...curr, [paciente.id]: paciente }));
+        this.goToPaciente360(paciente.id);
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });

@@ -23,6 +23,7 @@ import { ConsultorioContextService } from '../../../../core/consultorio/consulto
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import {
+  CasoAtencionSummary,
   HistoriaClinicaOverview,
   HistoriaClinicaTipoAtencion,
   SesionClinicaRequest,
@@ -81,6 +82,7 @@ export class SesionPage implements OnInit {
   readonly status = signal<ViewState>('idle');
   readonly sesion = signal<SesionClinicaResponse | null>(null);
   readonly overview = signal<HistoriaClinicaOverview | null>(null);
+  readonly casosClinicos = signal<CasoAtencionSummary[]>([]);
   readonly previousSesion = signal<SesionClinicaResponse | null>(null);
   readonly tratamientos = signal<TratamientoCatalogItem[]>([]);
   readonly isSaving = signal(false);
@@ -102,7 +104,16 @@ export class SesionPage implements OnInit {
   // ── Computed ──
   readonly consultorioId = computed(() => this.ctx.selectedConsultorioId() ?? '');
   readonly paciente = computed(() => this.overview()?.paciente ?? null);
-  readonly casoActivo = computed(() => this.overview()?.casosActivos?.[0] ?? null);
+  readonly casoActivo = computed<CasoAtencionSummary | { descripcion: string } | null>(() => {
+    const casoAtencionId = this.sesion()?.casoAtencionId;
+    if (casoAtencionId) {
+      const found = this.casosClinicos().find((c) => c.id === casoAtencionId);
+      if (found) return found;
+    }
+    const primerCaso = this.casosClinicos()[0];
+    if (primerCaso) return primerCaso;
+    return this.overview()?.casosActivos?.[0] ?? null;
+  });
   readonly isEditable = computed(() => this.sesion()?.estado === 'BORRADOR');
 
   readonly sessionMode = computed<SessionMode>(() => {
@@ -112,6 +123,8 @@ export class SesionPage implements OnInit {
   });
 
   readonly sesionNumero = computed(() => {
+    const caso = this.casosClinicos()[0];
+    if (caso) return (caso.cantidadSesiones ?? 0) + 1;
     const o = this.overview();
     if (!o) return null;
     return (o.casosActivos?.[0]?.cantidadSesiones ?? 0) + 1;
@@ -182,6 +195,7 @@ export class SesionPage implements OnInit {
       sesion: this.hcService.getSesion(cid, this.pacienteId, this.sesionId),
       overview: this.hcService.getOverview(cid, this.pacienteId),
       tratamientosCatalog: this.tratamientoCatalogService.get(cid),
+      casos: this.hcService.getCasosActivosPorPaciente(cid, this.pacienteId).pipe(catchError(() => of([]))),
     })
       .pipe(
         catchError((err) => {
@@ -195,6 +209,7 @@ export class SesionPage implements OnInit {
         if (!result) return;
         this.sesion.set(result.sesion);
         this.overview.set(result.overview);
+        this.casosClinicos.set(result.casos);
         this.tratamientos.set(result.tratamientosCatalog.tratamientos ?? []);
         this.hydrateFormsFromSesion(result.sesion);
         this.loadPreviousSesion(cid);

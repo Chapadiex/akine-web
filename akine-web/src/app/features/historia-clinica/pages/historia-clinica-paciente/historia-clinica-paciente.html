@@ -317,7 +317,41 @@
                     </div>
                   </div>
 
-                  @if (activeCaseCards().length) {
+                  @if (casosClinicos().length) {
+                    @if (activeCasosClinicos().length) {
+                      <div class="case-list">
+                        @for (caso of activeCasosClinicos(); track caso.id) {
+                          <button type="button" class="case-row" [class.case-row--active]="selectedCaseId() === caso.id" (click)="selectCase(caso.id)">
+                            <div>
+                              <strong>{{ caso.motivoConsulta ?? caso.afeccionPrincipal ?? 'Caso sin motivo' }}</strong>
+                              <span>{{ caso.profesionalResponsableNombre ?? 'Sin profesional' }} / {{ caso.fechaApertura | date: 'dd/MM/yyyy' }} · {{ caso.cantidadSesiones }} ses.</span>
+                            </div>
+                            <span class="state-pill" [attr.data-tone]="caso.estado.startsWith('CERRADO') ? 'muted' : 'success'"><strong>{{ caso.estado }}</strong></span>
+                          </button>
+                        }
+                      </div>
+                    }
+                    @if (closedCasosClinicos().length) {
+                      <div class="subsection">
+                        <button type="button" class="link-btn" (click)="toggleClosedCases()">
+                          {{ showClosedCases() ? 'Ocultar casos cerrados' : 'Ver casos cerrados (' + closedCasosClinicos().length + ')' }}
+                        </button>
+                        @if (showClosedCases()) {
+                          <div class="case-list case-list--closed">
+                            @for (caso of closedCasosClinicos(); track caso.id) {
+                              <button type="button" class="case-row" [class.case-row--active]="selectedCaseId() === caso.id" (click)="selectCase(caso.id)">
+                                <div>
+                                  <strong>{{ caso.motivoConsulta ?? caso.afeccionPrincipal ?? 'Caso sin motivo' }}</strong>
+                                  <span>{{ caso.profesionalResponsableNombre ?? 'Sin profesional' }} / {{ caso.fechaApertura | date: 'dd/MM/yyyy' }}</span>
+                                </div>
+                                <span class="state-pill" data-tone="muted"><strong>{{ caso.estado }}</strong></span>
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  } @else if (activeCaseCards().length) {
                     <div class="case-list">
                       @for (caso of activeCaseCards(); track caso.id) {
                         <button type="button" class="case-row" [class.case-row--active]="selectedCase()?.id === caso.id" (click)="selectCase(caso.id)">
@@ -325,17 +359,17 @@
                             <strong>{{ caso.descripcion }}</strong>
                             <span>{{ caso.profesionalNombre }} / {{ caso.fechaInicio | date: 'dd/MM/yyyy' }}</span>
                           </div>
-                          <span class="state-pill" data-tone="success">{{ caso.estado }}</span>
+                          <span class="state-pill" data-tone="success"><strong>{{ caso.estado }}</strong></span>
                         </button>
                       }
                     </div>
                   } @else {
                     <div class="empty-inline">
-                      <p>No hay casos activos. La acción principal ahora es abrir un nuevo caso clínico.</p>
+                      <p>No hay casos clínicos registrados. Abrí un nuevo caso para comenzar el tratamiento.</p>
                     </div>
                   }
 
-                  @if (closedCaseCards().length) {
+                  @if (!casosClinicos().length && closedCaseCards().length) {
                     <div class="subsection">
                       <button type="button" class="link-btn" (click)="toggleClosedCases()">
                         {{ showClosedCases() ? 'Ocultar casos cerrados' : 'Ver casos cerrados' }}
@@ -348,7 +382,7 @@
                                 <strong>{{ caso.descripcion }}</strong>
                                 <span>{{ caso.profesionalNombre }} / {{ caso.fechaInicio | date: 'dd/MM/yyyy' }}</span>
                               </div>
-                              <span class="state-pill" data-tone="muted">{{ caso.estado }}</span>
+                              <span class="state-pill" data-tone="muted"><strong>{{ caso.estado }}</strong></span>
                             </button>
                           }
                         </div>
@@ -956,17 +990,29 @@
         <button type="button" class="btn btn--ghost btn--sm" (click)="showCasoDrawer.set(false)">Cerrar</button>
       </div>
       <form class="drawer-form" [formGroup]="casoForm">
-        <label class="field"><span>Profesional</span><select formControlName="profesionalId"><option value="">Seleccionar</option>@for (profesional of professionalOptions(); track profesional.id) {<option [value]="profesional.id">{{ profesional.nombre }}</option>}</select></label>
-        <div class="field">
-          <span>Diagnóstico médico</span>
-          <app-diagnostico-medico-selector
-            [diagnosticos]="diagnosticosMedicos()"
-            [selectedCode]="casoForm.controls.diagnosticoCodigo.value"
-            (selectedCodeChange)="casoForm.controls.diagnosticoCodigo.setValue($event)"
-          />
-        </div>
-        <label class="field"><span>Fecha inicio</span><input type="date" formControlName="fechaInicio" /></label>
-        <label class="field"><span>Notas</span><textarea rows="4" formControlName="notas"></textarea></label>
+        <label class="field"><span>Profesional responsable</span><select formControlName="profesionalResponsableId"><option value="">Sin asignar</option>@for (profesional of professionalOptions(); track profesional.id) {<option [value]="profesional.id">{{ profesional.nombre }}</option>}</select></label>
+        <label class="field">
+          <span>Motivo de consulta *</span>
+          <textarea rows="3" formControlName="motivoConsulta" placeholder="Describa el motivo principal de consulta"></textarea>
+        </label>
+        <label class="field"><span>Diagnóstico médico</span><input type="text" formControlName="diagnosticoMedico" placeholder="Ej: Lumbalgia crónica, HTA..." /></label>
+        <label class="field"><span>Afección principal</span><input type="text" formControlName="afeccionPrincipal" placeholder="Ej: Dolor lumbar, limitación funcional..." /></label>
+        <label class="field"><span>Tipo de origen</span>
+          <select formControlName="tipoOrigen">
+            <option value="CONSULTA_DIRECTA">Consulta directa</option>
+            <option value="DERIVACION">Derivación</option>
+            <option value="GUARDIA">Guardia</option>
+            <option value="INTERNACION">Internación</option>
+          </select>
+        </label>
+        <label class="field"><span>Prioridad</span>
+          <select formControlName="prioridad">
+            <option value="BAJA">Baja</option>
+            <option value="NORMAL">Normal</option>
+            <option value="ALTA">Alta</option>
+            <option value="URGENTE">Urgente</option>
+          </select>
+        </label>
       </form>
       <div class="drawer-actions">
         <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">Crear caso clínico</button>

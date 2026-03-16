@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Consultorio } from '../../models/consultorio.models';
 import { ConsultorioService } from '../../services/consultorio.service';
@@ -13,6 +12,7 @@ import { resolveConsultorioId } from '../../utils/route-utils';
 interface FichaItem {
   label: string;
   value: string;
+  icon: FichaIcon;
 }
 
 interface FichaSection {
@@ -21,6 +21,8 @@ interface FichaSection {
   emptyMessage: string;
   items: FichaItem[];
 }
+
+type FichaIcon = 'phone' | 'email' | 'location' | 'route' | 'building' | 'id' | 'printer' | 'eye' | 'file';
 
 @Component({
   selector: 'app-consultorio-ficha',
@@ -45,10 +47,68 @@ interface FichaSection {
               @if (section.items.length > 0) {
                 <div class="info-list">
                   @for (item of section.items; track item.label) {
-                    <div class="info-row">
-                      <span>{{ item.label }}</span>
-                      <strong>{{ item.value }}</strong>
-                    </div>
+                    <article class="info-item">
+                      <div class="info-icon" aria-hidden="true">
+                        @switch (item.icon) {
+                          @case ('phone') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <path d="M5.5 4.5h3l1.6 4.3-1.9 1.9a15 15 0 0 0 5.6 5.6l1.9-1.9 4.3 1.6v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 3.5 6.5a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                            </svg>
+                          }
+                          @case ('email') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
+                              <path d="m4.5 7 7.5 5 7.5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                          }
+                          @case ('location') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <path d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z" stroke="currentColor" stroke-width="1.8" />
+                              <circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.8" />
+                            </svg>
+                          }
+                          @case ('route') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <circle cx="6.5" cy="6.5" r="2.5" stroke="currentColor" stroke-width="1.8" />
+                              <circle cx="17.5" cy="17.5" r="2.5" stroke="currentColor" stroke-width="1.8" />
+                              <path d="M8.5 8.5c2 0 3 1 3 3s1 3 3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                            </svg>
+                          }
+                          @case ('building') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <path d="M4.5 20V5.5A1.5 1.5 0 0 1 6 4h8a1.5 1.5 0 0 1 1.5 1.5V20M9 20v-4h3v4M7.5 8h.01M10.5 8h.01M7.5 11h.01M10.5 11h.01M15.5 8H19a.5.5 0 0 1 .5.5V20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                          }
+                          @case ('id') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <rect x="3.5" y="5" width="17" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
+                              <path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                            </svg>
+                          }
+                          @case ('eye') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                              <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.8" />
+                            </svg>
+                          }
+                          @case ('printer') {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <path d="M7 8V4.5h10V8M7.5 14h9M7 17.5h10V12H7v5.5ZM5 8h14a2 2 0 0 1 2 2v4h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                          }
+                          @default {
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                              <rect x="4" y="4.5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8" />
+                              <path d="M8 8.5h8M8 12h8M8 15.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                            </svg>
+                          }
+                        }
+                      </div>
+                      <div>
+                        <span class="info-label">{{ item.label }}</span>
+                        <strong class="info-value">{{ item.value }}</strong>
+                      </div>
+                    </article>
                   }
                 </div>
 
@@ -56,18 +116,6 @@ interface FichaSection {
                   <div class="card-actions">
                     <button type="button" class="btn-map" (click)="openGoogleMaps()">Ver / Buscar en mapa</button>
                   </div>
-                }
-
-                @if (section.key === 'contacto') {
-                  @if (mapEmbedUrl(); as mapUrl) {
-                    <iframe
-                      class="map-frame"
-                      [src]="mapUrl"
-                      loading="lazy"
-                      referrerpolicy="no-referrer-when-downgrade"
-                      title="Mapa del consultorio"
-                    ></iframe>
-                  }
                 }
               } @else {
                 <div class="empty-card">
@@ -87,33 +135,37 @@ interface FichaSection {
     .loading-msg { color: var(--text-muted); text-align: center; padding: 2rem 1rem; }
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: .8rem;
+      align-items: start;
     }
     .card {
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 18px;
       background: var(--white);
-      padding: .9rem;
       display: grid;
-      gap: .8rem;
+      gap: 0;
       align-content: start;
+      overflow: hidden;
     }
     .card-pending {
       border-left-width: 4px;
       border-left-color: var(--warning);
-      padding-left: .78rem;
     }
     .card-head {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: .8rem;
+      padding: .95rem 1rem .75rem;
     }
     .card-head h3 {
       margin: 0;
-      font-size: .95rem;
-      color: var(--text);
+      color: var(--primary);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      text-transform: uppercase;
     }
     .card-link,
     .empty-card a {
@@ -127,31 +179,48 @@ interface FichaSection {
     .empty-card a:hover {
       text-decoration: underline;
     }
-    .info-list { display: grid; gap: .65rem; }
-    .info-row {
+    .info-list {
       display: grid;
-      gap: .16rem;
-      padding-bottom: .55rem;
-      border-bottom: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: .45rem;
+      padding: 0 1rem .95rem;
+      align-items: start;
     }
-    .info-row:last-child { padding-bottom: 0; border-bottom: 0; }
-    .info-row span {
-      font-size: .68rem;
-      font-weight: 800;
-      letter-spacing: .04em;
-      text-transform: uppercase;
+    .info-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .55rem;
+      min-width: 0;
+    }
+    .info-icon {
       color: var(--text-muted);
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      padding-top: .08rem;
     }
-    .info-row strong {
-      color: var(--text);
-      font-size: .86rem;
-      line-height: 1.45;
+    .info-label {
+      display: block;
+      color: var(--text-muted);
+      font-size: .68rem;
       font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      margin-bottom: 0;
+    }
+    .info-value {
+      display: block;
+      color: var(--text);
+      font-size: .8rem;
+      font-weight: 600;
       overflow-wrap: anywhere;
+      word-break: normal;
+      line-height: 1.3;
     }
     .empty-card {
       border: 1px dashed var(--border);
       border-radius: 14px;
+      margin: 0 1rem 1rem;
       padding: .8rem;
       display: grid;
       gap: .28rem;
@@ -159,7 +228,7 @@ interface FichaSection {
     }
     .empty-card strong { color: var(--text); font-size: .88rem; }
     .empty-card p { margin: 0; color: var(--text-muted); font-size: .78rem; line-height: 1.4; }
-    .card-actions { display: flex; justify-content: flex-start; }
+    .card-actions { display: flex; justify-content: flex-start; padding: 0 1rem 1rem; }
     .btn-map {
       padding: .56rem .86rem;
       border: 1px solid var(--border);
@@ -169,21 +238,18 @@ interface FichaSection {
       font-weight: 700;
       cursor: pointer;
     }
-    .map-frame {
-      width: 100%;
-      height: 220px;
-      border: 0;
-      border-radius: 14px;
-      background: var(--bg);
+    @media (max-width: 1280px) {
+      .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .info-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: .9rem; }
     }
     @media (max-width: 900px) {
       .cards-grid { grid-template-columns: 1fr; }
+      .info-list { grid-template-columns: 1fr; }
     }
   `],
 })
 export class ConsultorioFichaPage {
   private readonly route = inject(ActivatedRoute);
-  private readonly sanitizer = inject(DomSanitizer);
   private readonly consultorioSvc = inject(ConsultorioService);
 
   readonly consultorio = signal<Consultorio | null>(null);
@@ -193,25 +259,25 @@ export class ConsultorioFichaPage {
     if (!current) return [];
 
     const contactItems = [
-      this.item('Telefono', current.phone),
-      this.item('Email', current.email),
-      this.item('Direccion', current.address),
-      this.item('Referencia', current.accessReference),
-      this.item('Piso / unidad', current.floorUnit),
+      this.item('Telefono', current.phone, 'phone'),
+      this.item('Email', current.email, 'email'),
+      this.item('Direccion', current.address, 'location'),
+      this.item('Referencia de acceso', current.accessReference, 'route'),
+      this.item('Piso / unidad', current.floorUnit, 'location'),
     ].filter((item): item is FichaItem => item !== null);
 
     const institutionItems = [
-      this.item('Razon social', current.legalName),
-      this.item('CUIT', current.cuit),
-      this.item('Responsable administrativo', current.administrativeContact),
+      this.item('Razon social', current.legalName, 'building'),
+      this.item('CUIT', current.cuit, 'id'),
+      this.item('Responsable administrativo', current.administrativeContact, 'file'),
     ].filter((item): item is FichaItem => item !== null);
 
     const documentItems = [
-      this.item('Nombre en documentos', current.documentDisplayName || current.name),
-      this.item('Subtitulo', current.documentSubtitle),
-      this.item('Pie institucional', current.documentFooter),
-      this.item('Campos visibles', this.documentFieldsSummary(current)),
-      this.item('Logo documental', current.documentLogoUrl ? 'Cargado' : ''),
+      this.item('Nombre institucional', current.name, 'printer'),
+      this.item('Subtitulo', current.documentSubtitle, 'file'),
+      this.item('Pie institucional', current.documentFooter, 'file'),
+      this.item('Campos visibles', this.documentFieldsSummary(current), 'eye'),
+      this.item('Logo institucional', current.logoUrl ? 'Cargado' : '', 'printer'),
     ].filter((item): item is FichaItem => item !== null);
 
     return [
@@ -237,14 +303,7 @@ export class ConsultorioFichaPage {
   });
   readonly canOpenMap = computed(() => {
     const current = this.consultorio();
-    return !!current && !!(current.address || (current.mapLatitude != null && current.mapLongitude != null));
-  });
-  readonly mapEmbedUrl = computed<SafeResourceUrl | null>(() => {
-    const current = this.consultorio();
-    if (!current || current.mapLatitude == null || current.mapLongitude == null) return null;
-    return this.sanitizer.bypassSecurityTrustResourceUrl(
-      `https://www.google.com/maps?q=${current.mapLatitude},${current.mapLongitude}&z=16&output=embed`,
-    );
+    return !!current && !!(current.geoAddress || current.googleMapsUrl || current.address || (current.mapLatitude != null && current.mapLongitude != null));
   });
 
   constructor() {
@@ -269,15 +328,20 @@ export class ConsultorioFichaPage {
   openGoogleMaps(): void {
     const current = this.consultorio();
     if (!current) return;
+    const directUrl = current.googleMapsUrl?.trim();
+    if (directUrl) {
+      window.open(directUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
     const query = current.mapLatitude != null && current.mapLongitude != null
       ? `${current.mapLatitude},${current.mapLongitude}`
-      : current.address || current.name;
+      : current.geoAddress || current.address || current.name;
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
   }
 
-  private item(label: string, value?: string): FichaItem | null {
+  private item(label: string, value: string | undefined, icon: FichaIcon): FichaItem | null {
     const normalized = value?.trim();
-    return normalized ? { label, value: normalized } : null;
+    return normalized ? { label, value: normalized, icon } : null;
   }
 
   private documentFieldsSummary(consultorio: Consultorio): string {
