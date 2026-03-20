@@ -123,6 +123,7 @@ export interface HistoriaClinicaOverview {
   alertasClinicas: string[];
   antecedentesRelevantes: HistoriaClinicaAntecedenteItem[];
   casosActivos: HistoriaClinicaActiveCaseSummary[];
+  casosAtencionActivos: CasoAtencionSummary[];
   ultimaSesion?: HistoriaClinicaSesionSummary | null;
   adjuntosRecientes: AdjuntoClinicoResponse[];
   profesionalHabitual?: string | null;
@@ -135,6 +136,7 @@ export interface AdjuntoClinicoResponse {
   id: string;
   sesionId?: string | null;
   atencionInicialId?: string | null;
+  casoAtencionId?: string | null;
   originalFilename: string;
   contentType: string;
   sizeBytes: number;
@@ -470,11 +472,13 @@ export interface CasoAtencionDetalle extends CasoAtencionSummary {
   diagnosticoFuncional?: string | null;
   coberturaId?: string | null;
   atencionInicialId?: string | null;
+  adjuntos?: AdjuntoClinicoResponse[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateCasoAtencionRequest {
+  pacienteId?: string | null;
   profesionalResponsableId?: string | null;
   tipoOrigen?: string | null;
   motivoConsulta?: string | null;

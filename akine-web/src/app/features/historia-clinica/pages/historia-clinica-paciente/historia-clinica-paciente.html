@@ -73,7 +73,7 @@
         @if (hasPatientContext()) {
           @switch (screenState()) {
             @case ('no-history') {
-              <button type="button" class="btn btn--primary" (click)="openLegajoModal()">{{ primaryActionLabel() }}</button>
+              <button type="button" class="btn btn--primary" (click)="openAntecedentesDrawer()">{{ primaryActionLabel() }}</button>
             }
             @case ('history-no-case') {
               <button type="button" class="btn btn--primary" (click)="openCasoDrawer()">{{ primaryActionLabel() }}</button>
@@ -95,12 +95,8 @@
           }
         }
 
-        <a class="btn btn--tertiary" routerLink="/app/historia-clinica/bandeja" [queryParams]="routeState()">
-          Ir a bandeja
-        </a>
-
         @if (hasPatientContext()) {
-          <button type="button" class="btn btn--ghost" (click)="clearSelectedPatient()">Limpiar</button>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="clearSelectedPatient()">Limpiar</button>
         }
       </div>
     </div>
@@ -129,19 +125,21 @@
       </div>
     </section>
   } @else if (selectedPatient(); as patient) {
-    <section class="status-band">
-      <div class="section-head">
-        <h2>Estado actual</h2>
+    <div class="patient-strip">
+      @for (item of statusSummaryItems(); track item.label; let last = $last) {
+        <span class="strip-item">
+          <span class="strip-label">{{ item.label }}:</span> {{ item.value }}
+        </span>
+        @if (!last) { <span class="strip-sep" aria-hidden="true">·</span> }
+      }
+    </div>
+
+    @if (contextNotice(); as notice) {
+      <div class="context-notice">
+        <p>{{ notice.message }}</p>
+        <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">{{ notice.actionLabel }}</button>
       </div>
-      <div class="status-band__grid">
-        @for (item of statusSummaryItems(); track item.label) {
-          <article class="status-kpi">
-            <span>{{ item.label }}</span>
-            <strong>{{ item.value }}</strong>
-          </article>
-        }
-      </div>
-    </section>
+    }
 
     <section class="tabs-shell">
       <nav class="tabs-nav" aria-label="Navegación historia clínica">
@@ -162,10 +160,10 @@
           <div class="tab-stack">
             @if (!hasLegajo()) {
               <section class="empty-state empty-state--medium">
-                <h2>Este paciente aún no tiene una atención inicial registrada en este consultorio</h2>
-                <p>Registra el ingreso clínico, deja una base mínima útil y define el plan terapéutico inicial sin completar toda la historia clínica.</p>
+                <h2>Este paciente aún no tiene historia clínica registrada en este consultorio</h2>
+                <p>Registrá los antecedentes clínicos para dejar una base documental mínima útil. La atención inicial puede cargarse después desde el calendario o sesiones.</p>
                 <div class="empty-state__actions">
-                  <button type="button" class="btn btn--primary" (click)="openLegajoModal()">Registrar atención inicial</button>
+                  <button type="button" class="btn btn--primary" (click)="openAntecedentesDrawer()">Registrar historia clínica</button>
                   <a
                     class="btn btn--secondary"
                     [routerLink]="['/app/pacientes', patient.id, 'historia-clinica']"
@@ -177,108 +175,97 @@
               </section>
             } @else {
               <section class="summary-grid">
-                <article class="surface">
-                  <div class="section-head">
-                    <div>
+                <div class="summary-col">
+                  <article class="surface">
+                    <div class="section-head">
                       <h3>Caso principal</h3>
+                      @if (summaryMainCase()) {
+                        <span class="state-pill" [attr.data-tone]="summaryMainCase()!.isActive ? 'success' : 'muted'">
+                          {{ summaryMainCase()!.estado }}
+                        </span>
+                      }
                     </div>
-                    @if (summaryMainCase()) {
-                      <span class="state-pill" [attr.data-tone]="summaryMainCase()!.isActive ? 'success' : 'muted'">
-                        {{ summaryMainCase()!.estado }}
-                      </span>
+
+                    @if (summaryMainCase(); as mainCase) {
+                      <div class="summary-card">
+                        <strong>{{ mainCase.descripcion }}</strong>
+                        <p>{{ mainCase.profesionalNombre }} / {{ mainCase.cantidadSesiones }} sesiones</p>
+                        <small>{{ mainCase.ultimaEvolucionResumen || 'Sin evolución resumida.' }}</small>
+                      </div>
+                      <div class="summary-actions">
+                        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaSesion(mainCase.profesionalId)">Nueva sesión</button>
+                        <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver casos y sesiones</button>
+                      </div>
+                    } @else {
+                      <p class="muted-copy">Sin caso clínico activo. Abrí uno para ordenar sesiones, diagnósticos y evolución.</p>
+                      <div class="summary-actions">
+                        <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">Nuevo caso clínico</button>
+                      </div>
                     }
-                  </div>
+                  </article>
 
-                  @if (summaryMainCase(); as mainCase) {
-                    <div class="summary-card">
-                      <strong>{{ mainCase.descripcion }}</strong>
-                      <p>{{ mainCase.profesionalNombre }} / {{ mainCase.cantidadSesiones }} sesiones</p>
-                      <small>{{ mainCase.ultimaEvolucionResumen || 'Sin evolución resumida.' }}</small>
+                  <article class="surface">
+                    <div class="section-head">
+                      <h3>Último evento</h3>
+                      @if (summaryLatestEvent()) {
+                        <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(summaryLatestEvent()!.sesionId)">Ver detalle</button>
+                      }
                     </div>
-                    <div class="summary-actions">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaSesion(mainCase.profesionalId)">Nueva sesión</button>
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver casos y sesiones</button>
-                    </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>No hay caso clínico activo</strong>
-                      <p>La historia clínica existe, pero falta abrir el caso que ordena la operativa.</p>
-                    </div>
-                    <div class="summary-actions">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">Nuevo caso clínico</button>
-                    </div>
-                  }
-                </article>
-
-                <article class="surface">
-                  <div class="section-head">
-                    <h3>Último evento</h3>
-                    @if (summaryLatestEvent()) {
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(summaryLatestEvent()!.sesionId)">Ver detalle</button>
+                    @if (summaryLatestEvent(); as latestEvent) {
+                      <div class="summary-card">
+                        <strong>{{ latestEvent.resumen || 'Sesión registrada' }}</strong>
+                        <p>{{ latestEvent.profesionalNombre }} / {{ latestEvent.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</p>
+                        <small>{{ latestEvent.tipoAtencion }} / {{ latestEvent.estado }}</small>
+                      </div>
+                    } @else {
+                      <p class="muted-copy">Sin sesiones registradas todavía.</p>
                     }
-                  </div>
-                  @if (summaryLatestEvent(); as latestEvent) {
-                    <div class="summary-card">
-                      <strong>{{ latestEvent.resumen || 'Sesión registrada' }}</strong>
-                      <p>{{ latestEvent.profesionalNombre }} / {{ latestEvent.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</p>
-                      <small>{{ latestEvent.tipoAtencion }} / {{ latestEvent.estado }}</small>
-                    </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>Sin sesiones registradas</strong>
-                      <p>Cuando se cargue la primera atención, vas a verla resumida acá.</p>
-                    </div>
-                  }
-                </article>
+                  </article>
+                </div>
 
-                <article class="surface">
-                  <div class="section-head">
-                    <h3>Antecedentes relevantes</h3>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('background')">Abrir tab</button>
-                  </div>
-                  @if (summaryAntecedentes().length) {
-                    <div class="summary-list">
-                      @for (antecedente of summaryAntecedentes(); track antecedente.label + antecedente.valueText) {
-                        <article class="summary-list__item">
-                          <div>
+                <div class="summary-col">
+                  <article class="surface">
+                    <div class="section-head">
+                      <h3>Antecedentes</h3>
+                      <button type="button" class="btn btn--ghost btn--sm" (click)="openAntecedentesDrawer()">Editar</button>
+                    </div>
+                    @if (summaryAntecedentes().length) {
+                      <div class="summary-list summary-list--compact">
+                        @for (antecedente of summaryAntecedentes(); track antecedente.label + antecedente.valueText) {
+                          <article class="summary-list__item">
                             <strong>{{ antecedente.label }}</strong>
-                            <p>{{ antecedente.valueText || 'Sin detalle cargado' }}</p>
-                          </div>
-                          @if (antecedente.critical) {
-                            <span class="state-pill" data-tone="warning">Crítico</span>
-                          }
-                        </article>
-                      }
-                    </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>Sin antecedentes resumidos</strong>
-                      <p>Completa la vista documental cuando necesites dejar contexto base.</p>
-                    </div>
-                  }
-                </article>
+                            <span>{{ antecedente.valueText || 'Sin detalle' }}</span>
+                            @if (antecedente.critical) {
+                              <span class="state-pill" data-tone="warning">Crítico</span>
+                            } @else {
+                              <span></span>
+                            }
+                          </article>
+                        }
+                      </div>
+                    } @else {
+                      <p class="muted-copy">Sin antecedentes cargados.</p>
+                    }
+                  </article>
 
-                <article class="surface">
-                  <div class="section-head">
-                    <h3>Adjuntos recientes</h3>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('background')">Ver documentos</button>
-                  </div>
-                  @if (summaryAdjuntos().length) {
-                    <div class="attachment-list">
-                      @for (adjunto of summaryAdjuntos(); track adjunto.id) {
-                        <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
-                          <strong>{{ adjunto.originalFilename }}</strong>
-                          <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
-                        </button>
-                      }
+                  <article class="surface">
+                    <div class="section-head">
+                      <h3>Adjuntos recientes</h3>
                     </div>
-                  } @else {
-                    <div class="summary-card summary-card--compact">
-                      <strong>Sin adjuntos recientes</strong>
-                      <p>Los documentos clínicos van a aparecer acá apenas se carguen.</p>
-                    </div>
-                  }
-                </article>
+                    @if (summaryAdjuntos().length) {
+                      <div class="attachment-list">
+                        @for (adjunto of summaryAdjuntos(); track adjunto.id) {
+                          <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
+                            <strong>{{ adjunto.originalFilename }}</strong>
+                            <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
+                          </button>
+                        }
+                      </div>
+                    } @else {
+                      <p class="muted-copy">Sin adjuntos recientes.</p>
+                    }
+                  </article>
+                </div>
               </section>
             }
           </div>
@@ -288,10 +275,10 @@
           <div class="tab-stack">
             @if (!hasLegajo()) {
               <section class="empty-state empty-state--medium">
-                <h2>Primero hay que registrar la atención inicial</h2>
-                <p>Casos y sesiones se habilitan una vez creada la base clínica inicial.</p>
+                <h2>Primero hay que registrar la historia clínica</h2>
+                <p>Casos y sesiones se habilitan una vez que exista una base documental registrada.</p>
                 <div class="empty-state__actions">
-                  <button type="button" class="btn btn--primary" (click)="openLegajoModal()">Registrar atención inicial</button>
+                  <button type="button" class="btn btn--primary" (click)="openAntecedentesDrawer()">Registrar historia clínica</button>
                 </div>
               </section>
             } @else if (casesStatus() === 'loading') {
@@ -398,12 +385,17 @@
                       <h3>{{ selectedCase()?.descripcion || 'Sesiones del paciente' }}</h3>
                       <p class="muted-copy">Vista operativa con filtros mínimos y livianos para continuar el tratamiento actual.</p>
                     </div>
-                    <div class="chip-row">
-                      @for (filter of sessionListFilters; track filter.value) {
-                        <button type="button" class="filter-chip" [class.filter-chip--active]="sessionListFilter() === filter.value" (click)="sessionListFilter.set(filter.value)">
-                          {{ filter.label }}
-                        </button>
+                    <div class="summary-actions">
+                      @if (selectedCaseId()) {
+                        <button type="button" class="btn btn--secondary btn--sm" (click)="openEditCaso(selectedCaseId()!)">Editar caso</button>
                       }
+                      <div class="chip-row">
+                        @for (filter of sessionListFilters; track filter.value) {
+                          <button type="button" class="filter-chip" [class.filter-chip--active]="sessionListFilter() === filter.value" (click)="sessionListFilter.set(filter.value)">
+                            {{ filter.label }}
+                          </button>
+                        }
+                      </div>
                     </div>
                   </div>
 
@@ -440,8 +432,8 @@
           <div class="tab-stack">
             @if (!hasLegajo()) {
               <section class="empty-state empty-state--medium">
-                <h2>Primero hay que registrar la atención inicial</h2>
-                <p>El timeline longitudinal aparece cuando exista una base clínica inicial en este consultorio.</p>
+                <h2>Primero hay que registrar la historia clínica</h2>
+                <p>El timeline longitudinal aparece cuando exista una base documental registrada en este consultorio.</p>
               </section>
             } @else if (timelineStatus() === 'loading') {
               <section class="surface surface--loading">
@@ -456,9 +448,7 @@
               <section class="surface">
                 <div class="section-head section-head--stack">
                   <div>
-                    <p class="eyebrow">Timeline</p>
-                    <h3>Qué pasó longitudinalmente</h3>
-                    <p class="muted-copy">El historial completo vive acá, no en la home por defecto.</p>
+                    <h3>Timeline</h3>
                   </div>
                   <div class="chip-row">
                     @for (filter of timelineFilters; track filter.value) {
@@ -487,12 +477,12 @@
                           <span class="state-pill" [attr.data-tone]="timelineTone(event)">{{ timelineTypeLabel(event) }}</span>
                         </div>
                         <div class="timeline-item__body">
-                          <div>
-                            <h4>{{ event.title }}</h4>
-                            <p>{{ event.summary }}</p>
-                            <small>{{ event.profesionalNombre || 'Sin profesional asociado' }}@if (event.statusLabel) { / {{ event.statusLabel }}}</small>
+                          <h4 class="timeline-item__title">{{ event.title }}</h4>
+                          <p class="timeline-item__summary">{{ event.summary }}</p>
+                          <div class="timeline-item__end">
+                            <small class="timeline-item__prof">{{ event.profesionalNombre || 'Sin profesional asociado' }}@if (event.statusLabel) { / {{ event.statusLabel }}}</small>
+                            <button type="button" class="btn btn--ghost btn--sm" (click)="openTimelineItem(event)">Ver detalle</button>
                           </div>
-                          <button type="button" class="btn btn--ghost btn--sm" (click)="openTimelineItem(event)">Ver detalle</button>
                         </div>
                       </article>
                     }
@@ -507,96 +497,6 @@
                     <p>No hay eventos clínicos para el filtro actual.</p>
                   </div>
                 }
-              </section>
-            }
-          </div>
-        }
-
-        @case ('background') {
-          <div class="tab-stack">
-            @if (!hasLegajo()) {
-              <section class="empty-state empty-state--medium">
-                <h2>Primero hay que registrar la atención inicial</h2>
-                <p>Antecedentes y adjuntos se habilitan una vez creada la atención inicial.</p>
-              </section>
-            } @else if (backgroundStatus() === 'loading') {
-              <section class="surface surface--loading">
-                <span class="spinner" aria-hidden="true"></span>
-                <p>Cargando antecedentes y adjuntos...</p>
-              </section>
-            } @else if (backgroundStatus() === 'error') {
-              <section class="surface">
-                <div class="alert alert--error">{{ backgroundError() }}</div>
-              </section>
-            } @else {
-              <section class="summary-grid">
-                <article class="surface">
-                  <div class="section-head">
-                    <div>
-                      <p class="eyebrow">Antecedentes</p>
-                      <h3>Contexto base del paciente</h3>
-                    </div>
-                    <button type="button" class="btn btn--ghost btn--sm" (click)="openAntecedentesDrawer()">Editar</button>
-                  </div>
-                  @if (antecedentes().length) {
-                    <div class="background-list">
-                      @for (antecedente of antecedentes(); track antecedente.label + antecedente.valueText + antecedente.notes) {
-                        <article class="background-item">
-                          <div>
-                            <strong>{{ antecedente.label }}</strong>
-                            <p>{{ antecedente.valueText || 'Sin detalle' }}</p>
-                            @if (antecedente.notes) {
-                              <small>{{ antecedente.notes }}</small>
-                            }
-                          </div>
-                          @if (antecedente.critical) {
-                            <span class="state-pill" data-tone="warning">Crítico</span>
-                          }
-                        </article>
-                      }
-                    </div>
-                  } @else {
-                    <p class="muted-copy">No hay antecedentes cargados.</p>
-                  }
-                </article>
-
-                <article class="surface">
-                  <div class="section-head">
-                    <div>
-                      <p class="eyebrow">Adjuntos</p>
-                      <h3>Documentos clínicos recientes</h3>
-                    </div>
-                    @if (backgroundLatestSesion()) {
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(backgroundLatestSesion()!.id)">Abrir sesión</button>
-                    }
-                  </div>
-                  @if (overview()?.adjuntosRecientes?.length) {
-                    <div class="attachment-list">
-                      @for (adjunto of overview()!.adjuntosRecientes; track adjunto.id) {
-                        <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
-                          <strong>{{ adjunto.originalFilename }}</strong>
-                          <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
-                        </button>
-                      }
-                    </div>
-                  } @else {
-                    <p class="muted-copy">No hay adjuntos recientes.</p>
-                  }
-
-                  @if (backgroundLatestSesion()?.adjuntos?.length) {
-                    <div class="subsection">
-                      <h4>Adjuntos de la última sesión</h4>
-                      <div class="attachment-list">
-                        @for (adjunto of backgroundLatestSesion()!.adjuntos; track adjunto.id) {
-                          <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
-                            <strong>{{ adjunto.originalFilename }}</strong>
-                            <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
-                          </button>
-                        }
-                      </div>
-                    </div>
-                  }
-                </article>
               </section>
             }
           </div>
@@ -821,9 +721,10 @@
                           [tratamientos]="treatmentCatalogItems()"
                           [categorias]="treatmentCatalogCategorias()"
                           [tipos]="treatmentCatalogTipos()"
-                          [excludedCodes]="selectedTreatmentCodes()"
-                          [selectedCode]="selectedTreatmentCode()"
-                          (selectedCodeChange)="handleSelectedTreatment($event)"
+                          [multiple]="true"
+                          [showPickedSummary]="false"
+                          [selectedCodes]="createLegajoTratamientoCodes()"
+                          (selectedCodesChange)="updateCreateLegajoTratamientos($event)"
                           placeholder="Buscar tratamiento por nombre, código o categoría"
                         />
                       </div>
@@ -982,61 +883,350 @@
     </aside>
   }
 
-  @if (showCasoDrawer()) {
-    <div class="drawer-backdrop" (click)="showCasoDrawer.set(false)"></div>
-    <aside class="drawer">
+  @if (showEditCasoDrawer()) {
+    <div class="drawer-backdrop" (click)="closeEditCasoDrawer()"></div>
+    <aside class="drawer drawer--wide" role="dialog" aria-modal="true" aria-labelledby="edit-caso-title">
       <div class="drawer-head">
-        <h3>Nuevo caso clínico</h3>
-        <button type="button" class="btn btn--ghost btn--sm" (click)="showCasoDrawer.set(false)">Cerrar</button>
+        <h3 id="edit-caso-title">Editar caso clínico</h3>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="closeEditCasoDrawer()">Cerrar</button>
       </div>
-      <form class="drawer-form" [formGroup]="casoForm">
-        <label class="field"><span>Profesional responsable</span><select formControlName="profesionalResponsableId"><option value="">Sin asignar</option>@for (profesional of professionalOptions(); track profesional.id) {<option [value]="profesional.id">{{ profesional.nombre }}</option>}</select></label>
+      <form class="drawer-form" [formGroup]="editCasoForm">
         <label class="field">
-          <span>Motivo de consulta *</span>
-          <textarea rows="3" formControlName="motivoConsulta" placeholder="Describa el motivo principal de consulta"></textarea>
-        </label>
-        <label class="field"><span>Diagnóstico médico</span><input type="text" formControlName="diagnosticoMedico" placeholder="Ej: Lumbalgia crónica, HTA..." /></label>
-        <label class="field"><span>Afección principal</span><input type="text" formControlName="afeccionPrincipal" placeholder="Ej: Dolor lumbar, limitación funcional..." /></label>
-        <label class="field"><span>Tipo de origen</span>
-          <select formControlName="tipoOrigen">
-            <option value="CONSULTA_DIRECTA">Consulta directa</option>
-            <option value="DERIVACION">Derivación</option>
-            <option value="GUARDIA">Guardia</option>
-            <option value="INTERNACION">Internación</option>
+          <span>Profesional responsable</span>
+          <select formControlName="profesionalResponsableId">
+            <option value="">Sin asignar</option>
+            @for (profesional of professionalOptions(); track profesional.id) {
+              <option [value]="profesional.id">{{ profesional.nombre }}</option>
+            }
           </select>
         </label>
-        <label class="field"><span>Prioridad</span>
-          <select formControlName="prioridad">
-            <option value="BAJA">Baja</option>
-            <option value="NORMAL">Normal</option>
-            <option value="ALTA">Alta</option>
-            <option value="URGENTE">Urgente</option>
-          </select>
+        <label class="field">
+          <span>Motivo de consulta</span>
+          <textarea rows="3" formControlName="motivoConsulta"></textarea>
+        </label>
+        <label class="field">
+          <span>Diagnóstico médico</span>
+          <input type="text" formControlName="diagnosticoMedico" />
+        </label>
+        <label class="field">
+          <span>Diagnóstico funcional / tratamiento</span>
+          <input type="text" formControlName="diagnosticoFuncional" />
+        </label>
+        <label class="field">
+          <span>Afección principal</span>
+          <input type="text" formControlName="afeccionPrincipal" />
         </label>
       </form>
       <div class="drawer-actions">
-        <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">Crear caso clínico</button>
+        <button type="button" class="btn btn--primary" [disabled]="isSavingEditCaso()" (click)="saveEditCaso()">Guardar cambios</button>
+        <button type="button" class="btn btn--secondary" [disabled]="isSavingEditCaso()" (click)="closeEditCasoDrawer()">Cancelar</button>
       </div>
     </aside>
   }
 
-  @if (showAntecedentesDrawer()) {
-    <div class="drawer-backdrop" (click)="showAntecedentesDrawer.set(false)"></div>
-    <aside class="drawer drawer--wide drawer--antecedentes">
-      <div class="drawer-head">
-        <h3>Antecedentes del paciente</h3>
-        <button type="button" class="btn btn--ghost btn--sm" (click)="showAntecedentesDrawer.set(false)">Cerrar</button>
+  @if (showCasoDrawer()) {
+    <div class="overlay">
+      <div class="modal-panel modal-panel--caso" role="dialog" aria-modal="true" aria-labelledby="caso-modal-title">
+
+        <div class="modal-head">
+          <div>
+            @if (selectedPatient(); as patient) {
+              <p class="eyebrow">{{ patient.apellido }}, {{ patient.nombre }}</p>
+            }
+            <h3 id="caso-modal-title">Nuevo caso clínico</h3>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Cerrar" (click)="closeCasoModal()">✕</button>
+        </div>
+
+        <div class="caso-wizard-steps">
+          <div class="caso-step" [class.caso-step--active]="casoModalStep() === 1" [class.caso-step--done]="casoModalStep() > 1">
+            <span class="caso-step__index">1</span>
+            <span class="caso-step__label">Apertura</span>
+          </div>
+          <span class="caso-step__connector" aria-hidden="true"></span>
+          <div class="caso-step" [class.caso-step--active]="casoModalStep() === 2" [class.caso-step--done]="casoModalStep() > 2">
+            <span class="caso-step__index">2</span>
+            <span class="caso-step__label">Diagnóstico</span>
+          </div>
+          <span class="caso-step__connector" aria-hidden="true"></span>
+          <div class="caso-step" [class.caso-step--active]="casoModalStep() === 3">
+            <span class="caso-step__index">3</span>
+            <span class="caso-step__label">Tratamiento</span>
+          </div>
+        </div>
+
+        <form [formGroup]="casoForm">
+          <div class="modal-body">
+
+            @switch (casoModalStep()) {
+
+              @case (1) {
+                <div class="caso-panel">
+                  <label class="field">
+                    <span>Responsable de carga</span>
+                    <select #casoResponsableSelect formControlName="profesionalResponsableId">
+                      <option value="">Sin asignar</option>
+                      @for (profesional of professionalOptions(); track profesional.id) {
+                        <option [value]="profesional.id">{{ profesional.nombre }}</option>
+                      }
+                    </select>
+                    @if (defaultProfesionalId() && casoForm.controls.profesionalResponsableId.value === defaultProfesionalId()) {
+                      <span class="field__hint">Se asignó automáticamente el usuario logueado. Podés cambiarlo si corresponde.</span>
+                    } @else {
+                      <span class="field__hint">Podés dejarlo sin asignar o elegir un responsable manualmente.</span>
+                    }
+                  </label>
+
+                  <div class="tipo-origen-grid">
+                    <button
+                      #casoOriginDirectButton
+                      type="button"
+                      class="tipo-origen-card"
+                      [class.tipo-origen-card--selected]="casoForm.controls.tipoOrigen.value === 'CONSULTA_DIRECTA'"
+                      [attr.title]="'El paciente consulta por iniciativa propia.'"
+                      (click)="casoForm.controls.tipoOrigen.setValue('CONSULTA_DIRECTA'); casoForm.controls.derivadoPorInstitucion.setValue(''); casoDerivacionAdjuntos.set([])"
+                    >
+                      <strong>Consulta directa</strong>
+                    </button>
+                    <button
+                      type="button"
+                      class="tipo-origen-card"
+                      [class.tipo-origen-card--selected]="casoForm.controls.tipoOrigen.value === 'DERIVACION'"
+                      [attr.title]="'El paciente fue derivado por otro profesional o institución.'"
+                      (click)="casoForm.controls.tipoOrigen.setValue('DERIVACION'); casoForm.controls.motivoConsultaDetalle.setValue('')"
+                    >
+                      <strong>Derivación</strong>
+                    </button>
+                  </div>
+
+                  @if (casoForm.controls.tipoOrigen.value === 'CONSULTA_DIRECTA') {
+                    <label class="field" [class.field--invalid]="casoForm.controls.motivoConsultaDetalle.touched && !casoForm.controls.motivoConsultaDetalle.value.trim()">
+                      <span>Motivo de la consulta</span>
+                      <textarea
+                        class="textarea--compact"
+                        rows="2"
+                        formControlName="motivoConsultaDetalle"
+                        placeholder="Motivo principal de consulta"
+                        [attr.aria-invalid]="casoForm.controls.motivoConsultaDetalle.touched && !casoForm.controls.motivoConsultaDetalle.value.trim()"
+                      ></textarea>
+                      @if (casoForm.controls.motivoConsultaDetalle.touched && !casoForm.controls.motivoConsultaDetalle.value.trim()) {
+                        <span class="field__error">Completá el motivo de la consulta para continuar.</span>
+                      }
+                    </label>
+                  }
+
+                  @if (casoForm.controls.tipoOrigen.value === 'DERIVACION') {
+                    <section class="caso-upload-box">
+                      <label class="field" [class.field--invalid]="casoForm.controls.derivadoPorInstitucion.touched && !casoForm.controls.derivadoPorInstitucion.value.trim()">
+                        <span>Derivado por / Institución</span>
+                        <input
+                          type="text"
+                          formControlName="derivadoPorInstitucion"
+                          placeholder="Profesional o institución derivante"
+                          [attr.aria-invalid]="casoForm.controls.derivadoPorInstitucion.touched && !casoForm.controls.derivadoPorInstitucion.value.trim()"
+                        />
+                        @if (casoForm.controls.derivadoPorInstitucion.touched && !casoForm.controls.derivadoPorInstitucion.value.trim()) {
+                          <span class="field__error">Completá quién derivó el caso.</span>
+                        }
+                      </label>
+                      <div class="caso-upload-box__actions">
+                        <label class="caso-upload-trigger">
+                          <span>Adjuntar</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="queueCasoDerivacionAdjuntos($event)" />
+                        </label>
+                        <label class="caso-upload-trigger caso-upload-trigger--soft">
+                          <span>Foto</span>
+                          <input type="file" accept="image/*" capture="environment" (change)="queueCasoDerivacionAdjuntos($event)" />
+                        </label>
+                        @if (casoDerivacionAdjuntos().length) {
+                          <div class="caso-upload-list">
+                            @for (file of casoDerivacionAdjuntos(); track file.name + '-' + $index) {
+                              <button
+                                type="button"
+                                class="caso-upload-chip"
+                                [attr.aria-label]="'Quitar ' + file.name"
+                                [attr.title]="'Quitar ' + file.name"
+                                (click)="removeCasoDerivacionAdjunto($index)"
+                              >
+                                <strong>{{ file.name }}</strong>
+                                <span>{{ humanFileSize(file.size) }}</span>
+                                <small>×</small>
+                              </button>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </section>
+                  }
+                </div>
+              }
+
+              @case (2) {
+                <div class="caso-panel">
+                  <div class="caso-step-split caso-step-split--diagnostico">
+                    <label class="field">
+                      <span>Diagnóstico</span>
+                      <app-diagnostico-medico-selector
+                        [diagnosticos]="diagnosticosMedicos()"
+                        [categorias]="diagnosticosMedicosCategorias()"
+                        [tipos]="diagnosticosMedicosTipos()"
+                        [multiple]="true"
+                        [showPickedSummary]="false"
+                        [invalid]="casoForm.controls.diagnosticoCodigo.touched && !casoDiagnosticoCodes().length"
+                        placeholder="Buscar diagnóstico..."
+                        [selectedCodes]="casoDiagnosticoCodes()"
+                        (selectedCodesChange)="updateCasoDiagnosticos($event)"
+                      />
+                      @if (casoForm.controls.diagnosticoCodigo.touched && !casoDiagnosticoCodes().length) {
+                        <span class="field__error">Seleccioná al menos un diagnóstico para continuar.</span>
+                      }
+                    </label>
+                    <div class="caso-selection-panel caso-selection-panel--diagnostico">
+                      <span class="caso-selection-panel__label">Diagnósticos seleccionados</span>
+                      <div class="caso-selection-panel__list caso-selection-panel__list--scroll">
+                        @for (item of selectedCasoDiagnosticos(); track item.codigoInterno) {
+                          <button type="button" class="caso-selection-chip caso-selection-chip--removable" [title]="resolveDiagnosticoCategoriaName(item.categoriaCodigo)" (click)="removeCasoDiagnostico(item.codigoInterno)">
+                            <div class="caso-selection-chip__copy">
+                              <strong>{{ item.nombre }}</strong>
+                            </div>
+                            <small>×</small>
+                          </button>
+                        } @empty {
+                          <span class="caso-selection-empty">Sin diagnósticos seleccionados.</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  <label class="field">
+                    <span>Observación</span>
+                    <textarea class="textarea--compact" rows="2" formControlName="diagnosticoObservacion" placeholder="Observación complementaria del diagnóstico"></textarea>
+                  </label>
+                </div>
+              }
+
+              @case (3) {
+                <div class="caso-panel">
+                  <div class="caso-step-split caso-step-split--diagnostico">
+                    <label class="field">
+                      <span>Componente tratamiento</span>
+                      <select formControlName="tratamientoId">
+                        <option value="">Seleccionar componente tratamiento</option>
+                        @for (item of treatmentCatalogItems(); track item.codigoInterno) {
+                          @if (item.activo) {
+                            <option [value]="item.codigoInterno">{{ item.nombre }}</option>
+                          }
+                        }
+                      </select>
+                      @if (casoForm.controls.tratamientoId.touched && casoForm.controls.tratamientoId.invalid) {
+                        <span class="field__error">Seleccioná un tratamiento para crear el caso.</span>
+                      }
+                    </label>
+                    <div class="caso-selection-panel">
+                      <span class="caso-selection-panel__label">Tratamiento seleccionado</span>
+                      <div class="caso-selection-panel__list">
+                        @if (resolveTreatmentCatalogItem(casoForm.controls.tratamientoId.value); as selectedTreatment) {
+                          <div class="caso-selection-chip">
+                            <strong>{{ selectedTreatment.nombre }}</strong>
+                            <span>{{ resolveTreatmentCategoryName(selectedTreatment.categoriaCodigo) }}</span>
+                          </div>
+                        } @else {
+                          <span class="caso-selection-empty">Todavía no hay tratamiento seleccionado.</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid-two caso-grid-two">
+                    <label class="field">
+                      <span>Cantidad de sesiones</span>
+                      <input type="number" min="1" inputmode="numeric" formControlName="cantidadSesiones" />
+                      @if (casoForm.controls.cantidadSesiones.touched && casoForm.controls.cantidadSesiones.invalid) {
+                        <span class="field__error">Indicá la cantidad estimada de sesiones.</span>
+                      }
+                    </label>
+                    <div></div>
+                  </div>
+
+                  <label class="field">
+                    <span>Observación</span>
+                    <textarea class="textarea--compact" rows="2" formControlName="tratamientoObservacion" placeholder="Observación complementaria del tratamiento"></textarea>
+                  </label>
+                </div>
+              }
+
+            }
+
+          </div>
+        </form>
+
+        <footer class="modal-footer">
+          @if (casoModalStep() > 1) {
+            <button type="button" class="btn btn--secondary" (click)="prevCasoStep()">Anterior</button>
+          } @else {
+            <button type="button" class="btn btn--secondary" (click)="closeCasoModal()">Cancelar</button>
+          }
+          <div class="modal-footer__right">
+            @if (casoModalStep() < 3) {
+              <button type="button" class="btn btn--primary" (click)="nextCasoStep()">Siguiente</button>
+            } @else {
+              <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">Crear caso clínico</button>
+            }
+          </div>
+        </footer>
+
       </div>
-      <app-antecedente-selector
-        [categories]="antecedenteCatalogCategories()"
-        [formArray]="antecedentesItems"
-        context="edit"
-        emptySelectionMessage="Todavía no hay antecedentes guardados para este paciente."
+    </div>
+
+    @if (showCasoCloseConfirm()) {
+      <app-confirm-dialog
+        title="¿Descartás el caso?"
+        message="Hay datos cargados que se perderán si cerrás ahora."
+        confirmLabel="Descartar"
+        (confirmed)="confirmCloseCasoModal()"
+        (cancelled)="showCasoCloseConfirm.set(false)"
       />
-      <div class="drawer-actions">
-        <button type="button" class="btn btn--primary" [disabled]="isSavingAntecedentes()" (click)="saveAntecedentes()">Guardar antecedentes</button>
+    }
+  }
+
+  @if (showAntecedentesDrawer()) {
+    <div class="overlay">
+      <div class="modal-panel modal-panel--antecedentes" role="dialog" aria-modal="true" aria-labelledby="antecedentes-modal-title">
+        <div class="modal-head">
+          <div>
+            @if (selectedPatient(); as patient) {
+              <p class="eyebrow">{{ patient.apellido }}, {{ patient.nombre }}</p>
+            }
+            <h3 id="antecedentes-modal-title">Antecedentes del paciente</h3>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Cerrar" (click)="closeAntecedentesModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <app-antecedente-selector
+            [categories]="antecedenteCatalogCategories()"
+            [formArray]="antecedentesItems"
+            context="edit"
+            emptySelectionMessage="Todavía no hay antecedentes cargados."
+          />
+        </div>
+
+        <footer class="modal-footer">
+          <button type="button" class="btn btn--secondary" (click)="closeAntecedentesModal()">Cancelar</button>
+          <button type="button" class="btn btn--primary" [disabled]="isSavingAntecedentes()" (click)="saveAntecedentes()">Guardar antecedentes</button>
+        </footer>
       </div>
-    </aside>
+    </div>
+  }
+
+  @if (showAntecedentesCloseConfirm()) {
+    <app-confirm-dialog
+      title="¿Descartar cambios?"
+      message="Hay antecedentes cargados que todavía no fueron guardados. Si salís ahora, se perderán."
+      confirmLabel="Descartar"
+      variant="warning"
+      (cancelled)="showAntecedentesCloseConfirm.set(false)"
+      (confirmed)="confirmCloseAntecedentesModal()"
+    />
   }
 
   @if (showClearPatientConfirm()) {

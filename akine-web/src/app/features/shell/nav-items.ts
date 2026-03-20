@@ -27,7 +27,7 @@ const PATIENT_ONLY: RoleName[] = ['PACIENTE'];
 export const NAV_SECTIONS: NavSection[] = [
   {
     id: 'operacion',
-    title: 'Operación',
+    title: 'Operaci\u00f3n',
     items: [
       {
         path: '/app/inicio',
@@ -53,7 +53,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       {
         path: '/app/historia-clinica',
-        label: 'Atención',
+        label: 'Atenci\u00f3n',
         icon: 'stethoscope',
         roles: CLINICAL_STAFF,
         children: [
@@ -65,13 +65,13 @@ export const NAV_SECTIONS: NavSection[] = [
           },
           {
             path: '/app/historia-clinica',
-            label: 'Historia clínica',
+            label: 'Historia cl\u00ednica',
             icon: 'file-medical',
             roles: CLINICAL_STAFF,
           },
           {
             path: '/app/historia-clinica',
-            label: 'Evoluciones / diagnósticos',
+            label: 'Evoluciones / diagn\u00f3sticos',
             icon: 'clipboard-pulse',
             roles: CLINICAL_STAFF,
           },
@@ -98,37 +98,27 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     id: 'administracion',
-    title: 'Administración',
+    title: 'Administraci\u00f3n',
     items: [
       {
-        path: '/app/equipo',
-        label: 'Equipo',
-        icon: 'team',
+        path: '/app/cobertura',
+        label: 'Cobertura',
+        icon: 'shield-check',
         roles: STAFF_WITH_ADMIN,
         children: [
-          {
-            path: '/app/equipo',
-            label: 'Todos los miembros',
-            icon: 'users',
-            roles: STAFF_WITH_ADMIN,
-          },
-          {
-            path: '/app/consultorios/:consultorioId/configuracion/cargos-personal',
-            label: 'Cargos del personal',
-            icon: 'badge',
-            roles: STAFF_WITH_ADMIN,
-          },
+          { path: '/app/cobertura/financiadores', label: 'Financiadores', icon: 'building', roles: STAFF_WITH_ADMIN },
+          { path: '/app/cobertura/planes', label: 'Planes', icon: 'layers', roles: STAFF_WITH_ADMIN },
         ],
       },
       {
-        path: '/app/obras-sociales',
-        label: 'Cobertura',
-        icon: 'shield',
+        path: '/app/facturacion',
+        label: 'Facturaci\u00f3n',
+        icon: 'receipt',
         roles: STAFF_WITH_ADMIN,
         children: [
-          { path: '/app/obras-sociales', label: 'Obras sociales', icon: 'heart-shield', roles: STAFF_WITH_ADMIN },
-          { path: '/app/obras-sociales', label: 'Planes', icon: 'layers', roles: STAFF_WITH_ADMIN },
-          { path: '/app/obras-sociales', label: 'Convenios', icon: 'handshake', roles: STAFF_WITH_ADMIN },
+          { path: '/app/facturacion/convenios', label: 'Convenios', icon: 'handshake', roles: STAFF_WITH_ADMIN },
+          { path: '/app/facturacion/lotes', label: 'Lotes / Presentaci\u00f3n', icon: 'inventory', roles: STAFF_WITH_ADMIN },
+          { path: '/app/facturacion/conciliacion', label: 'Conciliaci\u00f3n', icon: 'account-balance', roles: STAFF_WITH_ADMIN },
         ],
       },
       {
@@ -136,35 +126,17 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Consultorios 360',
         icon: 'building',
         roles: STAFF_WITH_ADMIN,
-      },
-      {
-        path: '/app/consultorios/:consultorioId/configuracion/especialidades',
-        label: 'Clínica',
-        icon: 'clinic',
-        roles: STAFF_WITH_ADMIN,
         children: [
           {
-            path: '/app/consultorios/:consultorioId/configuracion/especialidades',
-            label: 'Especialidades',
-            icon: 'spark',
+            path: '/app/equipo',
+            label: 'Colaboradores',
+            icon: 'users',
             roles: STAFF_WITH_ADMIN,
           },
           {
-            path: '/app/consultorios/:consultorioId/configuracion/plantillas-antecedentes',
-            label: 'Plantillas de antecedentes',
-            icon: 'clipboard-list',
-            roles: STAFF_WITH_ADMIN,
-          },
-          {
-            path: '/app/consultorios/:consultorioId/configuracion/diagnosticos-medicos',
-            label: 'Diagnosticos medicos',
-            icon: 'clipboard-pulse',
-            roles: STAFF_WITH_ADMIN,
-          },
-          {
-            path: '/app/consultorios/:consultorioId/configuracion/tratamientos',
-            label: 'Tratamientos',
-            icon: 'activity',
+            path: '/app/consultorios/:consultorioId/configuracion/cargos-personal',
+            label: 'Cargos del personal',
+            icon: 'badge',
             roles: STAFF_WITH_ADMIN,
           },
         ],
@@ -177,15 +149,15 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         path: '/app/admin/suscripciones',
-        label: 'Suscripción',
+        label: 'Suscripci\u00f3n',
         icon: 'credit-card',
         roles: PLATFORM_ADMIN,
         children: [
           { path: '/app/admin/suscripciones', label: 'Plan SaaS', icon: 'layers', roles: PLATFORM_ADMIN },
-          { path: '/app/admin/suscripciones', label: 'Facturación', icon: 'receipt-text', roles: PLATFORM_ADMIN },
+          { path: '/app/admin/suscripciones', label: 'Facturaci\u00f3n', icon: 'receipt-text', roles: PLATFORM_ADMIN },
           {
             path: '/app/admin/suscripciones',
-            label: 'Límites / usuarios',
+            label: 'L\u00edmites / usuarios',
             icon: 'users-gear',
             roles: PLATFORM_ADMIN,
           },

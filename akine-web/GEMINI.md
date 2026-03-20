@@ -353,6 +353,42 @@ Implementation rule:
 
 ---
 
+## Mandatory compliance gate: AKINE_UI_RULES
+
+Any modification in this frontend project that affects UI, UX, styles, visual structure, layout, spacing, components, forms, tables, modals, headers, tabs, steppers, filters, or visual behavior must comply with `AKINE_UI_RULES.md` without exception.
+
+`AKINE_UI_RULES.md` is the visual source of truth for the product. It is located at the workspace root and at `akine-web/akine-web/AKINE_UI_RULES.md`.
+
+### Mandatory protocol
+
+- Read `AKINE_UI_RULES.md` before touching any visual part of the product.
+- Treat `AKINE_UI_RULES.md` as the definitive and non-negotiable visual source of truth.
+- Do not close or consider a frontend task done without explicitly validating compliance with those rules.
+- If the proposed change conflicts with `AKINE_UI_RULES.md`, stop, correct, and align before delivering.
+- Do not improvise redesigns.
+- Do not create new patterns if an approved one already exists.
+- Do not enlarge components to "improve clarity".
+- Do not turn tabs, steppers, or subtle selectors into large or visually heavier elements.
+- Do not break visual consistency between equivalent screens.
+- Advanced filters must remain hidden behind a filter button unless there is a clear and justified operational need.
+- Maintain visual consistency, hierarchy, density, spacing, and behavior aligned with the patterns already defined in AKINE.
+
+### Required Gemini output for visual tasks
+
+Before implementing any visual change, Gemini must explicitly state:
+1. which existing pattern will be reused
+2. what will be simplified
+3. what will be removed or reduced to lower visual weight
+4. how consistency with equivalent screens will be preserved
+5. which global spacing rules, tokens, or shared utilities will be applied
+6. how compliance with `AKINE_UI_RULES.md` was verified
+
+### Acceptance rule
+
+If Gemini does not provide this explicit validation, the frontend task is considered incomplete. A visual change cannot be marked as done without verifying compliance with `AKINE_UI_RULES.md`.
+
+---
+
 ## Accessibility baseline
 
 Minimum accessibility rules:
@@ -454,6 +490,7 @@ A frontend task is done only if all applicable conditions are met:
 - affected flows were manually verified when needed
 - no sensitive data leaked in logs or browser storage
 - risks, assumptions, and UX edge cases are clearly stated
+- **for visual changes**: compliance with `AKINE_UI_RULES.md` has been explicitly validated and stated in the response; if not present, the task is not done
 
 ---
 

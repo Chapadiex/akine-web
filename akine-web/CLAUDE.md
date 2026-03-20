@@ -81,6 +81,35 @@ Cada feature debe mantener separacion clara entre:
 - no introducir librerias UI nuevas sin pedido explicito
 - responsive obligatorio para desktop, tablet y movil
 
+### Validación obligatoria contra AKINE_UI_RULES
+
+Toda modificación que afecte UI, UX, estilos, estructura visual, layout, spacing, componentes, formularios, tablas, modales, headers, tabs, steppers, filtros o comportamiento visual debe cumplir obligatoriamente con `AKINE_UI_RULES.md`.
+
+`AKINE_UI_RULES.md` es la fuente de verdad visual del producto. Está disponible en la raíz del workspace y en `akine-web/akine-web/AKINE_UI_RULES.md`.
+
+**Protocolo obligatorio:**
+- Leer `AKINE_UI_RULES.md` antes de tocar cualquier parte visual.
+- Tomarlo como fuente de verdad visual; no cerrarlo por preferencias propias.
+- No dar por terminada ninguna tarea visual sin validar cumplimiento explícitamente.
+- Si el cambio propuesto entra en conflicto con `AKINE_UI_RULES.md`, frenar, corregir y alinear antes de entregar.
+- No improvisar rediseños.
+- No crear patrones nuevos si ya existe uno aprobado.
+- No agrandar componentes para "mejorar claridad".
+- No convertir tabs, steppers o selectores sutiles en botones más grandes o visualmente más pesados.
+- No romper consistencia entre pantallas equivalentes.
+- Los filtros avanzados deben ir ocultos detrás de un botón de filtro salvo necesidad operativa real y justificada.
+
+**Salida obligatoria del agente en tareas visuales:**
+Antes de implementar cualquier cambio visual, indicar explícitamente:
+1. qué patrón existente se reutiliza
+2. qué se simplifica
+3. qué se elimina o reduce para bajar peso visual
+4. cómo se mantiene consistencia con otras pantallas
+5. qué spacing global, tokens o utilidades compartidas se aplican
+6. cómo se verificó cumplimiento con `AKINE_UI_RULES.md`
+
+**Regla de aceptación:** Si no existe esta validación explícita, la tarea de frontend se considera incompleta.
+
 ## 7.1 Estandar global de tablas
 - toda tabla actual y futura debe heredar un mismo sistema reutilizable de layout
 - definir tipos base de columna como minimo:
@@ -126,7 +155,7 @@ Queda prohibido sin pedido explicito:
 - tocar auth global sin revisar impacto
 
 ## 10. Verificacion minima
-Ejecutar segun corresponda:
+Ejecutar segun corresponda (para cambios visuales, agregar validacion contra `AKINE_UI_RULES.md` como paso previo al build):
 
 ```bash
 npm ci

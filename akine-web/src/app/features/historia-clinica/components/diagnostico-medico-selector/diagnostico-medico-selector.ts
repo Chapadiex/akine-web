@@ -12,7 +12,12 @@ import {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <section class="selector" [class.selector--multiple]="multiple()">
+    <section
+      class="selector"
+      [class.selector--multiple]="multiple()"
+      [class.selector--picked-side]="multiple() && pickedLayout() === 'side'"
+      [class.selector--invalid]="invalid()"
+    >
       <div class="selector-field">
         <input
           type="search"
@@ -50,13 +55,16 @@ import {
         }
       </div>
 
-      @if (multiple()) {
+      @if (multiple() && showPickedSummary()) {
         <div class="selector-picked">
           <span class="selector-picked__label">Diagnósticos seleccionados</span>
           <div class="selector-picked__list">
             @for (item of selectedItems(); track item.codigoInterno) {
               <button type="button" class="selector-chip" (click)="removeDiagnostico(item.codigoInterno)">
-                <span>{{ item.nombre }}</span>
+                <span class="selector-chip__copy">
+                  <strong>{{ item.nombre }}</strong>
+                  <small>{{ categoriaLabel(item.categoriaCodigo) }}</small>
+                </span>
                 <strong>&times;</strong>
               </button>
             } @empty {
@@ -70,6 +78,12 @@ import {
   styles: [`
     .selector { display: grid; gap: 10px; }
     .selector--multiple { height: 100%; grid-template-rows: auto 1fr; min-height: 0; }
+    .selector--picked-side {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: none;
+      align-items: start;
+      gap: 16px;
+    }
     .selector-field { position: relative; }
     .selector-field input {
       width: 100%;
@@ -79,6 +93,10 @@ import {
       padding: 0 12px;
       background: var(--white);
       color: var(--text);
+    }
+    .selector--invalid .selector-field input {
+      border-color: color-mix(in srgb, var(--error) 78%, var(--border));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--error) 12%, transparent);
     }
     .selector-dropdown {
       position: absolute;
@@ -131,6 +149,8 @@ import {
       gap: 8px;
       align-content: start;
       min-height: 0;
+      align-self: start;
+      padding-top: 0;
     }
     .selector-picked__label {
       font-size: 0.78rem;
@@ -146,13 +166,33 @@ import {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      min-height: 32px;
-      padding: 0 10px;
+      min-height: 38px;
+      padding: 6px 10px;
       border: 1px solid var(--border);
       border-radius: 999px;
       background: color-mix(in srgb, var(--white) 94%, var(--bg));
       color: var(--text);
       cursor: pointer;
+    }
+    .selector-chip__copy {
+      display: grid;
+      gap: 1px;
+      text-align: left;
+      min-width: 0;
+    }
+    .selector-chip__copy strong,
+    .selector-chip__copy small {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .selector-chip__copy strong {
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+    .selector-chip__copy small {
+      font-size: 0.72rem;
+      color: var(--text-muted);
     }
     .selector-chip strong {
       font-size: 0.9rem;
@@ -167,6 +207,12 @@ import {
     .selector-empty {
       padding: 14px 12px;
     }
+    @media (max-width: 820px) {
+      .selector--picked-side {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -176,6 +222,9 @@ export class DiagnosticoMedicoSelectorComponent {
   readonly tipos = input<DiagnosticoMedicoTipo[]>([]);
   readonly placeholder = input('Buscar diagnóstico médico...');
   readonly multiple = input(false);
+  readonly pickedLayout = input<'stack' | 'side'>('stack');
+  readonly showPickedSummary = input(true);
+  readonly invalid = input(false);
   readonly selectedCode = model('');
   readonly selectedCodes = model<string[]>([]);
 

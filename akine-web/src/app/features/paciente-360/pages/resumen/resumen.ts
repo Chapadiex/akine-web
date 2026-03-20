@@ -18,49 +18,54 @@ import { Paciente360Service } from '../../services/paciente-360.service';
       @if (loading()) {
         <p class="loading-msg">Cargando resumen operativo...</p>
       } @else if (summary(); as current) {
-        <header class="page-head">
-          <div class="page-head-main">
-            <h2>Resumen</h2>
-            <p>Vista general del paciente con actividad reciente, alertas y proximas acciones.</p>
-          </div>
-        </header>
-
         <div class="kpi-grid">
-          <article class="kpi-card">
-            <span class="kpi-label">Proximo turno</span>
+          <article class="kpi-card"
+            [class.kpi-card-success]="!!current.kpis.proximoTurnoFecha"
+            [class.kpi-card-warning]="!current.kpis.proximoTurnoFecha">
+            <span class="kpi-label">Próximo turno</span>
             <strong class="kpi-value">
               {{ current.kpis.proximoTurnoFecha ? (current.kpis.proximoTurnoFecha | date:'dd MMM · HH:mm') : 'Sin turno' }}
             </strong>
             <small class="kpi-helper">{{ current.kpis.proximoTurnoProfesional || 'Pendiente de agenda' }}</small>
           </article>
 
-          <article class="kpi-card">
-            <span class="kpi-label">Ultima atencion</span>
+          <article class="kpi-card"
+            [class.kpi-card-success]="!!current.kpis.ultimaAtencionFecha"
+            [class.kpi-card-warning]="!current.kpis.ultimaAtencionFecha">
+            <span class="kpi-label">Última atención</span>
             <strong class="kpi-value">
               {{ current.kpis.ultimaAtencionFecha ? (current.kpis.ultimaAtencionFecha | date:'dd MMM · HH:mm') : 'Sin registros' }}
             </strong>
             <small class="kpi-helper">{{ current.kpis.ultimaAtencionProfesional || 'Sin profesional' }}</small>
           </article>
 
-          <article class="kpi-card">
-            <span class="kpi-label">Diagnosticos activos</span>
+          <article class="kpi-card"
+            [class.kpi-card-warning]="current.kpis.diagnosticosActivos > 0"
+            [class.kpi-card-success]="current.kpis.diagnosticosActivos === 0">
+            <span class="kpi-label">Diagnósticos activos</span>
             <strong class="kpi-value">{{ current.kpis.diagnosticosActivos }}</strong>
-            <small class="kpi-helper">Pendientes de seguimiento clinico</small>
+            <small class="kpi-helper">Pendientes de seguimiento clínico</small>
           </article>
 
-          <article class="kpi-card">
+          <article class="kpi-card"
+            [class.kpi-card-success]="current.kpis.sesionesMes > 0"
+            [class.kpi-card-warning]="current.kpis.sesionesMes === 0">
             <span class="kpi-label">Sesiones del mes</span>
             <strong class="kpi-value">{{ current.kpis.sesionesMes }}</strong>
             <small class="kpi-helper">Atenciones efectivas registradas</small>
           </article>
 
-          <article class="kpi-card">
+          <article class="kpi-card"
+            [class.kpi-card-success]="current.kpis.coberturaEstado && !current.kpis.coberturaEstado.toLowerCase().startsWith('sin')"
+            [class.kpi-card-warning]="!current.kpis.coberturaEstado || current.kpis.coberturaEstado.toLowerCase().startsWith('sin')">
             <span class="kpi-label">Cobertura</span>
             <strong class="kpi-value">{{ current.kpis.coberturaEstado }}</strong>
             <small class="kpi-helper">Convenio y autorizaciones</small>
           </article>
 
-          <article class="kpi-card">
+          <article class="kpi-card"
+            [class.kpi-card-warning]="current.kpis.saldoPendiente > 0"
+            [class.kpi-card-success]="current.kpis.saldoPendiente === 0">
             <span class="kpi-label">Saldo pendiente</span>
             <strong class="kpi-value">{{ current.kpis.saldoPendiente | currency:'ARS':'symbol':'1.0-0' }}</strong>
             <small class="kpi-helper">Caja vinculada al paciente</small>
@@ -73,66 +78,45 @@ import { Paciente360Service } from '../../services/paciente-360.service';
               <h3>Alertas</h3>
               <a [routerLink]="['../obra-social']">Ver cobertura</a>
             </header>
-            <ul class="list">
-              @for (alert of current.alertas; track alert.mensaje) {
-                <li class="list-row">
-                  <span class="row-pill" [class.row-pill-warning]="alert.tipo === 'warning'">
-                    {{ alert.tipo }}
-                  </span>
-                  <div>
-                    <strong>{{ alert.mensaje }}</strong>
-                  </div>
-                  <a [routerLink]="[alert.route]">Abrir</a>
-                </li>
-              }
-            </ul>
+            @if (current.alertas.length === 0) {
+              <div class="state-empty"><p>Sin alertas pendientes.</p></div>
+            } @else {
+              <ul class="alerts-list">
+                @for (alert of current.alertas; track alert.mensaje) {
+                  <li class="alert-card" [attr.data-tone]="alert.tipo">
+                    <div>
+                      <strong>{{ alert.mensaje }}</strong>
+                    </div>
+                    <a [routerLink]="[alert.route]">Abrir</a>
+                  </li>
+                }
+              </ul>
+            }
           </article>
 
           <article class="panel">
             <header class="panel-head">
-              <h3>Proximas acciones</h3>
+              <h3>Próximas acciones</h3>
               <a [routerLink]="['../turnos']">Gestionar</a>
             </header>
-            <ul class="list">
-              @for (item of current.proximasAcciones; track item.etiqueta) {
-                <li class="list-row">
-                  <div>
-                    <strong>{{ item.etiqueta }}</strong>
-                    <p>
-                      {{ item.fechaReferencia ? (item.fechaReferencia | date:'dd/MM/yyyy HH:mm') : 'Sin fecha comprometida' }}
-                    </p>
-                  </div>
-                  <a [routerLink]="[item.route]">Ir</a>
-                </li>
-              }
-            </ul>
+            @if (current.proximasAcciones.length === 0) {
+              <div class="state-empty"><p>Sin acciones pendientes.</p></div>
+            } @else {
+              <ul class="actions-list">
+                @for (item of current.proximasAcciones; track item.etiqueta) {
+                  <li class="action-card">
+                    <div>
+                      <strong>{{ item.etiqueta }}</strong>
+                      <p>{{ item.fechaReferencia ? (item.fechaReferencia | date:'dd/MM/yyyy HH:mm') : 'Sin fecha comprometida' }}</p>
+                    </div>
+                    <a [routerLink]="[item.route]">Ir</a>
+                  </li>
+                }
+              </ul>
+            }
           </article>
         </div>
 
-        <article class="panel panel-wide">
-          <header class="panel-head">
-            <h3>Actividad reciente</h3>
-            <a [routerLink]="activityRoute()">Abrir tab</a>
-          </header>
-          @if (current.actividadReciente.length === 0) {
-            <div class="state-empty">
-              <p>No hay actividad reciente para mostrar.</p>
-            </div>
-          } @else {
-            <div class="activity-list">
-              @for (item of current.actividadReciente; track item.id) {
-                <a class="activity-row" [routerLink]="[item.route]">
-                  <span class="activity-type">{{ item.tipo }}</span>
-                  <div class="activity-copy">
-                    <strong>{{ item.titulo }}</strong>
-                    <p>{{ item.detalle }}</p>
-                  </div>
-                  <span class="activity-date">{{ item.fecha | date:'dd MMM · HH:mm' }}</span>
-                </a>
-              }
-            </div>
-          }
-        </article>
       } @else {
         <div class="state-empty">
           <p>No hay resumen disponible para este paciente.</p>

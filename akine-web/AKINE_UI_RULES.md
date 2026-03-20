@@ -1,534 +1,429 @@
-# AKINE_UI_RULES.md
+# AKINE_UI_RULES — Secciones complementarias
 
-## 1. Propósito
-
-`AKINE_UI_RULES.md` es la guía visual y de experiencia de usuario transversal de AKINE.
-
-Su objetivo es:
-- mantener consistencia entre pantallas,
-- evitar rediseños improvisados,
-- reducir peso visual y carga cognitiva,
-- mejorar la velocidad de carga operativa,
-- unificar criterios de formularios, tablas, modales, headers, tabs, steppers, filtros, estados, validaciones y responsive.
-
-Estas reglas son obligatorias para cualquier cambio de frontend, UX/UI o ajuste visual del producto.
+Estas secciones completan `AKINE_UI_RULES.md` y deben tratarse con la misma jerarquía y obligatoriedad que el documento base.
 
 ---
 
-## 2. Alcance obligatorio
+## 24. Design tokens obligatorios
 
-Estas reglas aplican a cualquier intervención sobre:
-- pantallas,
-- formularios,
-- campos,
-- tablas,
-- listados,
-- modales,
-- drawers,
-- headers,
-- tabs,
-- steppers,
-- KPIs,
-- cards,
-- badges,
-- estados,
-- buscadores,
-- filtros,
-- paginación,
-- acciones por fila,
-- toolbars,
-- uploads de archivos,
-- empty states,
-- banners,
-- alertas,
-- confirmaciones,
-- layouts responsive.
+Los valores definidos en esta sección son la fuente de verdad para espaciado, tipografía, radio, sombras y z-index en toda la aplicación.
 
-No se permite excluir un cambio de estas reglas argumentando que “solo se tocó una parte chica”.
+No se permite usar valores arbitrarios fuera de esta escala.
+No se permite hardcodear valores en componentes individuales si el token correspondiente ya existe.
 
----
+### 24.1 Espaciado
 
-## 3. Fuente de verdad visual y prioridad
+El sistema de espaciado base es de **8px**.
 
-`AKINE_UI_RULES.md` es la fuente de verdad visual del producto.
+| Token        | Valor  | Uso típico                                         |
+|--------------|--------|----------------------------------------------------|
+| `space-1`    | 4px    | separación mínima entre elementos internos         |
+| `space-2`    | 8px    | padding interno de inputs, gap entre íconos y texto|
+| `space-3`    | 12px   | separación entre campos de formulario              |
+| `space-4`    | 16px   | padding interno de cards, separación entre bloques |
+| `space-5`    | 24px   | separación entre secciones dentro de una pantalla  |
+| `space-6`    | 32px   | separación entre bloques principales               |
+| `space-7`    | 48px   | margen superior de pantalla, separación de headers |
+| `space-8`    | 64px   | uso excepcional, pantallas de landing o resumen    |
 
-### Orden de prioridad para decisiones visuales
-1. requerimiento funcional explícito aprobado,
-2. `AKINE_UI_RULES.md`,
-3. patrón existente aprobado en AKINE,
-4. criterio del agente o desarrollador.
+### 24.2 Tipografía
 
-No se permite saltear este orden.
+Fuente principal: **Plus Jakarta Sans** (fallback: system-ui, sans-serif).
+Fuente monoespaciada para códigos, identificadores o datos técnicos: **JetBrains Mono**.
 
-No se permite justificar un cambio visual solo por preferencia estética personal.
+Import obligatorio en el proyecto (Google Fonts):
+```
+https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap
+```
 
----
+Pesos permitidos: `400` (regular), `500` (medium), `600` (semibold).
+No usar `700` (bold) — resulta demasiado pesado en contexto clínico.
 
-## 4. Principios obligatorios de diseño en AKINE
+| Token        | Tamaño | Peso | Uso típico                                          |
+|--------------|--------|------|-----------------------------------------------------|
+| `text-xs`    | 11px   | 400  | captions, ayuda secundaria, metadatos, tags         |
+| `text-sm`    | 12px   | 400  | helper text, mensajes de validación, subtítulo badge|
+| `text-base`  | 13px   | 400  | texto de tabla, labels secundarios, body de card    |
+| `text-md`    | 14px   | 400  | body principal, labels de formulario                |
+| `text-label` | 15px   | 500  | subtítulos de sección, texto destacado, tab activo  |
+| `text-lg`    | 17px   | 600  | título de modal, título de card, sección            |
+| `text-xl`    | 20px   | 600  | título de pantalla                                  |
+| `text-2xl`   | 22px   | 600  | título de sección principal o dashboard KPI         |
 
-### 4.1 Consistencia antes que creatividad
-- No improvisar rediseños.
-- No crear patrones nuevos si ya existe uno aprobado.
-- No reinterpretar una pantalla completa si el problema es puntual.
-- No inventar nuevas distribuciones cuando una ya funciona en otra parte del sistema.
+Interlineado base: `1.5` para body. `1.25` para títulos.
+Letter-spacing: `0` para body. `0.06em–0.08em` solo para labels en mayúsculas (CAPS).
 
-### 4.2 Reducción de carga cognitiva
-- Mostrar primero lo más importante.
-- Lo secundario debe quedar resumido, oculto o detrás de una acción explícita.
-- No abrir pantallas con demasiados bloques compitiendo entre sí.
-- No mezclar datos operativos, configuración y contexto clínico en un mismo bloque si eso vuelve pesada la lectura.
+#### Regla de uso de pesos
 
-### 4.3 Compacidad visual
-- No agrandar componentes para “dar claridad”.
-- La claridad debe lograrse con mejor jerarquía, agrupación, espaciado y texto, no con botones gigantes o bloques sobredimensionados.
-- Priorizar controles compactos y proporcionales al contexto.
+- `400` para todo el contenido informativo y de lectura.
+- `500` para labels de formulario, tabs, subtítulos de sección, nombres de entidad en tabla.
+- `600` para títulos de pantalla, títulos de modal, valores KPI destacados.
+- No usar `600` en body text corrido. No usar `400` en títulos principales.
 
-### 4.4 Reutilización de patrones
-- Si ya existe una solución aprobada para headers, tablas, acciones, badges, filtros, formularios o modales, debe reutilizarse.
-- Las pantallas equivalentes deben verse equivalentes.
+#### Comparativa de alternativas (en orden de preferencia para AKINE)
 
----
+| Fuente              | Carácter              | Cuándo elegirla                               |
+|---------------------|-----------------------|-----------------------------------------------|
+| **Plus Jakarta Sans** ✓ | geométrica, cálida   | opción principal recomendada                  |
+| DM Sans             | neutra, funcional     | si se prefiere mayor neutralidad visual       |
+| Nunito Sans         | redondeada, amigable  | si el producto apunta más al paciente final   |
+| Roboto              | genérica              | no recomendada — muy asociada a apps Android  |
+| Inter               | técnica, fría         | aceptable pero sin personalidad de marca      |
 
-## 5. Jerarquía visual obligatoria
+### 24.3 Border radius
 
-Toda pantalla debe tener una jerarquía clara y estable.
+| Token          | Valor  | Uso                                                    |
+|----------------|--------|--------------------------------------------------------|
+| `radius-xs`    | 4px    | badges pill con punto, chips de filtro muy compactos   |
+| `radius-sm`    | 6px    | inputs, selects, botones, tooltips                     |
+| `radius-md`    | 8px    | cards internas, paneles secundarios, dropdowns         |
+| `radius-lg`    | 10px   | modales, drawers, cards principales de pantalla        |
+| `radius-xl`    | 14px   | paneles de resumen, cards KPI grandes                  |
+| `radius-full`  | 9999px | badges de estado (pill), avatares, indicadores circulares |
 
-### Regla general
-- Primero: contexto y acción principal.
-- Después: contenido principal editable o consultable.
-- Luego: contenido secundario, configuraciones o detalles avanzados.
+#### Regla de radio y borde superior de color en cards KPI
 
-### Reglas específicas
-- El título y subtítulo deben explicar la pantalla sin ruido visual.
-- Las acciones primarias deben ser visibles pero no invasivas.
-- Las acciones secundarias no deben competir con la acción principal.
-- Los estados deben verse claros pero no robar protagonismo innecesario.
-- No abrir una pantalla con múltiples banners, chips, cards y botones grandes al mismo tiempo.
+Las cards KPI usan `radius-xl` (14px) con un borde superior de 2.5px del color semántico del estado:
+- Warning → `#F59E0B`
+- Success → `#10B981`
+- Info → `#3B82F6`
+- Error → `#EF4444`
 
----
+El borde lateral izquierdo de color (patrón anterior) queda deprecado. El borde superior es el patrón aprobado.
 
-## 6. Reglas de headers y cabeceras
+### 24.4 Sombras
 
-### Cabecera estándar
-Toda pantalla debe tender a una cabecera compacta y consistente con:
-- título,
-- subtítulo o descripción corta,
-- acciones a la derecha si aplica,
-- icono o botón de filtro cuando corresponda.
+| Token           | Valor CSS                                      | Uso                            |
+|-----------------|------------------------------------------------|--------------------------------|
+| `shadow-xs`     | `0 1px 2px rgba(0,0,0,0.06)`                   | inputs en foco, chips          |
+| `shadow-sm`     | `0 2px 4px rgba(0,0,0,0.08)`                   | cards, dropdowns               |
+| `shadow-md`     | `0 4px 12px rgba(0,0,0,0.10)`                  | modales, paneles flotantes     |
+| `shadow-lg`     | `0 8px 24px rgba(0,0,0,0.14)`                  | drawers, popovers de contexto  |
 
-### Reglas
-- No usar cabeceras gigantes.
-- No repetir información en header y cuerpo si no aporta valor.
-- No usar demasiados badges en cabecera.
-- Si hay estado relevante, debe presentarse de forma compacta.
-- Si existen pantallas de resumen y edición del mismo dominio, sus cabeceras deben mantener la misma lógica visual base.
+### 24.5 Z-index
 
----
-
-## 7. Formularios: reglas obligatorias
-
-## 7.1 Formularios largos
-- No mostrar todos los campos al mismo tiempo si no es necesario para completar la tarea principal.
-- Aplicar progressive disclosure.
-- Dividir formularios por bloques lógicos del dominio, no por capricho visual.
-- No crear formularios “sábana”.
-- Lo indispensable debe estar primero.
-- Lo opcional o avanzado debe ir después o colapsado.
-
-## 7.2 Agrupación
-Agrupar campos por lógica real:
-- identidad,
-- contacto,
-- ubicación,
-- configuración,
-- datos administrativos,
-- datos clínicos,
-- datos de contexto,
-- datos opcionales.
-
-No mezclar grupos incompatibles dentro del mismo bloque.
-
-## 7.3 Obligatoriedad
-- Marcar solo lo realmente obligatorio.
-- No convertir campos opcionales en pseudo-obligatorios por mal diseño.
-- Lo obligatorio debe responder a necesidad funcional real.
-
-## 7.4 Ayuda y texto explicativo
-- No usar placeholders largos como explicación de negocio.
-- El label debe ser claro por sí mismo.
-- La ayuda adicional debe ser breve.
-- La explicación extensa debe ir debajo del campo o en ayuda contextual, no dentro del input.
-
-## 7.5 No duplicación
-- No volver a pedir información ya disponible en el flujo o dominio.
-- Si un dato ya existe en paciente, profesional, consultorio, cobertura, turno, sesión o caso, debe reutilizarse, resumirse o mostrarse como contexto antes que volver a cargarse.
-- No repetir el mismo dato en múltiples bloques salvo justificación funcional real.
+| Token           | Valor | Uso                            |
+|-----------------|-------|--------------------------------|
+| `z-base`        | 0     | contenido plano                |
+| `z-sticky`      | 100   | headers sticky, toolbars fijas |
+| `z-dropdown`    | 200   | menús desplegables             |
+| `z-modal`       | 300   | modales y overlays             |
+| `z-toast`       | 400   | notificaciones y toasts        |
+| `z-tooltip`     | 500   | tooltips                       |
 
 ---
 
-## 8. Reglas obligatorias para campos e inputs
+## 25. Paleta de colores y estados visuales
 
-## 8.1 Validación por tipo de dato
-Todo input debe validar el tipo de dato esperado.
+AKINE es un sistema de salud orientado a kinesiología y fisioterapia. La paleta prioriza legibilidad clínica, bajo nivel de fatiga visual y diferenciación clara de estados sin depender únicamente del color.
 
-### Esto es obligatorio
-- validar formato,
-- validar longitud,
-- validar obligatoriedad,
-- validar tipo,
-- validar rango si aplica,
-- validar consistencia de negocio si aplica.
+El color primario institucional es un **verde azulado oscuro** (`#1A6B5E`). Transmite calma, confianza y profesionalismo sin caer en el azul hospitalario genérico. Es el color ya presente en los botones primarios, tabs activos y acciones principales del sistema actual.
 
-### Ejemplos
-- email: formato de email válido,
-- teléfono: formato esperado,
-- documento: solo caracteres permitidos y longitud esperada,
-- CUIT/CUIL: estructura y longitud correctas,
-- fecha: fecha válida y rango permitido,
-- números: solo valores numéricos si corresponde,
-- importes: formato decimal correcto,
-- porcentajes: rango válido,
-- campos alfabéticos: no aceptar caracteres que no correspondan si el dominio no los permite.
+### 25.1 Colores base del sistema
 
-## 8.2 Validación temprana pero no agresiva
-- Validar mientras el usuario interactúa cuando sea útil.
-- No castigar al usuario mostrando error en rojo antes de que haya tenido oportunidad de completar el dato.
-- Priorizar validación en blur, cambio relevante o submit, según el caso.
-- Mostrar error claro y accionable.
+| Token                  | Hex        | Uso principal                                              |
+|------------------------|------------|------------------------------------------------------------|
+| `color-primary`        | `#1A6B5E`  | botón primario, tab activo, link de acción, acento         |
+| `color-primary-hover`  | `#155C51`  | hover sobre elementos primarios                            |
+| `color-primary-light`  | `#E6F4F2`  | fondo de contexto primario, highlight sutil, badge activo  |
+| `color-primary-text`   | `#0D4A40`  | texto sobre fondo `color-primary-light`                    |
+| `color-neutral-900`    | `#0F172A`  | texto principal                                            |
+| `color-neutral-600`    | `#475569`  | texto secundario, subtítulos, labels de tabla              |
+| `color-neutral-400`    | `#94A3B8`  | texto deshabilitado, placeholder                           |
+| `color-neutral-200`    | `#E2E8F0`  | bordes, divisores, separadores                             |
+| `color-neutral-100`    | `#F1F5F9`  | fondo de cards secundarias, paneles                        |
+| `color-neutral-50`     | `#F8FAFC`  | fondo de pantalla base                                     |
+| `color-white`          | `#FFFFFF`  | fondo de modales, inputs, superficies elevadas             |
 
-## 8.3 Input adecuado al dato
-- No usar input genérico si corresponde otro control.
-- No usar select largo si corresponde búsqueda o autocomplete.
-- No usar toggle para decisiones complejas.
-- No usar radio si hay demasiadas opciones.
-- No usar textarea si alcanza con input corto.
-- No usar date picker si el contexto requiere una entrada más rápida y controlada.
+### 25.2 Colores semánticos de estado
 
-## 8.4 Restricción de entrada
-Cuando el dominio lo justifique:
-- limitar caracteres inválidos,
-- aplicar máscara,
-- aplicar normalización,
-- impedir tipeo incorrecto desde el origen cuando sea razonable.
+| Token                   | Hex        | Fondo light | Uso principal                                         |
+|-------------------------|------------|-------------|-------------------------------------------------------|
+| `color-success`         | `#059669`  | `#ECFDF5`   | activo, aprobado, éxito, guardado correctamente       |
+| `color-success-text`    | `#065F46`  | —           | texto sobre fondo success-light                       |
+| `color-warning`         | `#D97706`  | `#FFFBEB`   | pendiente, sin cobertura, requiere atención           |
+| `color-warning-text`    | `#92400E`  | —           | texto sobre fondo warning-light                       |
+| `color-error`           | `#DC2626`  | `#FEF2F2`   | error, cancelado, rechazado, campo inválido           |
+| `color-error-text`      | `#991B1B`  | —           | texto sobre fondo error-light                         |
+| `color-info`            | `#2563EB`  | `#EFF6FF`   | en curso, informativo, contexto clínico neutro        |
+| `color-info-text`       | `#1E40AF`  | —           | texto sobre fondo info-light                          |
+| `color-blocked`         | `#4B5563`  | `#F3F4F6`   | bloqueado, sin permisos, finalizado, inactivo         |
+| `color-blocked-text`    | `#374151`  | —           | texto sobre fondo blocked-light                       |
 
-Ejemplo:
-- no permitir letras en campos puramente numéricos,
-- no permitir caracteres inválidos en identificadores,
-- normalizar espacios,
-- evitar dobles espacios o contenido basura.
+### 25.3 Regla de contraste obligatorio
 
-## 8.5 Consistencia entre frontend y backend
-- La validación de UI no reemplaza la validación de backend.
-- Debe existir coherencia entre ambas.
-- La UI debe prevenir errores obvios.
-- El backend debe garantizar integridad final.
+Todos los textos sobre fondos coloreados deben superar ratio **4.5:1** (WCAG AA mínimo).
 
----
+Verificaciones críticas:
+- Texto `color-warning-text` (`#92400E`) sobre `#FFFBEB` → ratio ≈ 5.8:1 ✓
+- Texto `color-success-text` (`#065F46`) sobre `#ECFDF5` → ratio ≈ 6.1:1 ✓
+- Texto `color-primary-text` (`#0D4A40`) sobre `#E6F4F2` → ratio ≈ 7.2:1 ✓
 
-## 9. Reglas de foco y posicionamiento del cursor
+No usar jamás texto genérico gris oscuro (`#333` o similar) sobre fondos de color semántico — siempre usar el token `-text` correspondiente del mismo ramp.
 
-Estas reglas son obligatorias para mejorar velocidad operativa.
+### 25.4 Regla de no dependencia del color
 
-## 9.1 Apertura de modales desde acción de alta, carga o edición
-Si una acción abre un modal para:
-- crear,
-- cargar,
-- editar,
-- completar,
-- adjuntar,
-- corregir,
+Ningún estado puede comunicarse exclusivamente por color. Todo badge de estado debe incluir:
+- punto de color (dot) o ícono,
+- texto del estado,
+- y si aplica: tooltip o label extendido en hover.
 
-el foco debe posicionarse automáticamente en el primer campo útil editable del flujo.
+### 25.5 Variables CSS obligatorias en Angular
 
-### Regla general
-- El usuario no debe tener que hacer un clic extra en el primer campo principal.
-- El cursor debe quedar listo para escribir donde tiene sentido empezar.
+Definir en `:root` del archivo de estilos global:
 
-### Aplicación
-- modal de alta: foco en el primer campo principal de carga,
-- modal de edición: foco en el primer campo editable relevante,
-- modal de upload: foco en el control principal de carga o en el primer paso accionable.
+```css
+:root {
+  /* Primario */
+  --color-primary:        #1A6B5E;
+  --color-primary-hover:  #155C51;
+  --color-primary-light:  #E6F4F2;
+  --color-primary-text:   #0D4A40;
 
-### Excepciones válidas
-No aplicar auto-focus ciego cuando:
-- el modal es solo de confirmación,
-- la primera acción debe ser elegir una opción previa,
-- hay un componente inicial que no admite foco útil,
-- el foco automático rompería accesibilidad o navegación.
+  /* Neutros */
+  --color-neutral-900:    #0F172A;
+  --color-neutral-600:    #475569;
+  --color-neutral-400:    #94A3B8;
+  --color-neutral-200:    #E2E8F0;
+  --color-neutral-100:    #F1F5F9;
+  --color-neutral-50:     #F8FAFC;
+  --color-white:          #FFFFFF;
 
-## 9.2 Cambio entre botón y modal
-Cuando un usuario pasa de una acción visible a un modal:
-- debe sentirse continuidad,
-- el foco debe quedar dentro del modal,
-- no debe perderse el contexto,
-- el usuario debe poder empezar a operar de inmediato.
+  /* Semánticos */
+  --color-success:        #059669;
+  --color-success-light:  #ECFDF5;
+  --color-success-text:   #065F46;
 
-## 9.3 Cierre de modal
-Al cerrar un modal:
-- el foco debe volver al elemento que abrió el modal, o
-- a una referencia lógica equivalente si el elemento original ya no existe.
+  --color-warning:        #D97706;
+  --color-warning-light:  #FFFBEB;
+  --color-warning-text:   #92400E;
 
-## 9.4 Navegación por teclado
-- El orden de tabulación debe ser lógico.
-- No debe haber saltos extraños.
-- El usuario debe poder completar formularios y modales sin depender del mouse.
+  --color-error:          #DC2626;
+  --color-error-light:    #FEF2F2;
+  --color-error-text:     #991B1B;
+
+  --color-info:           #2563EB;
+  --color-info-light:     #EFF6FF;
+  --color-info-text:      #1E40AF;
+
+  --color-blocked:        #4B5563;
+  --color-blocked-light:  #F3F4F6;
+  --color-blocked-text:   #374151;
+
+  /* Tipografía */
+  --font-primary: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+}
+```
+
+No hardcodear ninguno de estos valores en componentes individuales. Usar siempre la variable CSS correspondiente.
 
 ---
 
-## 10. Tabs, steppers, accordions y patrones de secciones
+## 26. Estados de entidad: definición visual obligatoria
 
-## 10.1 Tabs
-Usar tabs solo si:
-- las secciones son hermanas,
-- el usuario cambia entre ellas con frecuencia,
-- no necesita verlas simultáneamente.
+Todo estado debe representarse con badge pill compacto: fondo semántico + punto de color + texto.
+No se permite representar estados solo con texto plano sin diferenciación visual.
+No se permite inventar estados nuevos sin declararlos en esta sección.
 
-No usar tabs para esconder desorden.
+### 26.1 Tabla de estados y representación
 
-## 10.2 Stepper
-Usar stepper solo si existe secuencia real de pasos.
+| Estado        | Badge texto   | Token fondo            | Token texto            | Color dot  | Ícono sugerido  |
+|---------------|---------------|------------------------|------------------------|------------|-----------------|
+| Activo        | Activo        | `color-success-light`  | `color-success-text`   | `#10B981`  | check-circle    |
+| Inactivo      | Inactivo      | `color-blocked-light`  | `color-blocked-text`   | `#9CA3AF`  | minus-circle    |
+| Pendiente     | Pendiente     | `color-warning-light`  | `color-warning-text`   | `#F59E0B`  | clock           |
+| Sin cobertura | Sin cobertura | `color-warning-light`  | `color-warning-text`   | `#F59E0B`  | shield-off      |
+| Aprobado      | Aprobado      | `color-success-light`  | `color-success-text`   | `#10B981`  | check           |
+| En curso      | En curso      | `color-info-light`     | `color-info-text`      | `#3B82F6`  | refresh         |
+| Finalizado    | Finalizado    | `color-blocked-light`  | `color-blocked-text`   | `#64748B`  | check-square    |
+| Bloqueado     | Bloqueado     | `color-blocked-light`  | `color-blocked-text`   | `#6B7280`  | lock            |
+| Sin permisos  | Sin permisos  | `color-blocked-light`  | `color-blocked-text`   | `#6B7280`  | shield-off      |
+| Cancelado     | Cancelado     | `color-error-light`    | `color-error-text`     | `#EF4444`  | x-circle        |
+| Vinculado     | Vinculado     | `color-primary-light`  | `color-primary-text`   | `#1A6B5E`  | link            |
 
-No usar stepper decorativo.
+### 26.2 Estructura CSS del badge de estado
 
-No convertir stepper en botones grandes.
+```css
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;       /* pill */
+  font-family: var(--font-primary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
 
-## 10.3 Accordion / details
-Usar para:
-- ayuda,
-- información secundaria,
-- configuración avanzada,
-- detalles no críticos.
+.badge-estado .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+```
 
-No ocultar dentro de accordions lo que la mayoría necesita para completar la tarea.
+### 26.3 Reglas de badges de estado
 
-## 10.4 Regla estricta
-- No convertir tabs o steppers en bloques grandes.
-- No reemplazar un patrón aprobado por uno más pesado sin motivo funcional fuerte.
-
----
-
-## 11. Modales, drawers y paneles
-
-### 11.1 Cuándo usar modal
-Usar modal para tareas:
-- acotadas,
-- rápidas,
-- enfocadas,
-- de edición puntual,
-- de confirmación,
-- de carga breve.
-
-### 11.2 Cuándo no usar modal
-No usar modal para:
-- flujos largos,
-- formularios gigantes,
-- tareas complejas con múltiples bloques pesados,
-- procesos donde el usuario necesita mucho contexto simultáneo.
-
-### 11.3 Reglas
-- El modal debe tener un objetivo claro.
-- Debe abrir con foco correcto.
-- Debe tener acciones claras.
-- No debe tener ruido visual innecesario.
-- No debe tener demasiadas acciones de igual peso.
-
-### 11.4 Drawers
-Usar solo cuando el patrón del sistema ya lo justifique y no rompa consistencia.
-
-Si el sistema usa modal como patrón principal para edición puntual, no cambiar a drawer por gusto.
+- El texto del badge debe estar en `font-size: 12px`, `font-weight: 500`.
+- El punto (dot) debe ser de `6px × 6px`, circular.
+- No usar badges de más de tres palabras. Si el estado es largo, abreviarlo o usar tooltip.
+- No cambiar los colores de estado entre pantallas del mismo dominio.
+- Los badges de estado no deben tener borde propio — solo fondo y texto.
+- En tablas: el badge va en la columna Estado, nunca mezclado con la columna de identidad.
 
 ---
 
-## 12. Tablas, listados y grillas
+## 27. Loading states: cuándo y cómo
 
-## 12.1 Reglas generales
-- Las tablas deben priorizar lectura rápida.
-- No sobrecargar con demasiadas columnas visibles.
-- No repetir acciones gigantes dentro de cada fila.
-- Las acciones por fila deben ser compactas y consistentes.
+La carga debe comunicarse de forma apropiada según el tipo de contenido y el tiempo estimado de espera.
 
-## 12.2 Alineación
-- texto a la izquierda,
-- números a la derecha,
-- estados con tratamiento consistente,
-- fechas con formato uniforme.
+### 27.1 Criterios de selección
 
-## 12.3 Estados
-- los estados deben ser visibles y consistentes,
-- cuando corresponda pueden ir en negrita,
-- no depender solo del color.
+| Situación                                          | Patrón obligatorio   |
+|----------------------------------------------------|----------------------|
+| Carga inicial de tabla o listado                   | Skeleton             |
+| Carga inicial de pantalla completa                 | Skeleton             |
+| Acción puntual sobre un elemento (guardar, enviar) | Spinner inline       |
+| Recarga parcial de sección                         | Skeleton parcial     |
+| Carga en botón primario tras acción                | Spinner en botón     |
+| Carga global bloqueante (transición entre rutas)   | Barra de progreso top|
+| Upload de archivo                                  | Barra de progreso    |
 
-## 12.4 Columnas
-- Mantener orden lógico.
-- Primero identidad.
-- Después atributos clave.
-- Luego estado.
-- Finalmente acciones.
+### 27.2 Skeleton
 
-## 12.5 Acciones
-- No llenar la tabla de botones.
-- Priorizar menú de acciones o acciones compactas cuando haga falta.
-- Mantener mismo patrón entre tablas equivalentes.
+- Usar bloques grises con animación de pulso (shimmer).
+- Los skeletons deben replicar la estructura aproximada del contenido real: misma cantidad de filas, columnas y bloques.
+- No mostrar skeletons de forma genérica sin relación con el contenido esperado.
+- Color base del skeleton: `color-neutral-200`. Color del shimmer: `color-neutral-100`.
+- No mezclar skeleton con spinner en la misma sección simultáneamente.
 
----
+### 27.3 Spinner
 
-## 13. Filtros y búsquedas
+- Usar solo para acciones puntuales o cargas de duración breve y conocida.
+- El spinner debe ser pequeño y proporcional al contexto: no usar spinner grande en tabla.
+- Cuando el spinner está en un botón, deshabilitar el botón durante la carga.
+- Color: `color-primary` sobre fondo claro. `color-white` sobre fondo primario.
 
-## 13.1 Regla obligatoria
-Los filtros avanzados deben estar ocultos detrás de un botón o acción de filtro.
+### 27.4 Barra de progreso
 
-No deben mostrarse visibles por defecto salvo necesidad funcional crítica y explícita.
+- Usar para uploads o procesos con progreso medible.
+- Mostrar porcentaje numérico cuando sea posible.
+- No usar barra indeterminada si hay progreso real disponible.
 
-## 13.2 Reglas
-- El buscador principal puede estar visible si es de uso frecuente.
-- Los filtros secundarios o avanzados deben desplegarse bajo demanda.
-- No saturar la cabecera con filtros visibles.
-- El icono y acción de filtro deben ser consistentes en toda la app.
+### 27.5 Reglas generales de loading
 
-## 13.3 Comportamiento
-- Al aplicar filtros, volver a la primera página.
-- Al limpiar filtros, la pantalla debe recuperarse de forma clara.
-- El usuario debe entender fácilmente si hay filtros activos.
+- No dejar secciones en blanco sin indicador de carga.
+- No dejar botones activos mientras la acción está en curso.
+- No mostrar datos parciales mezclados con skeleton.
+- Respetar el tiempo máximo de espera percibido: si una carga supera 3 segundos, debe haber feedback visible.
 
 ---
 
-## 14. Estados obligatorios del sistema
+## 28. Notificaciones, toasts y alertas
 
-Toda pantalla o componente debe contemplar, cuando corresponda:
-- carga,
-- vacío,
-- error,
-- éxito,
-- bloqueo,
-- sin permisos,
-- sin resultados.
+### 28.1 Cuándo usar cada patrón
 
-## Reglas
-- No dejar sectores vacíos sin explicación.
-- No dejar botones activos si el usuario no puede completar la acción.
-- No mostrar errores genéricos sin guía.
-- El mensaje debe explicar qué pasó y qué puede hacer el usuario.
+| Situación                                                  | Patrón             |
+|------------------------------------------------------------|--------------------|
+| Confirmación de acción exitosa (guardar, eliminar, enviar) | Toast              |
+| Error de acción puntual recuperable                        | Toast de error     |
+| Error de validación de formulario                          | Mensaje inline     |
+| Alerta del sistema persistente o con acción requerida      | Banner             |
+| Información contextual no crítica dentro de pantalla       | Alert inline       |
+| Confirmación destructiva (eliminar, descartar)             | Modal de confirmación |
 
----
+### 28.2 Toasts
 
-## 15. Upload de archivos
+- Posición: esquina inferior derecha en desktop, inferior centrado en mobile.
+- Duración: 4 segundos para éxito e información. 6 segundos para error.
+- El toast de error no debe cerrarse automáticamente si no hay acción alternativa visible.
+- No apilar más de 3 toasts simultáneos.
+- Incluir ícono semántico acorde al estado.
+- No usar toasts para errores críticos que requieren acción del usuario: usar modal o banner.
+- El toast debe poder cerrarse manualmente con botón `X`.
 
-## 15.1 Regla general
-La carga de archivos debe ser simple y clara.
+### 28.3 Banners
 
-## 15.2 Obligatorio
-- indicar tipos permitidos,
-- indicar límite si aplica,
-- validar formato,
-- validar tamaño si aplica,
-- mostrar estado de carga,
-- mostrar error comprensible si falla,
-- permitir reemplazo o eliminación si el flujo lo requiere.
+- Usar para avisos del sistema persistentes o que requieren acción.
+- Posición: debajo del header de la pantalla, fuera del contenido principal.
+- Incluir siempre: texto explicativo + acción si aplica + posibilidad de cerrar si no es bloqueante.
+- No acumular más de un banner visible al mismo tiempo salvo necesidad crítica.
+- No usar banners decorativos sin información real.
 
-## 15.3 Foco y continuidad
-Si el usuario abre un modal de carga de archivos:
-- el foco debe quedar en el control principal de carga o en el primer paso lógico útil.
+### 28.4 Alertas inline
 
----
+- Usar dentro del contexto de un formulario o sección puntual.
+- No reemplazar mensajes de validación de campo con alertas inline genéricas.
+- Deben ser compactas y no romper el flujo de lectura del formulario.
 
-## 16. Responsive obligatorio
+### 28.5 Textos de toasts y alertas
 
-Ningún cambio visual se considera completo si solo funciona bien en desktop.
-
-## Debe contemplar
-- desktop,
-- tablet,
-- mobile.
-
-## Reglas
-- Mantener jerarquía visual.
-- Mantener accesibilidad de acciones.
-- Mantener legibilidad.
-- No romper flujos.
-- No ocultar información crítica solo porque no entra.
-- Reordenar con lógica, no simplemente apilar sin criterio.
+- El mensaje debe explicar qué pasó en términos del dominio, no del sistema.
+- Correcto: "El turno fue guardado correctamente."
+- Incorrecto: "Success" / "OK" / "Error 500".
+- Si hay un error, el mensaje debe orientar al usuario sobre qué puede hacer.
+- No usar jerga técnica en mensajes visibles al usuario final.
 
 ---
 
-## 17. Accesibilidad mínima obligatoria
+## 29. Inventario de patrones aprobados
 
-Toda UI debe cumplir como mínimo con:
-- foco visible,
-- labels claros,
-- asociación correcta entre label y campo,
-- mensajes de error vinculados al campo,
-- navegación razonable por teclado,
-- contraste suficiente,
-- no depender solo del color para indicar estado,
-- targets táctiles razonables en mobile.
+Esta sección lista los patrones visuales y de interacción que están aprobados como estándar en AKINE.
+Cualquier pantalla nueva o modificada debe priorizar estos patrones antes de crear uno nuevo.
 
-No se permite una UI “linda” pero difícil de operar.
+### 29.1 Estructura de pantalla estándar
 
----
+```
+┌─────────────────────────────────────────┐
+│ Header: título + subtítulo + acciones   │
+├─────────────────────────────────────────┤
+│ Filtros / buscador (ocultos por defecto)│
+├─────────────────────────────────────────┤
+│ Contenido principal (tabla / cards)     │
+├─────────────────────────────────────────┤
+│ Paginación                              │
+└─────────────────────────────────────────┘
+```
 
-## 18. Espaciado y consistencia estructural
+### 29.2 Patrones de formulario aprobados
 
-## 18.1 Regla general
-El espaciado debe ser consistente en toda la aplicación.
+- **Formulario en modal**: para carga o edición puntual de una entidad. Campos en una o dos columnas. Acciones al pie: `Cancelar` + `Guardar`.
+- **Formulario en pantalla completa con secciones**: para entidades complejas con múltiples bloques (datos del paciente, datos clínicos, configuración). Usar secciones colapsables o tabs si hay más de 6 bloques.
+- **Formulario con stepper**: solo para flujos con pasos secuenciales obligatorios y donde el orden importa.
 
-## Obligatorio
-- usar sistema fijo de spacing,
-- mantener mismas distancias entre header, subtítulo, acciones y contenido en pantallas equivalentes,
-- no ajustar márgenes manualmente por pantalla sin criterio global,
-- no crear diferencias arbitrarias entre resumen, edición y modal.
+### 29.3 Patrones de tabla aprobados
 
-## 18.2 Equivalencia
-Si dos pantallas representan el mismo patrón:
-- deben compartir estructura base,
-- deben compartir jerarquía,
-- deben compartir lógica de acciones,
-- deben compartir tratamiento visual de estados y separaciones.
+- Columnas con orden: identidad → atributos clave → estado → acciones.
+- Acciones por fila: máximo 2 acciones directas visibles. El resto en menú contextual (`...`).
+- Paginación estándar: navegación por páginas con selector de cantidad de registros.
+- Sin datos: empty state con ícono, mensaje y acción principal si aplica.
 
----
+### 29.4 Patrones de acción aprobados
 
-## 19. Regla de no burocracia visual
+- **Botón primario**: una sola acción principal por pantalla o modal.
+- **Botón secundario**: acción alternativa (cancelar, volver, exportar).
+- **Botón ghost o link**: acciones de menor jerarquía.
+- **Menú de acciones por fila**: para más de 2 acciones sobre una entidad de tabla.
+- **FAB (Floating Action Button)**: no aprobado en AKINE. No usar.
 
-AKINE no debe obligar al usuario a atravesar ruido visual para completar una tarea.
+### 29.5 Patrones de modal aprobados
 
-### Esto implica
-- no repetir contexto en exceso,
-- no mostrar bloques decorativos sin función,
-- no pedir más datos de los necesarios para avanzar,
-- no mezclar información crítica con accesorios visuales,
-- no inflar la pantalla con cards, chips, banners o badges innecesarios.
-
----
-
-## 20. Respuesta previa obligatoria antes de implementar cambios visuales
-
-Antes de tocar cualquier cambio visual, el agente o desarrollador debe indicar explícitamente:
-
-1. qué patrón existente va a reutilizar,
-2. en qué pantalla o módulo ya existe ese patrón,
-3. qué va a simplificar,
-4. qué va a eliminar,
-5. cómo va a reducir peso visual,
-6. cómo va a mantener consistencia con otras pantallas,
-7. qué estados visuales contempla,
-8. cómo se comportará en desktop, tablet y mobile,
-9. dónde quedará el foco inicial si abre un modal,
-10. cómo validará los tipos de datos en los inputs involucrados.
-
-No se debe implementar primero y justificar después.
+- **Modal de carga/edición**: con foco en primer campo, sin cierre por backdrop, con confirmación si hay cambios.
+- **Modal de confirmación destructiva**: solo título + mensaje + `Cancelar` + acción destructiva.
+- **Modal de detalle/lectura**: puede cerrarse por backdrop. Sin acciones de edición inline.
 
 ---
 
-## 21. Excepciones
+## 30. Corrección de sección 22 (Regla final)
 
-Cualquier excepción a estas reglas:
-- debe justificarse por necesidad funcional real,
-- debe declararse antes de implementarse,
-- no puede basarse en preferencia estética individual,
-- no puede romper coherencia global del producto sin aprobación explícita.
+La sección 22 del documento base está incompleta. El párrafo correcto es:
 
 ---
 
-## 22. Regla final
+### 22. Regla final
 
 Si una propuesta:
 - agrega ruido,
@@ -542,51 +437,71 @@ Si una propuesta:
 - no resuelve estados,
 - o no respeta responsive,
 
-## 23. Regla de cierre de modales con carga o edición
+entonces la propuesta **no cumple con AKINE y debe corregirse antes de implementarse**.
 
-Los modales que contengan formularios de carga, edición, corrección o configuración no deben cerrarse al hacer click fuera del modal.
+No se acepta implementar y corregir después. La corrección es previa a cualquier merge, deploy o aplicación en el sistema.
 
-### Objetivo
-Evitar pérdida accidental de datos, interrupciones involuntarias del flujo y cierres no intencionales en tareas transaccionales.
+---
 
-### Reglas obligatorias
-- No permitir cierre por click en el backdrop en formularios con datos editables.
-- El modal solo debe poder cerrarse por acciones explícitas del usuario, como `Cancelar`, `Cerrar` (`X`) o una acción exitosa de `Guardar`.
-- Si el modal no tiene cambios, puede cerrarse con acciones explícitas sin confirmación adicional.
-- Si el modal tiene cambios sin guardar, no debe cerrarse directamente.
-- Si el usuario intenta salir y existen cambios sin guardar, mostrar una confirmación de descarte antes de cerrar.
-- No perder datos cargados por interacciones accidentales fuera del modal.
-- La tecla `ESC` debe seguir la misma lógica de protección de cambios.
-- El cierre por `Cancelar`, `Cerrar` (`X`) o `ESC` no debe descartar datos silenciosamente si hubo edición previa.
+## 31. Checklist de revisión obligatoria pre-implementación
 
-### Comportamiento esperado
-- Click fuera del modal: no cerrar.
-- `Cancelar` o `Cerrar` (`X`) sin cambios: cerrar.
-- `Cancelar`, `Cerrar` (`X`) o `ESC` con cambios: pedir confirmación.
-- `Guardar` exitoso: cerrar.
-- `Guardar` con error de validación o error de persistencia: no cerrar.
+Este checklist debe completarse antes de cualquier cambio de frontend.
+No es opcional. No se puede saltear argumentando urgencia o cambio menor.
 
-### Confirmación sugerida al intentar salir con cambios
-**Título:** `¿Descartar cambios?`  
-**Mensaje:** `Hay datos cargados que todavía no fueron guardados.`  
-**Acciones:**
-- `Seguir editando`
-- `Descartar`
+### 31.1 Estructura y consistencia
 
-### Alcance
-Esta regla aplica a cualquier modal de:
-- alta,
-- edición,
-- corrección,
-- configuración,
-- carga de datos,
-- carga de archivos,
-- asignación o vinculación,
-- formularios multiestado o multisección.
+- [ ] Reutilicé un patrón existente aprobado en AKINE (sección 29).
+- [ ] La pantalla mantiene la jerarquía estándar: header → filtros → contenido → paginación.
+- [ ] No inventé un patrón nuevo sin declararlo y justificarlo.
+- [ ] Las pantallas equivalentes se ven equivalentes.
 
-### Excepción
-Solo pueden cerrarse por click fuera los modales informativos, de lectura, ayuda o confirmación simple, siempre que no contengan datos editables ni riesgo de pérdida de trabajo.
+### 31.2 Formularios y campos
 
-entonces la propuesta no cumple con AKINE y debe corregirse antes de implementarse.
+- [ ] Los campos están agrupados por lógica de dominio real.
+- [ ] Solo marqué como obligatorio lo que es funcionalmente obligatorio.
+- [ ] No repito datos ya disponibles en el flujo.
+- [ ] Cada input valida tipo, formato, longitud y rango cuando aplica.
+- [ ] Los mensajes de error son claros, accionables y en términos del dominio.
+
+### 31.3 Estados visuales
+
+- [ ] Contemplé los 7 estados: carga, vacío, error, éxito, bloqueo, sin permisos, sin resultados.
+- [ ] Los estados usan los tokens y badges definidos en la sección 26.
+- [ ] No dependo solo del color para indicar estado.
+
+### 31.4 Modales
+
+- [ ] El modal tiene foco automático en el primer campo útil.
+- [ ] El modal con formulario no se cierra con click fuera del backdrop.
+- [ ] Si hay cambios sin guardar, hay confirmación de descarte antes de cerrar.
+- [ ] Las acciones del modal son claras: `Cancelar` y `Guardar` (o equivalentes).
+
+### 31.5 Responsive
+
+- [ ] Probé el cambio en desktop (≥1280px).
+- [ ] Probé el cambio en tablet (768px–1279px).
+- [ ] Probé el cambio en mobile (≤767px).
+- [ ] No oculté información crítica en mobile sin alternativa.
+
+### 31.6 Accesibilidad mínima
+
+- [ ] Todos los inputs tienen label asociado correctamente.
+- [ ] Los mensajes de error están vinculados al campo.
+- [ ] El orden de tabulación es lógico.
+- [ ] El foco es visible en todos los controles.
+- [ ] El contraste supera 4.5:1 en textos sobre fondos coloreados.
+
+### 31.7 Loading y notificaciones
+
+- [ ] Definí el patrón de carga correcto (skeleton, spinner o barra).
+- [ ] Los botones se deshabilitan durante acciones en curso.
+- [ ] Los toasts y alertas usan el patrón definido en la sección 28.
+- [ ] Los mensajes de feedback están en términos del dominio, no del sistema.
+
+### 31.8 Tokens de diseño
+
+- [ ] Usé tokens de espaciado definidos en la sección 24.
+- [ ] Usé tokens de color definidos en la sección 25.
+- [ ] No hardcodeé valores arbitrarios de px, color o tipografía.
 
 ---

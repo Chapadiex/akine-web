@@ -40,6 +40,9 @@ describe('HistoriaClinicaPacientePage', () => {
       'updateSesion',
       'closeSesion',
       'annulSesion',
+      'createCasoAtencion',
+      'uploadCasoAtencionAdjunto',
+      'getCasosPorPaciente',
       'createDiagnostico',
       'resolveDiagnostico',
       'uploadAdjunto',
@@ -57,6 +60,9 @@ describe('HistoriaClinicaPacientePage', () => {
     historiaSvc.getAntecedentes.and.returnValue(of([]));
     historiaSvc.listDiagnosticos.and.returnValue(of([]));
     historiaSvc.listSesiones.and.returnValue(of([]));
+    historiaSvc.getCasosPorPaciente.and.returnValue(of([]));
+    historiaSvc.createCasoAtencion.and.returnValue(of({ id: 'caso-1' } as any));
+    historiaSvc.uploadCasoAtencionAdjunto.and.returnValue(of({ id: 'adj-1' } as any));
     historiaSvc.getSesion.and.returnValue(
       of({
         id: 'sesion-1',
@@ -432,6 +438,82 @@ describe('HistoriaClinicaPacientePage', () => {
 
     expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').toContain('Nuevo caso clínico');
     expect(fixture.nativeElement.querySelector('.header-actions')?.textContent ?? '').not.toContain('Nueva sesión');
+  });
+
+  it('opens new case modal with compact 3-step flow and focuses the first field', fakeAsync(() => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          casosActivos: [],
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    clickButton('Nuevo caso clínico');
+    tick();
+    fixture.detectChanges();
+
+    const modal = fixture.nativeElement.querySelector('.modal-panel--caso');
+    const firstOption = fixture.nativeElement.querySelector('#casoOriginDirectButton') as HTMLButtonElement;
+
+    expect(modal?.textContent ?? '').toContain('Consulta directa');
+    expect(modal?.textContent ?? '').toContain('Derivación');
+    expect(modal?.textContent ?? '').toContain('Diagnóstico');
+    expect(modal?.textContent ?? '').toContain('Tratamiento');
+    expect(modal?.textContent ?? '').not.toContain('Guardia');
+    expect(modal?.textContent ?? '').not.toContain('Internación');
+    expect(modal?.textContent ?? '').not.toContain('Apertura del caso');
+    expect(document.activeElement).toBeTruthy();
+    expect((document.activeElement as HTMLElement | null)?.id).toBe('casoOriginDirectButton');
+  }));
+
+  it('saves the new case using the simplified step payload mapping', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          casosActivos: [],
+          profesionalHabitual: null,
+          alertasClinicas: [],
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    fixture.componentInstance.openCasoDrawer();
+    fixture.componentInstance.casoForm.patchValue({
+      profesionalResponsableId: 'prof-1',
+      tipoOrigen: 'DERIVACION',
+      diagnosticoCodigo: 'DX001',
+      diagnosticoObservacion: 'Observación diagnóstica',
+      tratamientoId: 'TMN001',
+      cantidadSesiones: '12',
+      tratamientoObservacion: 'Plan inicial',
+    });
+    fixture.componentInstance.diagnosticosMedicos.set([
+      { codigoInterno: 'DX001', nombre: 'Lumbalgia mecánica', categoriaCodigo: 'cat', keywords: [], activo: true } as any,
+    ]);
+    fixture.componentInstance.updateCasoDiagnosticos(['DX001']);
+    fixture.detectChanges();
+
+    fixture.componentInstance.saveCaso();
+
+    expect(historiaSvc.createCasoAtencion).toHaveBeenCalledWith(
+      'consultorio-1',
+      'legajo-1',
+      jasmine.objectContaining({
+        profesionalResponsableId: 'prof-1',
+        tipoOrigen: 'DERIVACION',
+        motivoConsulta: 'Derivación',
+        diagnosticoMedico: 'Lumbalgia mecánica',
+        afeccionPrincipal: 'Observación diagnóstica',
+        diagnosticoFuncional: 'Tratamiento inicial: Terapia manual. Cantidad de sesiones: 12. Observación: Plan inicial',
+      }),
+    );
   });
 
   it('searches by DNI using the patient service', fakeAsync(() => {

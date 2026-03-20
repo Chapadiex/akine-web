@@ -235,6 +235,19 @@ export class HistoriaClinicaService {
     );
   }
 
+  uploadCasoAtencionAdjunto(
+    consultorioId: string,
+    casoId: string,
+    file: File,
+  ): Observable<AdjuntoClinicoResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.api.post<AdjuntoClinicoResponse>(
+      API.casosAtencion.adjuntos(consultorioId, casoId),
+      formData,
+    );
+  }
+
   downloadAdjunto(
     consultorioId: string,
     pacienteId: string,

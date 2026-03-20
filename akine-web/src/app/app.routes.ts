@@ -155,11 +155,53 @@ export const routes: Routes = [
       { path: 'profesionales', redirectTo: 'equipo', pathMatch: 'full' },
       { path: 'empleados', redirectTo: 'equipo', pathMatch: 'full' },
       {
-        path: 'obras-sociales',
-        loadComponent: () =>
-          import('./features/obras-sociales/obras-sociales').then(
-            (m) => m.ObrasSociales,
-          ),
+        path: 'cobertura',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
+        children: [
+          {
+            path: 'financiadores',
+            loadComponent: () =>
+              import('./features/cobertura/pages/financiadores-list/financiadores-list.component').then(
+                (m) => m.FinanciadoresListComponent,
+              ),
+          },
+          {
+            path: 'planes',
+            loadComponent: () =>
+              import('./features/cobertura/pages/planes-list/planes-list.component').then(
+                (m) => m.PlanesListComponent,
+              ),
+          },
+        ],
+      },
+      {
+        path: 'facturacion',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
+        children: [
+          {
+            path: 'convenios',
+            loadComponent: () =>
+              import('./features/facturacion/pages/convenios-list/convenios-list.component').then(
+                (m) => m.ConveniosListComponent,
+              ),
+          },
+          {
+            path: 'lotes',
+            loadComponent: () =>
+              import('./features/facturacion/pages/lotes-list/lotes-list.component').then(
+                (m) => m.LotesListComponent,
+              ),
+          },
+          {
+            path: 'conciliacion',
+            loadComponent: () =>
+              import('./features/facturacion/pages/conciliacion-dashboard/conciliacion-dashboard.component').then(
+                (m) => m.ConciliacionDashboardComponent,
+              ),
+          },
+        ],
       },
       {
         path: 'caja',
