@@ -1,4 +1,4 @@
-<section class="clinical-shell">
+﻿<section class="clinical-shell">
   <header class="clinical-header" [class.clinical-header--sticky]="hasPatientContext()">
     <div class="clinical-header__main">
       <div class="clinical-title">
@@ -7,11 +7,8 @@
           <h1>Historia clínica</h1>
           <p>Busca por apellido, nombre o DNI para abrir un contexto clínico sin saturar la pantalla.</p>
         } @else {
-          <div class="clinical-title__row">
-            <div>
-              <span class="clinical-title__overline">Paciente seleccionado</span>
-              <h1>{{ patientContextTitle() }}</h1>
-            </div>
+          <div class="clinical-title__row clinical-title__row--identity">
+            <h1>{{ patientContextTitle() }}</h1>
             @if (headerStatusBadge(); as badge) {
               <span class="state-pill" [attr.data-tone]="badge.tone">{{ badge.label }}</span>
             }
@@ -62,12 +59,14 @@
     </div>
 
     <div class="clinical-header__side">
-      <div class="header-meta">
-        <span class="meta-chip">{{ consultorioCtx.selectedConsultorio()?.name || 'Sin consultorio' }}</span>
-        @if (workspaceSnapshot(); as workspace) {
-          <span class="meta-chip meta-chip--soft">{{ workspace.total }} sesiones visibles</span>
-        }
-      </div>
+      @if (!hasPatientContext()) {
+        <div class="header-meta">
+          <span class="meta-chip">{{ consultorioCtx.selectedConsultorio()?.name || 'Sin consultorio' }}</span>
+          @if (workspaceSnapshot(); as workspace) {
+            <span class="meta-chip meta-chip--soft">{{ workspace.total }} sesiones visibles</span>
+          }
+        </div>
+      }
 
       <div class="header-actions">
         @if (hasPatientContext()) {
@@ -126,20 +125,13 @@
     </section>
   } @else if (selectedPatient(); as patient) {
     <div class="patient-strip">
-      @for (item of statusSummaryItems(); track item.label; let last = $last) {
-        <span class="strip-item">
-          <span class="strip-label">{{ item.label }}:</span> {{ item.value }}
+      <span class="strip-item">{{ summaryTopLine() }}</span>
+      @if (workspaceSnapshot(); as workspace) {
+        <span class="strip-item strip-item--muted">
+          {{ consultorioCtx.selectedConsultorio()?.name || 'Sin consultorio' }} · {{ workspace.total }} sesiones visibles
         </span>
-        @if (!last) { <span class="strip-sep" aria-hidden="true">·</span> }
       }
     </div>
-
-    @if (contextNotice(); as notice) {
-      <div class="context-notice">
-        <p>{{ notice.message }}</p>
-        <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">{{ notice.actionLabel }}</button>
-      </div>
-    }
 
     <section class="tabs-shell">
       <nav class="tabs-nav" aria-label="Navegación historia clínica">
@@ -175,56 +167,103 @@
               </section>
             } @else {
               <section class="summary-grid">
-                <div class="summary-col">
+                <div class="summary-col summary-col--plan">
                   <article class="surface">
-                    <div class="section-head">
-                      <h3>Caso principal</h3>
-                      @if (summaryMainCase()) {
-                        <span class="state-pill" [attr.data-tone]="summaryMainCase()!.isActive ? 'success' : 'muted'">
-                          {{ summaryMainCase()!.estado }}
-                        </span>
-                      }
-                    </div>
-
-                    @if (summaryMainCase(); as mainCase) {
-                      <div class="summary-card">
-                        <strong>{{ mainCase.descripcion }}</strong>
-                        <p>{{ mainCase.profesionalNombre }} / {{ mainCase.cantidadSesiones }} sesiones</p>
-                        <small>{{ mainCase.ultimaEvolucionResumen || 'Sin evolución resumida.' }}</small>
+                    @if (therapeuticPlanSummary(); as plan) {
+                      <div class="section-head">
+                        <h3>Plan terapéutico activo</h3>
+                        <div class="summary-actions">
+                          <span class="state-pill" [attr.data-tone]="plan.caseStatus.startsWith('CERRADO') ? 'muted' : 'success'">
+                            {{ plan.caseStatus }}
+                          </span>
+                          <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver detalle</button>
+                          <button
+                            type="button"
+                            class="btn btn--primary btn--sm"
+                            [disabled]="!hasActiveCases()"
+                            [attr.aria-disabled]="!hasActiveCases()"
+                            [title]="!hasActiveCases() ? 'Primero abrí un caso clínico activo.' : null"
+                            (click)="openNuevaSesion(selectedCase()?.profesionalId)"
+                          >
+                            Nueva sesión
+                          </button>
+                        </div>
                       </div>
-                      <div class="summary-actions">
-                        <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaSesion(mainCase.profesionalId)">Nueva sesión</button>
-                        <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver casos y sesiones</button>
+
+                      <div class="summary-card summary-card--plan">
+                        <p><strong>Caso:</strong> {{ plan.caseName }}</p>
+                        <p><strong>Motivo:</strong> {{ plan.consultationReason }}</p>
+                        <p><strong>Origen:</strong> {{ plan.caseSource }}</p>
+                        <p><strong>Diagnóstico:</strong> {{ plan.diagnosisSummary }}</p>
+                        <p><strong>Tratamiento:</strong> {{ plan.treatmentName }}</p>
+                        <p><strong>Profesional:</strong> {{ plan.assignedProfessionalName }}</p>
+                        <div class="summary-kpi-grid">
+                          <span><strong>{{ plan.plannedSessions }}</strong> planificadas</span>
+                          <span><strong>{{ plan.completedSessions }}</strong> realizadas</span>
+                          <span><strong>{{ plan.draftSessions }}</strong> borrador</span>
+                          <span><strong>{{ plan.pendingSessions }}</strong> pendientes</span>
+                        </div>
+                        <small class="summary-plan-meta">
+                          @if (plan.lastCompletedSession) {
+                            Última sesión: {{ plan.lastCompletedSession.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }} · {{ isCompleteSession(plan.lastCompletedSession) ? 'Completa' : 'Express' }}
+                          } @else {
+                            Última sesión: Sin registro
+                          }
+                        </small>
+                        <small class="summary-plan-meta">Conducta actual: {{ plan.currentConduct }}</small>
                       </div>
                     } @else {
-                      <p class="muted-copy">Sin caso clínico activo. Abrí uno para ordenar sesiones, diagnósticos y evolución.</p>
-                      <div class="summary-actions">
-                        <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">Nuevo caso clínico</button>
+                      <div class="section-head">
+                        <h3>Plan terapéutico activo</h3>
+                        <div class="summary-actions">
+                          <span class="state-pill" data-tone="muted">Sin estado</span>
+                          <button type="button" class="btn btn--ghost btn--sm" disabled aria-disabled="true">Ver detalle</button>
+                          <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">Nuevo caso clínico</button>
+                        </div>
                       </div>
-                    }
-                  </article>
-
-                  <article class="surface">
-                    <div class="section-head">
-                      <h3>Último evento</h3>
-                      @if (summaryLatestEvent()) {
-                        <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(summaryLatestEvent()!.sesionId)">Ver detalle</button>
-                      }
-                    </div>
-                    @if (summaryLatestEvent(); as latestEvent) {
-                      <div class="summary-card">
-                        <strong>{{ latestEvent.resumen || 'Sesión registrada' }}</strong>
-                        <p>{{ latestEvent.profesionalNombre }} / {{ latestEvent.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</p>
-                        <small>{{ latestEvent.tipoAtencion }} / {{ latestEvent.estado }}</small>
-                      </div>
-                    } @else {
-                      <p class="muted-copy">Sin sesiones registradas todavía.</p>
+                      <p class="muted-copy">Sin plan terapéutico activo. Abrí un caso clínico para ordenar tratamiento y sesiones.</p>
                     }
                   </article>
                 </div>
 
-                <div class="summary-col">
+                <div class="summary-col summary-col--sessions">
                   <article class="surface">
+                    <div class="section-head">
+                      <h3>Sesiones recientes</h3>
+                    </div>
+
+                    @if (summarySessionRows().length) {
+                      <div class="summary-session-table">
+                        <header class="summary-session-table__head">
+                          <span>N°</span>
+                          <span>Tipo</span>
+                          <span>Fecha</span>
+                          <span>Estado</span>
+                          <span>Resumen</span>
+                          <span>Acción</span>
+                        </header>
+                        @for (row of summarySessionRows(); track row.sessionId) {
+                          <article class="summary-session-table__row">
+                            <span>{{ row.numberLabel }}</span>
+                            <span>{{ row.typeLabel }}</span>
+                            <span>{{ row.dateLabel }}</span>
+                            <span>{{ row.statusLabel }}</span>
+                            <span class="summary-session-table__summary">{{ row.summaryLabel }}</span>
+                            <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(row.sessionId)">{{ row.actionLabel }}</button>
+                          </article>
+                        }
+                      </div>
+                      <div class="summary-actions">
+                        <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver todas las sesiones</button>
+                      </div>
+                    } @else {
+                      <p class="muted-copy">Sin sesiones recientes.</p>
+                    }
+                  </article>
+                </div>
+
+                <div class="summary-col summary-col--context">
+                  <article class="surface surface--compact">
                     <div class="section-head">
                       <h3>Antecedentes</h3>
                       <button type="button" class="btn btn--ghost btn--sm" (click)="openAntecedentesDrawer()">Editar</button>
@@ -235,11 +274,6 @@
                           <article class="summary-list__item">
                             <strong>{{ antecedente.label }}</strong>
                             <span>{{ antecedente.valueText || 'Sin detalle' }}</span>
-                            @if (antecedente.critical) {
-                              <span class="state-pill" data-tone="warning">Crítico</span>
-                            } @else {
-                              <span></span>
-                            }
                           </article>
                         }
                       </div>
@@ -248,9 +282,9 @@
                     }
                   </article>
 
-                  <article class="surface">
+                  <article class="surface surface--compact">
                     <div class="section-head">
-                      <h3>Adjuntos recientes</h3>
+                      <h3>Adjuntos</h3>
                     </div>
                     @if (summaryAdjuntos().length) {
                       <div class="attachment-list">
@@ -265,6 +299,20 @@
                       <p class="muted-copy">Sin adjuntos recientes.</p>
                     }
                   </article>
+
+                  <article class="surface surface--compact">
+                    <div class="section-head">
+                      <h3>Estado rápido</h3>
+                    </div>
+                    <div class="summary-list summary-list--compact">
+                      @for (item of quickStatusItems(); track item.label) {
+                        <article class="summary-list__item">
+                          <strong>{{ item.label }}</strong>
+                          <span>{{ item.value }}</span>
+                        </article>
+                      }
+                    </div>
+                  </article>
                 </div>
               </section>
             }
@@ -276,7 +324,7 @@
             @if (!hasLegajo()) {
               <section class="empty-state empty-state--medium">
                 <h2>Primero hay que registrar la historia clínica</h2>
-                <p>Casos y sesiones se habilitan una vez que exista una base documental registrada.</p>
+                <p>Plan y sesiones se habilita una vez que exista una base documental registrada.</p>
                 <div class="empty-state__actions">
                   <button type="button" class="btn btn--primary" (click)="openAntecedentesDrawer()">Registrar historia clínica</button>
                 </div>
@@ -299,7 +347,16 @@
                       <h3>Tratamientos en curso</h3>
                     </div>
                     <div class="summary-actions">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaSesion(selectedCase()?.profesionalId)">Nueva sesión</button>
+                      <button
+                        type="button"
+                        class="btn btn--primary btn--sm"
+                        [disabled]="!hasActiveCases()"
+                        [attr.aria-disabled]="!hasActiveCases()"
+                        [title]="!hasActiveCases() ? 'Primero abrí un caso clínico activo.' : null"
+                        (click)="openNuevaSesion(selectedCase()?.profesionalId)"
+                      >
+                        Nueva sesión
+                      </button>
                       <button type="button" class="btn btn--secondary btn--sm" (click)="openCasoDrawer()">Nuevo caso clínico</button>
                     </div>
                   </div>
@@ -381,9 +438,9 @@
                 <article class="surface">
                   <div class="section-head section-head--stack">
                     <div>
-                      <p class="eyebrow">Sesiones</p>
-                      <h3>{{ selectedCase()?.descripcion || 'Sesiones del paciente' }}</h3>
-                      <p class="muted-copy">Vista operativa con filtros mínimos y livianos para continuar el tratamiento actual.</p>
+                      <p class="eyebrow">Plan terapéutico</p>
+                      <h3>{{ selectedCase()?.descripcion || 'Plan y sesiones del paciente' }}</h3>
+                      <p class="muted-copy">{{ planProgressLabel() }}</p>
                     </div>
                     <div class="summary-actions">
                       @if (selectedCaseId()) {
@@ -398,18 +455,31 @@
                       </div>
                     </div>
                   </div>
+                  @if (therapeuticPlanSummary(); as plan) {
+                    <article class="summary-card summary-card--compact plan-progress-strip">
+                      <strong>Progreso del tratamiento: {{ plan.completedSessions }}/{{ plan.plannedSessions }} sesiones realizadas</strong>
+                      <p>{{ plan.plannedSessions }} planificadas · {{ plan.completedSessions }} realizada{{ plan.completedSessions === 1 ? '' : 's' }} · {{ plan.draftSessions }} borrador · {{ plan.pendingSessions }} pendientes</p>
+                    </article>
+                  }
 
-                  @if (relatedSessions().length) {
+                  @if (planSessionItems().length) {
                     <div class="session-list">
-                      @for (sesion of relatedSessions(); track sesion.id) {
+                      @for (item of planSessionItems(); track item.session.id) {
                         <article class="session-row">
-                          <div>
-                            <strong>{{ sesion.tipoAtencion }}</strong>
-                            <p>{{ sesion.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }} / {{ resolveProfessionalName(sesion.profesionalId) }}</p>
-                            <small>{{ sesion.resumenClinico || sesion.motivoConsulta || 'Sin resumen cargado.' }}</small>
+                          <div class="session-row__copy">
+                            <strong>
+                              Sesión {{ item.sessionNumber ?? '-' }}
+                              @if (item.plannedSessions > 0) { de {{ item.plannedSessions }} }
+                            </strong>
+                            <p>{{ item.sessionTypeLabel }} · {{ item.statusLabel }} · {{ item.session.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</p>
+                            <p>Profesional: {{ resolveProfessionalName(item.session.profesionalId) }}</p>
+                            <p>Respuesta: {{ item.patientResponse }}</p>
+                            <p>Dolor: {{ item.painSummary }}</p>
+                            <p>Conducta: {{ item.conductSummary }}</p>
+                            <small>Resumen: {{ item.clinicalSummary }}</small>
                           </div>
                           <div class="summary-actions">
-                            <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(sesion.id)">Ver detalle</button>
+                            <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(item.session.id)">Ver detalle</button>
                             @if (selectedCase()?.isActive) {
                               <button type="button" class="btn btn--danger btn--sm" (click)="closeCaso(selectedCase()!)">Cerrar caso</button>
                             }
@@ -433,12 +503,12 @@
             @if (!hasLegajo()) {
               <section class="empty-state empty-state--medium">
                 <h2>Primero hay que registrar la historia clínica</h2>
-                <p>El timeline longitudinal aparece cuando exista una base documental registrada en este consultorio.</p>
+                <p>La actividad clínica longitudinal aparece cuando exista una base documental registrada en este consultorio.</p>
               </section>
             } @else if (timelineStatus() === 'loading') {
               <section class="surface surface--loading">
                 <span class="spinner" aria-hidden="true"></span>
-                <p>Cargando timeline clínico...</p>
+                <p>Cargando actividad clínica...</p>
               </section>
             } @else if (timelineStatus() === 'error') {
               <section class="surface">
@@ -448,7 +518,7 @@
               <section class="surface">
                 <div class="section-head section-head--stack">
                   <div>
-                    <h3>Timeline</h3>
+                    <h3>Actividad clínica</h3>
                   </div>
                   <div class="chip-row">
                     @for (filter of timelineFilters; track filter.value) {
@@ -494,7 +564,7 @@
                   }
                 } @else {
                   <div class="empty-inline">
-                    <p>No hay eventos clínicos para el filtro actual.</p>
+                    <p>No hay actividad clínica para el filtro actual.</p>
                   </div>
                 }
               </section>
@@ -1251,3 +1321,4 @@
     />
   }
 </section>
+

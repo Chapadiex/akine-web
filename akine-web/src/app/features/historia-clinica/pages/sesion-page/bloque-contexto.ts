@@ -33,7 +33,10 @@ import {
             {{ sesion()?.estado }}
           </span>
           @if (sesionNumero()) {
-            <span class="sesion-num">Sesión #{{ sesionNumero() }}</span>
+            <span class="sesion-num">
+              Sesión {{ sesionNumero() }}
+              @if (sesionesPlanificadas() > 0) { de {{ sesionesPlanificadas() }} }
+            </span>
           }
         </div>
       </div>
@@ -146,6 +149,7 @@ export class BloqueContextoComponent {
   readonly overview = input<HistoriaClinicaOverview | null>(null);
   readonly casoActivo = input<CasoAtencionSummary | { descripcion: string } | null>(null);
   readonly sesionNumero = input<number | null>(null);
+  readonly sesionesPlanificadas = input<number>(0);
 
   readonly casoLabel = computed<string | null>(() => {
     const caso = this.casoActivo();

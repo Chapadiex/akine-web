@@ -15,11 +15,12 @@ import { CommonModule } from '@angular/common';
 import { PacienteRequest } from '../../models/paciente.models';
 import { PACIENTE_PAISES } from '../../models/paciente-paises';
 import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones';
+import { FinanciadorPlanSelector, FinanciadorPlanSelectorValue } from '../financiador-plan-selector/financiador-plan-selector';
 
 @Component({
   selector: 'app-paciente-form',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, FinanciadorPlanSelector],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()">
@@ -296,33 +297,37 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
         <div class="section-panel">
           <div class="section-heading">
             <strong>Obra social</strong>
-            <span>Cobertura, plan y numero de afiliado.</span>
+            <span>Financiador, plan vigente y numero de afiliado.</span>
           </div>
 
-          <div class="field field-full">
-            <label>Obra Social</label>
-            <input formControlName="obraSocialNombre" placeholder="Nombre de obra social" />
-          </div>
-
-          <div class="grid">
-            <div class="field">
-              <label>Plan</label>
-              <input formControlName="obraSocialPlan" placeholder="Plan" />
-            </div>
-            <div class="field">
-              <label>Nro. Afiliado</label>
-              <input formControlName="obraSocialNroAfiliado" placeholder="Nro. afiliado" />
-            </div>
-          </div>
+          <app-financiador-plan-selector
+            [consultorioId]="consultorioId()"
+            [context]="mode() === 'edit' ? 'edicion' : 'alta'"
+            [editable]="true"
+            [showValidationErrors]="showCoverageErrors()"
+            [initialValue]="coverageInitialValue()"
+            (valueChange)="onCoverageChange($event)"
+            (validChange)="coverageValid.set($event)"
+          />
         </div>
       }
 
-      <div class="actions">
-        <button type="button" class="btn-cancel" (click)="cancelled.emit()">Cancelar</button>
-        <button type="submit" class="btn-save" [disabled]="form.invalid">
-          {{ mode() === 'edit' ? 'Guardar cambios' : 'Guardar' }}
-        </button>
-      </div>
+      @if (confirmCancel()) {
+        <div class="cancel-confirm">
+          <span class="cancel-confirm__text">Descartar los cambios sin guardar?</span>
+          <div class="cancel-confirm__actions">
+            <button type="button" class="btn-cancel" (click)="confirmCancel.set(false)">Seguir editando</button>
+            <button type="button" class="btn-discard" (click)="cancelled.emit()">Descartar</button>
+          </div>
+        </div>
+      } @else {
+        <div class="actions">
+          <button type="button" class="btn-cancel" (click)="requestCancel()">Cancelar</button>
+          <button type="submit" class="btn-save" [disabled]="form.invalid || !coverageValid()">
+            {{ mode() === 'edit' ? 'Guardar cambios' : 'Guardar' }}
+          </button>
+        </div>
+      }
     </form>
   `,
   styles: [`
@@ -603,6 +608,34 @@ import { PACIENTE_PROFESIONES_COMUNES } from '../../models/paciente-profesiones'
       cursor: pointer;
     }
     .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-discard {
+      padding: .5rem 1rem;
+      border: 1px solid #e53e3e;
+      border-radius: var(--radius);
+      background: #e53e3e;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .cancel-confirm {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      padding-top: .75rem;
+      margin-top: .7rem;
+    }
+    .cancel-confirm__text {
+      font-size: .9rem;
+      color: var(--text);
+      font-weight: 500;
+    }
+    .cancel-confirm__actions {
+      display: flex;
+      gap: .75rem;
+    }
     @media (max-width: 720px) {
       .grid { grid-template-columns: 1fr; gap: 0; }
       .section-tabs { gap: .28rem; }
@@ -615,6 +648,7 @@ export class PacienteForm {
   initialDni = input<string>('');
   initialPaciente = input<Partial<PacienteRequest> | null>(null);
   mode = input<'create' | 'edit'>('create');
+  consultorioId = input<string>('');
   saved = output<PacienteRequest>();
   cancelled = output<void>();
 
@@ -628,6 +662,13 @@ export class PacienteForm {
   readonly nationalityQuery = signal('');
   readonly commonProfessions = PACIENTE_PROFESIONES_COMUNES;
   readonly countries = PACIENTE_PAISES;
+  readonly coverageValid = signal(true);
+  readonly showCoverageErrors = signal(false);
+  readonly confirmCancel = signal(false);
+  readonly coverageInitialValue = signal<FinanciadorPlanSelectorValue>({
+    esParticular: true,
+    financiadorNombre: 'PARTICULAR',
+  });
   readonly sections = [
     { id: 'basicos', label: 'Datos basicos' },
     { id: 'otros', label: 'Otros' },
@@ -664,6 +705,9 @@ export class PacienteForm {
     obraSocialNombre: [''],
     obraSocialPlan: [''],
     obraSocialNroAfiliado: [''],
+    obraSocialFinanciadorId: [''],
+    obraSocialPlanId: [''],
+    obraSocialEsParticular: [true],
   });
 
   constructor() {
@@ -689,6 +733,9 @@ export class PacienteForm {
         obraSocialNombre: patient?.obraSocialNombre ?? '',
         obraSocialPlan: patient?.obraSocialPlan ?? '',
         obraSocialNroAfiliado: patient?.obraSocialNroAfiliado ?? '',
+        obraSocialFinanciadorId: patient?.obraSocialFinanciadorId ?? '',
+        obraSocialPlanId: patient?.obraSocialPlanId ?? '',
+        obraSocialEsParticular: patient?.obraSocialEsParticular ?? !patient?.obraSocialNombre,
       });
 
       if (this.lastHydrationKey === hydrationKey) {
@@ -711,10 +758,24 @@ export class PacienteForm {
         obraSocialNombre: patient?.obraSocialNombre ?? '',
         obraSocialPlan: patient?.obraSocialPlan ?? '',
         obraSocialNroAfiliado: patient?.obraSocialNroAfiliado ?? '',
+        obraSocialFinanciadorId: patient?.obraSocialFinanciadorId ?? '',
+        obraSocialPlanId: patient?.obraSocialPlanId ?? '',
+        obraSocialEsParticular: patient?.obraSocialEsParticular ?? !patient?.obraSocialNombre,
       }, { emitEvent: false });
+
+      this.coverageInitialValue.set({
+        financiadorId: patient?.obraSocialFinanciadorId,
+        financiadorNombre: patient?.obraSocialNombre || 'PARTICULAR',
+        planId: patient?.obraSocialPlanId,
+        planNombre: patient?.obraSocialPlan,
+        nroAfiliado: patient?.obraSocialNroAfiliado,
+        esParticular: patient?.obraSocialEsParticular ?? !patient?.obraSocialNombre,
+      });
+      this.showCoverageErrors.set(false);
 
       this.professionQuery.set('');
       this.nationalityQuery.set('');
+      this.confirmCancel.set(false);
       this.activeSection.set('basicos');
 
       const dniControl = this.form.controls.dni;
@@ -741,8 +802,16 @@ export class PacienteForm {
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    this.professionOpen.set(false);
-    this.nationalityOpen.set(false);
+    if (this.professionOpen() || this.nationalityOpen()) {
+      this.professionOpen.set(false);
+      this.nationalityOpen.set(false);
+      return;
+    }
+    if (this.confirmCancel()) {
+      this.confirmCancel.set(false);
+      return;
+    }
+    this.requestCancel();
   }
 
   setActiveSection(section: 'basicos' | 'otros' | 'obra-social'): void {
@@ -818,13 +887,15 @@ export class PacienteForm {
   }
 
   submit(): void {
-    if (this.form.invalid) {
+    this.showCoverageErrors.set(true);
+    if (this.form.invalid || !this.coverageValid()) {
       this.form.markAllAsTouched();
       this.moveToFirstInvalidSection();
       return;
     }
 
     const v = this.form.getRawValue();
+    const withCoverage = !v.obraSocialEsParticular;
     this.saved.emit({
       dni: v.dni,
       nombre: v.nombre,
@@ -837,10 +908,29 @@ export class PacienteForm {
       nacionalidad: this.toOptional(v.nacionalidad),
       estadoCivil: this.toOptional(v.estadoCivil),
       profesiones: (v.profesiones && v.profesiones.length > 0) ? v.profesiones : undefined,
-      obraSocialNombre: this.toOptional(v.obraSocialNombre),
-      obraSocialPlan: this.toOptional(v.obraSocialPlan),
-      obraSocialNroAfiliado: this.toOptional(v.obraSocialNroAfiliado),
+      obraSocialNombre: withCoverage ? this.toOptional(v.obraSocialNombre) : undefined,
+      obraSocialPlan: withCoverage ? this.toOptional(v.obraSocialPlan) : undefined,
+      obraSocialNroAfiliado: withCoverage ? this.toOptional(v.obraSocialNroAfiliado) : undefined,
     });
+  }
+
+  onCoverageChange(selection: FinanciadorPlanSelectorValue): void {
+    this.form.patchValue({
+      obraSocialNombre: selection.esParticular ? '' : (selection.financiadorNombre ?? ''),
+      obraSocialPlan: selection.esParticular ? '' : (selection.planNombre ?? ''),
+      obraSocialNroAfiliado: selection.esParticular ? '' : (selection.nroAfiliado ?? ''),
+      obraSocialFinanciadorId: selection.financiadorId ?? '',
+      obraSocialPlanId: selection.planId ?? '',
+      obraSocialEsParticular: selection.esParticular,
+    }, { emitEvent: false });
+  }
+
+  requestCancel(): void {
+    if (this.form.dirty) {
+      this.confirmCancel.set(true);
+      return;
+    }
+    this.cancelled.emit();
   }
 
   private toOptional(value: string): string | undefined {
@@ -861,6 +951,11 @@ export class PacienteForm {
   }
 
   private moveToFirstInvalidSection(): void {
+    if (!this.coverageValid()) {
+      this.setActiveSection('obra-social');
+      return;
+    }
+
     const sectionByControl: Record<string, 'basicos' | 'otros' | 'obra-social'> = {
       dni: 'basicos',
       telefono: 'basicos',
@@ -876,6 +971,9 @@ export class PacienteForm {
       obraSocialNombre: 'obra-social',
       obraSocialPlan: 'obra-social',
       obraSocialNroAfiliado: 'obra-social',
+      obraSocialFinanciadorId: 'obra-social',
+      obraSocialPlanId: 'obra-social',
+      obraSocialEsParticular: 'obra-social',
     };
 
     for (const controlName of Object.keys(this.form.controls)) {

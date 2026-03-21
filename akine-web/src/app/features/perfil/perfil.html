@@ -1,0 +1,167 @@
+<section class="perfil">
+  <header class="page-header">
+    <h1>Mi perfil</h1>
+    <p>Datos personales y seguridad de tu cuenta.</p>
+  </header>
+
+  @if (loading()) {
+    <div class="state-card">Cargando perfil...</div>
+  } @else {
+    <!-- ── Datos personales ── -->
+    <article class="profile-card">
+      <h2 class="card-title">Datos personales</h2>
+
+      @if (profile(); as p) {
+        <dl class="read-meta">
+          <div><dt>Email</dt><dd>{{ p.email }}</dd></div>
+          <div><dt>Roles</dt><dd>{{ p.roles.join(', ') }}</dd></div>
+        </dl>
+      }
+
+      @if (profileSuccess(); as msg) {
+        <div class="alert alert--success">{{ msg }}</div>
+      }
+      @if (profileError(); as err) {
+        <div class="alert alert--error">{{ err }}</div>
+      }
+
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+        <div class="form-row">
+          <label class="form-field">
+            <span class="form-label">Nombre <span class="req">*</span></span>
+            <input type="text" formControlName="firstName" autocomplete="given-name" />
+            @if (fieldError('profile', 'firstName', 'required')) {
+              <span class="field-error">El nombre es requerido.</span>
+            }
+            @if (fieldError('profile', 'firstName', 'maxlength')) {
+              <span class="field-error">Máximo 100 caracteres.</span>
+            }
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Apellido <span class="req">*</span></span>
+            <input type="text" formControlName="lastName" autocomplete="family-name" />
+            @if (fieldError('profile', 'lastName', 'required')) {
+              <span class="field-error">El apellido es requerido.</span>
+            }
+            @if (fieldError('profile', 'lastName', 'maxlength')) {
+              <span class="field-error">Máximo 100 caracteres.</span>
+            }
+          </label>
+        </div>
+
+        <label class="form-field form-field--half">
+          <span class="form-label">Teléfono</span>
+          <input type="tel" formControlName="phone" autocomplete="tel" placeholder="Opcional" />
+          @if (fieldError('profile', 'phone', 'maxlength')) {
+            <span class="field-error">Máximo 30 caracteres.</span>
+          }
+        </label>
+
+        <div class="form-actions">
+          <button
+            class="btn btn--primary"
+            type="submit"
+            [disabled]="profileSaving()"
+          >
+            {{ profileSaving() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <!-- ── Contexto profesional / empleado ── -->
+    @if (context(); as ctx) {
+      <article class="profile-card">
+        <h2 class="card-title">
+          {{ ctx.tipo === 'PROFESIONAL' ? 'Datos profesionales' : 'Datos de colaborador' }}
+        </h2>
+        <p class="context-note">Estos datos son administrados por el responsable del consultorio.</p>
+
+        @if (ctx.tipo === 'PROFESIONAL') {
+          <dl class="read-meta">
+            @if (ctx.matricula) {
+              <div><dt>Matrícula</dt><dd>{{ ctx.matricula }}</dd></div>
+            }
+            @if (ctx.nroDocumento) {
+              <div><dt>Documento</dt><dd>{{ ctx.nroDocumento }}</dd></div>
+            }
+            @if (ctx.especialidades && ctx.especialidades.length > 0) {
+              <div><dt>Especialidades</dt><dd>{{ ctx.especialidades.join(', ') }}</dd></div>
+            }
+            @if (ctx.domicilio) {
+              <div><dt>Domicilio</dt><dd>{{ ctx.domicilio }}</dd></div>
+            }
+          </dl>
+        }
+
+        @if (ctx.tipo === 'EMPLEADO') {
+          <dl class="read-meta">
+            @if (ctx.cargo) {
+              <div><dt>Cargo</dt><dd>{{ ctx.cargo }}</dd></div>
+            }
+            @if (ctx.dni) {
+              <div><dt>DNI</dt><dd>{{ ctx.dni }}</dd></div>
+            }
+          </dl>
+        }
+      </article>
+    }
+
+    <!-- ── Cambiar contraseña ── -->
+    <article class="profile-card">
+      <h2 class="card-title">Cambiar contraseña</h2>
+
+      @if (passwordSuccess(); as msg) {
+        <div class="alert alert--success">{{ msg }}</div>
+      }
+      @if (passwordError(); as err) {
+        <div class="alert alert--error">{{ err }}</div>
+      }
+
+      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+        <label class="form-field form-field--half">
+          <span class="form-label">Contraseña actual <span class="req">*</span></span>
+          <input type="password" formControlName="currentPassword" autocomplete="current-password" />
+          @if (fieldError('password', 'currentPassword', 'required')) {
+            <span class="field-error">Ingresá tu contraseña actual.</span>
+          }
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            <span class="form-label">Nueva contraseña <span class="req">*</span></span>
+            <input type="password" formControlName="newPassword" autocomplete="new-password" />
+            @if (fieldError('password', 'newPassword', 'required')) {
+              <span class="field-error">Ingresá una nueva contraseña.</span>
+            }
+            @if (fieldError('password', 'newPassword', 'minlength')) {
+              <span class="field-error">Mínimo 8 caracteres.</span>
+            }
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Confirmar contraseña <span class="req">*</span></span>
+            <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+            @if (fieldError('password', 'confirmPassword', 'required')) {
+              <span class="field-error">Confirmá la nueva contraseña.</span>
+            }
+            @if (passwordMismatch) {
+              <span class="field-error">Las contraseñas no coinciden.</span>
+            }
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button
+            class="btn btn--primary"
+            type="submit"
+            [disabled]="passwordSaving()"
+          >
+            {{ passwordSaving() ? 'Actualizando…' : 'Cambiar contraseña' }}
+          </button>
+        </div>
+      </form>
+    </article>
+  }
+</section>

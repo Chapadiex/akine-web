@@ -1,0 +1,112 @@
+.perfil {
+  display: grid;
+  gap: 1rem;
+  max-width: 560px;
+}
+
+.page-header h1 {
+  font-size: 1.4rem;
+}
+
+.state-card {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--text-muted);
+}
+
+// ── Card ───────────────────────────────────────────────────────────────────
+
+.profile-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem;
+  background: var(--white);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+// ── Read-only meta ─────────────────────────────────────────────────────────
+
+.read-meta {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.86rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+
+  div {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0.35rem;
+  }
+
+  dt {
+    color: var(--text-muted);
+  }
+}
+
+.context-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+// ── Form layout ────────────────────────────────────────────────────────────
+
+form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.form-field {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.86rem;
+}
+
+.form-field--half {
+  max-width: 260px;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.req {
+  color: var(--color-error, #dc2626);
+}
+
+.field-error {
+  font-size: 0.78rem;
+  color: var(--color-error, #dc2626);
+}
+
+.form-actions {
+  padding-top: 0.25rem;
+}
+
+// ── Responsive ─────────────────────────────────────────────────────────────
+
+@media (max-width: 540px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field--half {
+    max-width: 100%;
+  }
+}

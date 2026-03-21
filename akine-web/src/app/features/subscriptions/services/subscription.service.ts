@@ -4,13 +4,16 @@ import { ApiClient } from '../../../core/api/api-client.service';
 import { API } from '../../../core/api/api-endpoints';
 import {
   ApproveSubscriptionRequest,
+  ChangePlanRequest,
   ClinicPayload,
   CompanyPayload,
   CreateSubscriptionDraftRequest,
   CreateSubscriptionResponse,
   OwnerPayload,
   PagedSubscriptionListResponse,
+  PlanInfo,
   RejectSubscriptionRequest,
+  SaasMetrics,
   SubscriptionDetail,
   SubscriptionStatusResponse,
   SubscriptionSummary,
@@ -91,5 +94,29 @@ export class SubscriptionService {
 
   reactivate(subscriptionId: string): Observable<SubscriptionSummary> {
     return this.api.patch<SubscriptionSummary>(API.admin.reactivateSubscription(subscriptionId), {});
+  }
+
+  // ── Self-service del owner (Phase 4) ───────────────────────────────────────
+
+  getMySuscripcion(): Observable<SubscriptionStatusResponse> {
+    return this.api.get<SubscriptionStatusResponse>(API.subscriptions.my);
+  }
+
+  renew(subscriptionId: string): Observable<SubscriptionStatusResponse> {
+    return this.api.post<SubscriptionStatusResponse>(API.subscriptions.renew(subscriptionId), {});
+  }
+
+  changePlan(subscriptionId: string, request: ChangePlanRequest): Observable<SubscriptionStatusResponse> {
+    return this.api.post<SubscriptionStatusResponse>(API.subscriptions.changePlan(subscriptionId), request);
+  }
+
+  // ── Métricas SaaS admin (Phase 5) ──────────────────────────────────────────
+
+  getSaasMetrics(): Observable<SaasMetrics> {
+    return this.api.get<SaasMetrics>(API.admin.saasMetrics);
+  }
+
+  getPlanes(): Observable<PlanInfo[]> {
+    return this.api.get<PlanInfo[]>(API.admin.planes);
   }
 }

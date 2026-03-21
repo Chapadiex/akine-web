@@ -34,10 +34,14 @@ export const API = {
     simulatePayment: (id: string) => `/api/v1/subscriptions/${id}/payment-simulate`,
     submitApproval: (id: string) => `/api/v1/subscriptions/${id}/submit-approval`,
     statusByTracking: (trackingToken: string) => `/api/v1/subscriptions/status/${trackingToken}`,
+    my: '/api/v1/subscriptions/my',
+    renew: (id: string) => `/api/v1/subscriptions/${id}/renew`,
+    changePlan: (id: string) => `/api/v1/subscriptions/${id}/change-plan`,
   },
   users: {
     me: '/api/v1/users/me',
     mePassword: '/api/v1/users/me/password',
+    meContext: '/api/v1/users/me/context',
   },
   admin: {
     users: '/api/v1/admin/users',
@@ -49,6 +53,8 @@ export const API = {
     suspendSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/suspend`,
     reactivateSubscription: (id: string) => `/api/v1/admin/subscriptions/${id}/reactivate`,
     subscriptionDetail: (id: string) => `/api/v1/admin/subscriptions/${id}`,
+    saasMetrics: '/api/v1/admin/saas/metrics',
+    planes: '/api/v1/admin/planes',
   },
   pacientes: {
     me: '/api/v1/pacientes/me',

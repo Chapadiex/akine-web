@@ -59,6 +59,31 @@
   font-size: 0.75rem;
 }
 
+.chip--pending-renewal {
+  border-color: #d97706;
+  color: #92400e;
+  background: #fffbeb;
+  font-weight: 700;
+}
+
+.days-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+}
+
+.days-badge--urgent {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
 .meta {
   display: grid;
   gap: 0.4rem;

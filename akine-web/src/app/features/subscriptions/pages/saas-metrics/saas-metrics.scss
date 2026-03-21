@@ -1,0 +1,178 @@
+.saas-metrics {
+  display: grid;
+  gap: 1rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.6rem;
+
+  h1 {
+    font-size: 1.4rem;
+  }
+}
+
+.state-card {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--text-muted);
+}
+
+// ── KPI cards ──────────────────────────────────────────────────────────────
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.kpi-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  border-top-width: 2.5px;
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.kpi-card--success  { border-top-color: #059669; }
+.kpi-card--warning  { border-top-color: #d97706; }
+.kpi-card--info     { border-top-color: #2563eb; }
+.kpi-card--primary  { border-top-color: var(--primary, #1a6b5e); }
+
+.kpi-card__label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.kpi-card__value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+// ── Layout panels ──────────────────────────────────────────────────────────
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.panel {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem;
+}
+
+.panel__title {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.6rem;
+}
+
+.panel__empty {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+// ── Activity meta ──────────────────────────────────────────────────────────
+
+.activity-meta {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+
+  div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+
+  dt {
+    color: var(--text-muted);
+  }
+
+  dd {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: right;
+  }
+}
+
+// ── Data table (global table standard) ────────────────────────────────────
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th,
+  td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+// Column type alignments (global table standard)
+.col-text        { text-align: left; }
+.col-text-short  { text-align: left; white-space: nowrap; }
+.col-numeric     { text-align: right; }
+
+// ── Days badge ─────────────────────────────────────────────────────────────
+
+.days-badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+}
+
+.days-badge--urgent {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fed7aa;
+}
+
+.days-badge--critical {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+// ── Responsive ─────────────────────────────────────────────────────────────
+
+@media (max-width: 980px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 540px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}

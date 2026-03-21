@@ -26,6 +26,7 @@ import {
   RegisterProfessionalRequest,
   ResendActivationRequest,
   UpdateProfileRequest,
+  UserContext,
   UserProfile,
 } from '../models/auth.models';
 
@@ -171,6 +172,19 @@ export class AuthService {
 
   changePassword(request: ChangePasswordRequest): Observable<void> {
     return this.api.patch<void>(API.users.mePassword, request);
+  }
+
+  getMyContext(): Observable<UserContext> {
+    return this.api.get<UserContext>(API.users.meContext);
+  }
+
+  /** Updates the in-memory signal and localStorage cache after a profile edit. */
+  syncUserFromProfile(profile: UserProfile): void {
+    const current = this._currentUser();
+    if (!current) return;
+    const updated: AuthUser = { ...current, firstName: profile.firstName, lastName: profile.lastName };
+    this._currentUser.set(updated);
+    this.tokenService.storeUser(updated);
   }
 
   // ─── Session restore ───────────────────────────────────────────────────────

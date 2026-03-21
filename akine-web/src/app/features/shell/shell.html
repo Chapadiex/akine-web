@@ -2,6 +2,13 @@
   <div class="shell-overlay" (click)="closeMobile()" aria-hidden="true"></div>
 }
 
+@if (showSetupWizard()) {
+  <app-setup-wizard-modal
+    (completed)="onSetupCompleted($event)"
+    (dismissed)="showSetupWizard.set(false)"
+  />
+}
+
 <div class="shell" [class.shell--collapsed]="collapsed()">
   <aside class="sidenav" [class.sidenav--mobile-open]="mobileOpen()" aria-label="Menu principal">
     <div class="sidenav__brand">
@@ -174,7 +181,9 @@
     </header>
 
     <main class="shell-content" id="main-content">
-      <router-outlet />
+      @if (!showSetupWizard()) {
+        <router-outlet />
+      }
     </main>
   </div>
 </div>

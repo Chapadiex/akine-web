@@ -5,6 +5,7 @@ export type SubscriptionStatus =
   | 'SETUP_PENDING'
   | 'PENDING_APPROVAL'
   | 'ACTIVE'
+  | 'PENDING_RENEWAL'
   | 'REJECTED'
   | 'EXPIRED'
   | 'SUSPENDED';
@@ -144,3 +145,36 @@ export interface SuspendSubscriptionRequest {
   reason?: string;
 }
 
+// ── Phase 4: Self-service del owner ──────────────────────────────────────────
+
+export interface ChangePlanRequest {
+  planCode: string;
+}
+
+export interface PlanInfo {
+  code: string;
+  nombre: string;
+  descripcion: string | null;
+  precioMensual: number;
+}
+
+// ── Phase 5: Métricas SaaS admin ─────────────────────────────────────────────
+
+export interface VencimientoProximo {
+  nroConsultorio: string | null;
+  razonSocial: string | null;
+  endDate: string;
+  diasRestantes: number;
+}
+
+export interface SaasMetrics {
+  totalSuscripciones: Record<string, number>;
+  distribucionPlanes: Record<string, number>;
+  mrr: {
+    total: number;
+    porPlan: Record<string, number>;
+  };
+  vencimientosProximos: VencimientoProximo[];
+  nuevasSuscripcionesUltimos30Dias: number;
+  churnsUltimos30Dias: number;
+}

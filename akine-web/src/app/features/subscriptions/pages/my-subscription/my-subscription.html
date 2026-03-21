@@ -1,0 +1,109 @@
+<section class="my-subscription">
+  <header class="page-header">
+    <h1>Mi suscripción</h1>
+    <p>Estado y gestión de tu plan.</p>
+  </header>
+
+  @if (errorMessage(); as error) {
+    <div class="alert alert--error">{{ error }}</div>
+  }
+
+  @if (loading()) {
+    <div class="state-card">Cargando suscripción...</div>
+  } @else if (!suscripcion()) {
+    <div class="state-card">No tenés una suscripción activa.</div>
+  } @else {
+    @if (bannerClass()) {
+      <div [class]="bannerClass()">{{ bannerMessage() }}</div>
+    }
+
+    @if (actionSuccess(); as msg) {
+      <div class="alert alert--success">{{ msg }}</div>
+    }
+    @if (actionError(); as err) {
+      <div class="alert alert--error">{{ err }}</div>
+    }
+
+    <article class="subscription-card">
+      <header class="subscription-card__header">
+        <h2>Mi plan</h2>
+        <span [class]="chipClass(suscripcion()!.status)">{{ suscripcion()!.status }}</span>
+      </header>
+
+      <dl class="meta">
+        <div><dt>Plan</dt><dd>{{ suscripcion()!.planCode || '-' }} / {{ suscripcion()!.billingCycle || '-' }}</dd></div>
+        @if (suscripcion()!.startDate) {
+          <div><dt>Inicio</dt><dd>{{ suscripcion()!.startDate }}</dd></div>
+        }
+        @if (suscripcion()!.endDate) {
+          <div>
+            <dt>Vencimiento</dt>
+            <dd>
+              {{ suscripcion()!.endDate }}
+              @if (daysUntilExpiry(); as days) {
+                <span class="days-badge" [class.days-badge--urgent]="days <= 7">
+                  {{ days >= 0 ? days + ' día' + (days === 1 ? '' : 's') : 'Vencida' }}
+                </span>
+              }
+            </dd>
+          </div>
+        }
+      </dl>
+
+      @if (suscripcion()!.status === 'SUSPENDED') {
+        <p class="status-note status-note--suspended">Tu suscripción está suspendida. Contactá al soporte para reactivarla.</p>
+      }
+
+      <div class="actions-row">
+        @if (canRenew()) {
+          <button
+            class="btn btn--primary"
+            type="button"
+            [disabled]="actionLoading() === 'renew'"
+            (click)="renew()"
+          >
+            {{ actionLoading() === 'renew' ? 'Renovando…' : 'Renovar' }}
+          </button>
+        }
+        @if (canChangePlan() && !changePlanOpen()) {
+          <button class="btn btn--outline" type="button" (click)="openChangePlan()">Cambiar plan</button>
+        }
+      </div>
+
+      @if (changePlanOpen()) {
+        <form class="change-plan-form" [formGroup]="changePlanForm" (ngSubmit)="confirmChangePlan()">
+          <p class="change-plan-form__title">Seleccioná el nuevo plan</p>
+          @if (planes().length > 0) {
+            <div class="plan-options">
+              @for (plan of planes(); track plan.code) {
+                <label
+                  class="plan-option"
+                  [class.plan-option--selected]="changePlanForm.value.planCode === plan.code"
+                >
+                  <input type="radio" formControlName="planCode" [value]="plan.code" />
+                  <span class="plan-option__name">{{ plan.nombre }}</span>
+                  <span class="plan-option__price">${{ formatPrice(plan.precioMensual) }}</span>
+                </label>
+              }
+            </div>
+          } @else {
+            <label>
+              Código de plan
+              <input type="text" formControlName="planCode" placeholder="Ej: PROFESIONAL" />
+            </label>
+          }
+          <div class="actions-row">
+            <button
+              class="btn btn--primary"
+              type="submit"
+              [disabled]="actionLoading() === 'changePlan'"
+            >
+              {{ actionLoading() === 'changePlan' ? 'Confirmando…' : 'Confirmar cambio' }}
+            </button>
+            <button class="btn btn--ghost" type="button" (click)="cancelChangePlan()">Cancelar</button>
+          </div>
+        </form>
+      }
+    </article>
+  }
+</section>

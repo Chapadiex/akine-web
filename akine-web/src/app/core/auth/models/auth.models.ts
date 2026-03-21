@@ -101,6 +101,18 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface UserContext {
+  tipo: 'PROFESIONAL' | 'EMPLEADO' | 'NONE';
+  // Profesional
+  matricula: string | null;
+  especialidades: string[] | null;
+  nroDocumento: string | null;
+  domicilio: string | null;
+  // Empleado
+  cargo: string | null;
+  dni: string | null;
+}
+
 // ─── Error format (RFC-7807 compatible) ───────────────────────────────────────
 
 export interface ApiError {

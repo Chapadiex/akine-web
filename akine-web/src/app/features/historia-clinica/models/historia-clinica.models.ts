@@ -20,7 +20,7 @@ export interface HistoriaClinicaWorkspaceItem {
   pacienteNombre: string;
   pacienteApellido: string;
   pacienteDni: string;
-  profesionalId: string;
+  profesionalId?: string | null;
   profesionalNombre: string;
   fechaAtencion: string;
   estado: HistoriaClinicaSesionEstado;
@@ -87,8 +87,8 @@ export interface HistoriaClinicaActiveCaseSummary {
 
 export interface HistoriaClinicaSesionSummary {
   sesionId: string;
-  profesionalId: string;
-  profesionalNombre: string;
+  profesionalId?: string | null;
+  profesionalNombre?: string | null;
   fechaAtencion: string;
   estado: HistoriaClinicaSesionEstado;
   tipoAtencion: HistoriaClinicaTipoAtencion;
@@ -215,7 +215,7 @@ export interface SesionClinicaResponse {
   id: string;
   consultorioId: string;
   pacienteId: string;
-  profesionalId: string;
+  profesionalId?: string | null;
   turnoId?: string | null;
   casoAtencionId?: string | null;
   boxId?: string | null;
@@ -242,7 +242,7 @@ export interface SesionClinicaResponse {
 }
 
 export interface SesionClinicaRequest {
-  profesionalId: string;
+  profesionalId?: string | null;
   turnoId?: string | null;
   casoAtencionId?: string | null;
   boxId?: string | null;

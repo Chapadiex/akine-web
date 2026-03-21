@@ -1,0 +1,112 @@
+<section class="saas-metrics">
+  <header class="page-header">
+    <div>
+      <h1>Métricas SaaS</h1>
+      <p>Resumen operativo de suscripciones y facturación.</p>
+    </div>
+    <button class="btn btn--ghost" type="button" (click)="refresh()" [disabled]="loading()">
+      Actualizar
+    </button>
+  </header>
+
+  @if (errorMessage(); as error) {
+    <div class="alert alert--error">{{ error }}</div>
+  }
+
+  @if (loading()) {
+    <div class="state-card">Cargando métricas...</div>
+  } @else if (metrics()) {
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card--success">
+        <span class="kpi-card__label">Activas</span>
+        <span class="kpi-card__value">{{ kpiActivas() }}</span>
+      </div>
+      <div class="kpi-card kpi-card--warning">
+        <span class="kpi-card__label">Pendientes de aprobación</span>
+        <span class="kpi-card__value">{{ kpiPendientes() }}</span>
+      </div>
+      <div class="kpi-card kpi-card--info">
+        <span class="kpi-card__label">Vencimientos próximos (30d)</span>
+        <span class="kpi-card__value">{{ kpiExpirando() }}</span>
+      </div>
+      <div class="kpi-card kpi-card--primary">
+        <span class="kpi-card__label">MRR Total</span>
+        <span class="kpi-card__value">{{ formatCurrency(kpiMrr()) }}</span>
+      </div>
+    </div>
+
+    <div class="metrics-grid">
+      <section class="panel">
+        <h2 class="panel__title">Distribución por plan</h2>
+        @if (planRows().length === 0) {
+          <p class="panel__empty">Sin datos.</p>
+        } @else {
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="col-text">Plan</th>
+                <th class="col-numeric">Suscripciones</th>
+                <th class="col-numeric">%</th>
+                <th class="col-numeric">MRR</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of planRows(); track row.plan) {
+                <tr>
+                  <td class="col-text">{{ row.plan }}</td>
+                  <td class="col-numeric">{{ row.count }}</td>
+                  <td class="col-numeric">{{ row.pct }}%</td>
+                  <td class="col-numeric">{{ formatCurrency(row.mrr) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title">Actividad — últimos 30 días</h2>
+        <dl class="activity-meta">
+          <div>
+            <dt>Nuevas altas</dt>
+            <dd>{{ metrics()!.nuevasSuscripcionesUltimos30Dias }}</dd>
+          </div>
+          <div>
+            <dt>Bajas (churn)</dt>
+            <dd>{{ metrics()!.churnsUltimos30Dias }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2 class="panel__title">Vencimientos próximos (próximos 30 días)</h2>
+      @if (expirations().length === 0) {
+        <p class="panel__empty">No hay vencimientos en los próximos 30 días.</p>
+      } @else {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-text-short">Consultorio</th>
+              <th class="col-text">Razón social</th>
+              <th class="col-text-short">Vence</th>
+              <th class="col-numeric">Días</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of expirations(); track v.endDate + v.nroConsultorio) {
+              <tr>
+                <td class="col-text-short">{{ v.nroConsultorio || '-' }}</td>
+                <td class="col-text">{{ v.razonSocial || '-' }}</td>
+                <td class="col-text-short">{{ v.endDate }}</td>
+                <td class="col-numeric">
+                  <span [class]="urgencyClass(v.diasRestantes)">{{ v.diasRestantes }}d</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+</section>

@@ -27,7 +27,7 @@ import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dial
       <header mat-dialog-title class="compact">
         <div class="title-group">
           <h2>{{ isEdit ? 'Editar' : 'Nuevo' }} Plan</h2>
-          <p class="subtitle">Financiador: {{ financiador?.nombre }}</p>
+          <p class="subtitle">Financiador: {{ financiador.nombre }}</p>
         </div>
         <button mat-icon-button (click)="onClose()" type="button">
           <mat-icon>close</mat-icon>

@@ -204,7 +204,7 @@ type PanelMode = 'empty' | 'view' | 'create' | 'edit';
     @if (showModalForm() && canWrite()) {
       <app-profesional-form
         [editValue]="formEditValue()"
-        [consultorioId]="selectedConsultorioId() ?? ''"
+        [consultorioId]="selectedConsultorioId()"
         [showEstado]="false"
         [saving]="saving()"
         (submitted$)="onSubmit($event)"

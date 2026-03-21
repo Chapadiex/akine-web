@@ -43,10 +43,12 @@ import { BloqueAdministrativoComponent } from './bloque-administrativo';
 import { BloqueExamenFisicoComponent } from './bloque-examen-fisico';
 import { BloqueEstadoActualComponent } from './bloque-estado-actual';
 import { BloqueCierreExpressComponent } from './bloque-cierre-express';
+import { ConfirmDialog } from '../../../../shared/ui/confirm-dialog/confirm-dialog';
 
 type ViewState = 'idle' | 'loading' | 'success' | 'error';
 type SessionMode = 'quick' | 'full' | 'readonly';
 type SesionStep = 'evaluacion' | 'examen' | 'tratamiento' | 'resultado';
+const SESSION_CONTEXT_SIZE = 200;
 
 @Component({
   selector: 'app-sesion-page',
@@ -62,6 +64,7 @@ type SesionStep = 'evaluacion' | 'examen' | 'tratamiento' | 'resultado';
     BloqueExamenFisicoComponent,
     BloqueEstadoActualComponent,
     BloqueCierreExpressComponent,
+    ConfirmDialog,
   ],
   templateUrl: './sesion-page.html',
   styleUrl: './sesion-page.scss',
@@ -83,9 +86,12 @@ export class SesionPage implements OnInit {
   readonly sesion = signal<SesionClinicaResponse | null>(null);
   readonly overview = signal<HistoriaClinicaOverview | null>(null);
   readonly casosClinicos = signal<CasoAtencionSummary[]>([]);
+  readonly allSessions = signal<SesionClinicaResponse[]>([]);
   readonly previousSesion = signal<SesionClinicaResponse | null>(null);
   readonly tratamientos = signal<TratamientoCatalogItem[]>([]);
   readonly isSaving = signal(false);
+  readonly showCloseSesionConfirm = signal(false);
+  readonly showDeleteSesionConfirm = signal(false);
   readonly showExamenFisico = signal(false);
   readonly activeStep = signal<SesionStep>('evaluacion');
   readonly selectedMode = signal<'quick' | 'full'>('quick');
@@ -115,6 +121,49 @@ export class SesionPage implements OnInit {
     return this.overview()?.casosActivos?.[0] ?? null;
   });
   readonly isEditable = computed(() => this.sesion()?.estado === 'BORRADOR');
+  readonly canDeleteSesion = computed(() => this.sesion()?.estado === 'BORRADOR');
+  readonly plannedSessions = computed(() => {
+    const caso = this.casoActivo();
+    if (caso && 'cantidadSesiones' in caso) {
+      return caso.cantidadSesiones ?? 0;
+    }
+    return this.overview()?.casosActivos?.[0]?.cantidadSesiones ?? 0;
+  });
+  readonly caseSessions = computed(() => {
+    const current = this.sesion();
+    const sessions = this.allSessions();
+    if (!current || !sessions.length) {
+      return [] as SesionClinicaResponse[];
+    }
+    if (current.casoAtencionId) {
+      const direct = sessions.filter((session) => session.casoAtencionId === current.casoAtencionId);
+      if (direct.length) {
+        return direct;
+      }
+    }
+    const caso = this.casoActivo();
+    const startDateRaw = caso && 'fechaApertura' in caso ? caso.fechaApertura : null;
+    const startDate = startDateRaw ? new Date(startDateRaw).getTime() : Number.NaN;
+    return sessions.filter((session) => {
+      if (caso && 'profesionalResponsableId' in caso && caso.profesionalResponsableId && session.profesionalId !== caso.profesionalResponsableId) {
+        return false;
+      }
+      return Number.isNaN(startDate) || new Date(session.fechaAtencion).getTime() >= startDate;
+    });
+  });
+  readonly completedSessions = computed(() => this.caseSessions().filter((session) => session.estado === 'CERRADA').length);
+  readonly sessionTypeLabel = computed(() => (this.sesion()?.tipoAtencion === 'EVALUACION' ? 'Completa' : 'Express'));
+  readonly currentSessionNumber = computed(() => {
+    const current = this.sesion();
+    if (!current) {
+      return null;
+    }
+    const ordered = [...this.caseSessions()].sort(
+      (left, right) => new Date(left.fechaAtencion).getTime() - new Date(right.fechaAtencion).getTime(),
+    );
+    const index = ordered.findIndex((session) => session.id === current.id);
+    return index >= 0 ? index + 1 : null;
+  });
 
   readonly sessionMode = computed<SessionMode>(() => {
     const s = this.sesion();
@@ -196,6 +245,7 @@ export class SesionPage implements OnInit {
       overview: this.hcService.getOverview(cid, this.pacienteId),
       tratamientosCatalog: this.tratamientoCatalogService.get(cid),
       casos: this.hcService.getCasosActivosPorPaciente(cid, this.pacienteId).pipe(catchError(() => of([]))),
+      sesiones: this.hcService.listSesiones(cid, this.pacienteId, { page: 0, size: SESSION_CONTEXT_SIZE }).pipe(catchError(() => of([]))),
     })
       .pipe(
         catchError((err) => {
@@ -210,21 +260,26 @@ export class SesionPage implements OnInit {
         this.sesion.set(result.sesion);
         this.overview.set(result.overview);
         this.casosClinicos.set(result.casos);
+        this.allSessions.set(result.sesiones);
         this.tratamientos.set(result.tratamientosCatalog.tratamientos ?? []);
         this.hydrateFormsFromSesion(result.sesion);
-        this.loadPreviousSesion(cid);
+        this.resolvePreviousSesion(result.sesion, result.sesiones);
         this.status.set('success');
       });
   }
 
-  private loadPreviousSesion(cid: string): void {
-    this.hcService
-      .listSesiones(cid, this.pacienteId, { size: 2, estado: 'CERRADA' })
-      .pipe(catchError(() => of([])), takeUntilDestroyed(this.destroyRef))
-      .subscribe((sesiones) => {
-        const prev = sesiones.find((s) => s.id !== this.sesionId);
-        this.previousSesion.set(prev ?? null);
-      });
+  private resolvePreviousSesion(currentSesion: SesionClinicaResponse, sessions: SesionClinicaResponse[]): void {
+    const currentDate = new Date(currentSesion.fechaAtencion).getTime();
+    const base = (currentSesion.casoAtencionId
+      ? sessions.filter((session) => session.casoAtencionId === currentSesion.casoAtencionId)
+      : sessions
+    ).filter((session) => session.estado === 'CERRADA' && session.id !== currentSesion.id);
+    const previous = base
+      .sort((left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime())
+      .find((session) => new Date(session.fechaAtencion).getTime() <= currentDate)
+      ?? base[0]
+      ?? null;
+    this.previousSesion.set(previous);
   }
 
   setMode(mode: 'quick' | 'full'): void {
@@ -404,7 +459,80 @@ export class SesionPage implements OnInit {
       });
   }
 
-  closeSesion(): void {
+  requestCloseSesion(): void {
+    const cid = this.consultorioId();
+    if (!cid) return;
+
+    // Validate minimums before closing
+    const eval_ = this.evaluacionForm.getRawValue();
+    if (!eval_.respuestaPaciente || !eval_.proximaConducta) {
+      this.toast.warning('Completá respuesta del paciente y próxima conducta antes de cerrar.');
+      return;
+    }
+
+    this.showCloseSesionConfirm.set(true);
+  }
+
+  cancelCloseSesion(): void {
+    this.showCloseSesionConfirm.set(false);
+  }
+
+  confirmCloseSesion(): void {
+    this.showCloseSesionConfirm.set(false);
+    this.closeSesion();
+  }
+
+  requestDeleteSesion(): void {
+    if (!this.sesion()) {
+      return;
+    }
+    if (!this.canDeleteSesion()) {
+      this.toast.warning('No se puede eliminar esta sesión porque ya no está en estado borrador.');
+      return;
+    }
+    this.showDeleteSesionConfirm.set(true);
+  }
+
+  cancelDeleteSesion(): void {
+    this.showDeleteSesionConfirm.set(false);
+  }
+
+  confirmDeleteSesion(): void {
+    this.showDeleteSesionConfirm.set(false);
+    this.deleteSesion();
+  }
+
+  private deleteSesion(): void {
+    const cid = this.consultorioId();
+    if (!cid) return;
+    if (!this.canDeleteSesion()) {
+      this.toast.warning('No se puede eliminar esta sesión porque ya no está en estado borrador.');
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.hcService
+      .annulSesion(cid, this.pacienteId, this.sesionId)
+      .pipe(
+        catchError((err) => {
+          this.isSaving.set(false);
+          this.toast.error(this.errorMapper.toMessage(err));
+          return of(null);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        this.isSaving.set(false);
+        if (result) {
+          this.toast.success('Sesión eliminada.');
+          this.router.navigate(['/app/historia-clinica'], {
+            queryParams: { pacienteId: this.pacienteId, tab: 'cases' },
+          });
+        }
+      });
+  }
+
+  private closeSesion(): void {
     const cid = this.consultorioId();
     if (!cid) return;
 

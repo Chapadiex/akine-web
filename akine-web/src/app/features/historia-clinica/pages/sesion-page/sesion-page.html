@@ -18,7 +18,8 @@
     [sesion]="sesion()"
     [overview]="overview()"
     [casoActivo]="casoActivo()"
-    [sesionNumero]="sesionNumero()"
+    [sesionNumero]="currentSessionNumber() ?? sesionNumero()"
+    [sesionesPlanificadas]="plannedSessions()"
   />
 
   <!-- Mode selector — only for editable sessions -->
@@ -178,15 +179,87 @@
         <span class="save-indicator">Guardando...</span>
       }
       @if (isEditable()) {
+        <button
+          class="btn btn--danger-outline"
+          (click)="requestDeleteSesion()"
+          [disabled]="isSaving() || !canDeleteSesion()">
+          Eliminar sesión
+        </button>
+        <span class="footer-separator" aria-hidden="true"></span>
         <button class="btn btn--secondary" (click)="save()" [disabled]="isSaving()">Guardar</button>
-        <button class="btn btn--primary" (click)="closeSesion()" [disabled]="isSaving()">Cerrar sesión</button>
+        <button class="btn btn--primary" (click)="requestCloseSesion()" [disabled]="isSaving()">Cerrar sesión</button>
       }
     </div>
   </footer>
+
+  @if (showCloseSesionConfirm()) {
+    <app-confirm-dialog
+      title="Cerrar sesión de atención"
+      message="Se guardarán los datos cargados y la sesión quedará cerrada. ¿Querés continuar?"
+      confirmLabel="Sí, cerrar sesión"
+      variant="warning"
+      (cancelled)="cancelCloseSesion()"
+      (confirmed)="confirmCloseSesion()"
+    />
+  }
+
+  @if (showDeleteSesionConfirm()) {
+    <app-confirm-dialog
+      title="Eliminar sesión"
+      message="Estás por eliminar esta sesión. Se perderán todos los datos cargados y cualquier información relacionada con esta sesión. Esta acción no se puede deshacer."
+      confirmLabel="Eliminar sesión"
+      variant="destructive"
+      (cancelled)="cancelDeleteSesion()"
+      (confirmed)="confirmDeleteSesion()"
+    />
+  }
 }
 
 <!-- Sidebar template -->
 <ng-template #sidebarPrev let-prev>
+  <div class="sidebar-card">
+    <h4 class="sidebar-title">Contexto del caso</h4>
+    <div class="sidebar-row">
+      <span class="sidebar-label">Caso</span>
+      <span class="sidebar-value">
+        @if (casoActivo(); as caso) {
+          @if ('descripcion' in caso) {
+            {{ caso.descripcion }}
+          } @else {
+            {{ caso.motivoConsulta ?? caso.afeccionPrincipal ?? 'Caso en seguimiento' }}
+          }
+        } @else {
+          Sin caso asignado
+        }
+      </span>
+    </div>
+    <div class="sidebar-row">
+      <span class="sidebar-label">Tratamiento</span>
+      <span class="sidebar-value">
+        {{ overview()?.planTerapeuticoActivo?.tratamientos?.[0]?.tratamientoNombre ?? 'Sin tratamiento activo' }}
+      </span>
+    </div>
+    <div class="sidebar-row">
+      <span class="sidebar-label">Sesión actual</span>
+      <span class="sidebar-value">
+        {{ currentSessionNumber() ?? sesionNumero() ?? '-' }}
+        @if (plannedSessions() > 0) { de {{ plannedSessions() }} }
+      </span>
+    </div>
+    <div class="sidebar-row">
+      <span class="sidebar-label">Tipo</span>
+      <span class="sidebar-value">{{ sessionTypeLabel() }}</span>
+    </div>
+    <div class="sidebar-row">
+      <span class="sidebar-label">Estado</span>
+      <span class="sidebar-value">{{ sesion()?.estado }}</span>
+    </div>
+    <div class="sidebar-row">
+      <span class="sidebar-label">Progreso del plan</span>
+      <span class="sidebar-value">{{ completedSessions() }}/{{ plannedSessions() }} realizadas</span>
+    </div>
+  </div>
+
   <div class="sidebar-card">
     <h4 class="sidebar-title">Sesión anterior</h4>
     <div class="sidebar-date">{{ prev.fechaAtencion | date: 'dd/MM/yyyy' }}</div>

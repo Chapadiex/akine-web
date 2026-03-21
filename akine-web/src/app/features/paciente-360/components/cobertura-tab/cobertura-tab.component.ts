@@ -5,8 +5,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CoberturaService } from '../../../cobertura/services/cobertura.service';
-import { PacienteCobertura } from '../../../cobertura/models/cobertura.models';
+import { FinanciadorSalud, PacienteCobertura } from '../../../cobertura/models/cobertura.models';
 import { CoberturaFormDialogComponent } from '../../../cobertura/components/cobertura-form-dialog/cobertura-form-dialog.component';
+import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 
 @Component({
   selector: 'app-cobertura-paciente-tab',
@@ -31,7 +32,7 @@ import { CoberturaFormDialogComponent } from '../../../cobertura/components/cobe
           <ng-container matColumnDef="financiador">
             <th mat-header-cell *matHeaderCellDef> Financiador / Plan </th>
             <td mat-cell *matCellDef="let element"> 
-              <div class="text-bold">{{ element.financiadorId }}</div> <!-- Deberia mostrar el nombre mapeado -->
+              <div class="text-bold">{{ getFinanciadorNombre(element.financiadorId) }}</div>
               <div class="text-small text-secondary">{{ element.planId || 'Plan Base' }}</div>
             </td>
           </ng-container>
@@ -77,17 +78,31 @@ export class CoberturaPacienteTabComponent implements OnInit {
   
   private service = inject(CoberturaService);
   private dialog = inject(MatDialog);
+  private consultorioContext = inject(ConsultorioContextService);
   
   coberturas = signal<PacienteCobertura[]>([]);
+  financiadores = signal<FinanciadorSalud[]>([]);
   displayedColumns = ['financiador', 'afiliado', 'principal', 'acciones'];
 
   ngOnInit() {
+    this.loadFinanciadores();
     this.loadCoberturas();
+  }
+
+  private loadFinanciadores() {
+    const consultorioId = this.consultorioContext.selectedConsultorioId();
+    if (!consultorioId) return;
+    this.service.getFinanciadores(consultorioId).subscribe((data: FinanciadorSalud[]) => this.financiadores.set(data));
   }
 
   loadCoberturas() {
     if(!this.pacienteId) return;
     this.service.getCoberturasPaciente(this.pacienteId).subscribe((data: PacienteCobertura[]) => this.coberturas.set(data));
+  }
+
+  getFinanciadorNombre(financiadorId: string): string {
+    const financiador = this.financiadores().find((item) => item.id === financiadorId);
+    return financiador?.nombre || financiadorId;
   }
 
   asignarCobertura() {

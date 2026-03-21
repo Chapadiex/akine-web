@@ -16,11 +16,12 @@ import { ToastService } from '../../shared/ui/toast/toast.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { ConsultorioService } from '../consultorios/services/consultorio.service';
 import { NAV_SECTIONS, NavItem, NavSection } from './nav-items';
+import { SetupWizardModal } from './setup-wizard/setup-wizard-modal';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, FormsModule, SetupWizardModal],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +37,7 @@ export class Shell implements OnInit {
   readonly currentUser = this.authService.currentUser;
   readonly collapsed = signal(false);
   readonly mobileOpen = signal(false);
+  readonly showSetupWizard = signal(false);
   readonly consultorios = this.consultorioCtx.consultorios;
   readonly selectedConsultorioId = this.consultorioCtx.selectedConsultorioId;
   readonly selectedConsultorio = this.consultorioCtx.selectedConsultorio;
@@ -97,9 +99,20 @@ export class Shell implements OnInit {
     if (!this.authService.isAuthenticated()) return;
 
     this.consultorioService.list().subscribe({
-      next: (items) => this.consultorioCtx.setConsultorios(items),
-      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+      next: (items) => {
+        this.consultorioCtx.setConsultorios(items);
+        const isSystemAdmin = this.authService.hasRole('ADMIN');
+        if (!isSystemAdmin && items.length === 0) {
+          this.showSetupWizard.set(true);
+        }
+      },
+      error: (err: unknown) => this.toast.error(this.errMap.toMessage(err)),
     });
+  }
+
+  onSetupCompleted(consultorioId: string): void {
+    this.showSetupWizard.set(false);
+    this.consultorioCtx.reloadAndSelect(consultorioId);
   }
 
   toggle(): void {

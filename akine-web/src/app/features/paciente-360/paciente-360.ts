@@ -283,11 +283,12 @@ interface TabDef {
         </section>
 
         @if (showEdit() && header(); as editable) {
-          <div class="overlay" (click)="closeEdit()">
+          <div class="overlay">
             <div class="panel" (click)="$event.stopPropagation()">
               <h3>Editar ficha del paciente</h3>
               <app-paciente-form
                 [mode]="'edit'"
+                [consultorioId]="consultorioId()"
                 [initialPaciente]="toEditableFormData(editable)"
                 (saved)="saveEdit($event)"
                 (cancelled)="closeEdit()"

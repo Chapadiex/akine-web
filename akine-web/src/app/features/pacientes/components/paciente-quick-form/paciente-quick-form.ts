@@ -21,11 +21,12 @@ import {
 import { Observable, catchError, map, of, switchMap, timer } from 'rxjs';
 import { PacienteRequest } from '../../models/paciente.models';
 import { PacienteService } from '../../services/paciente.service';
+import { FinanciadorPlanSelector, FinanciadorPlanSelectorValue } from '../financiador-plan-selector/financiador-plan-selector';
 
 @Component({
   selector: 'app-paciente-quick-form',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, FinanciadorPlanSelector],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()">
@@ -120,55 +121,33 @@ import { PacienteService } from '../../services/paciente.service';
         </div>
       </div>
 
-      <!-- Fila 4: Tiene obra social -->
-      <div class="field-toggle">
-        <label class="toggle-label">
-          <input
-            type="checkbox"
-            [checked]="tieneObraSocial()"
-            (change)="onToggleObraSocial()"
-          />
-          <span>Tiene obra social</span>
-        </label>
-      </div>
-
-      <!-- Filas 5-6: Bloque cobertura (condicional) -->
-      @if (tieneObraSocial()) {
-        <div class="os-block">
-          <!-- Fila 5: Obra social | Plan -->
-          <div class="row-2">
-            <div class="field">
-              <label for="qf-obraSocial">Obra social *</label>
-              <input
-                id="qf-obraSocial"
-                formControlName="obraSocialNombre"
-                placeholder="Nombre de obra social"
-                [class.field-error]="form.controls.obraSocialNombre.invalid && form.controls.obraSocialNombre.touched"
-              />
-              @if (form.controls.obraSocialNombre.touched && form.controls.obraSocialNombre.hasError('required')) {
-                <span class="error-msg">La obra social es obligatoria.</span>
-              }
-            </div>
-            <div class="field">
-              <label for="qf-plan">Plan</label>
-              <input
-                id="qf-plan"
-                formControlName="obraSocialPlan"
-                placeholder="Plan"
-              />
-            </div>
-          </div>
-          <!-- Fila 6: Nro. afiliado -->
-          <div class="field">
-            <label for="qf-nroAfiliado">Nro. afiliado</label>
+      <div class="coverage-block">
+        <div class="field-toggle">
+          <label class="toggle-label">
             <input
-              id="qf-nroAfiliado"
-              formControlName="obraSocialNroAfiliado"
-              placeholder="N&uacute;mero de afiliado"
+              type="checkbox"
+              [checked]="tieneObraSocial()"
+              (change)="onToggleObraSocial()"
             />
-          </div>
+            <span>Tiene obra social</span>
+          </label>
         </div>
-      }
+
+        @if (tieneObraSocial()) {
+          <app-financiador-plan-selector
+            [consultorioId]="consultorioId()"
+            [context]="'alta'"
+            [editable]="true"
+            [showValidationErrors]="showCoverageErrors()"
+            [initialValue]="coverageInitialValue()"
+            (valueChange)="onCoverageChange($event)"
+            (validChange)="coverageValid.set($event)"
+          />
+          @if (showCoverageErrors() && form.controls.obraSocialEsParticular.value) {
+            <span class="error-msg">Si el paciente tiene obra social, selecciona una obra social activa.</span>
+          }
+        }
+      </div>
 
       @if (confirmCancel()) {
         <div class="cancel-confirm">
@@ -181,7 +160,7 @@ import { PacienteService } from '../../services/paciente.service';
       } @else {
         <div class="actions">
           <button type="button" class="btn-cancel" (click)="requestCancel()">Cancelar</button>
-          <button type="submit" class="btn-save" [disabled]="form.invalid || form.pending">
+          <button type="submit" class="btn-save" [disabled]="form.invalid || form.pending || !isCoverageReadyToSave()">
             Guardar
           </button>
         </div>
@@ -226,6 +205,7 @@ import { PacienteService } from '../../services/paciente.service';
     .row-2 {
       display: grid; grid-template-columns: 1fr 1fr; gap: .75rem;
     }
+    .coverage-block { margin-bottom: .1rem; }
     .field-toggle { margin-bottom: .75rem; }
     .toggle-label {
       display: inline-flex; align-items: center; gap: .5rem;
@@ -233,13 +213,6 @@ import { PacienteService } from '../../services/paciente.service';
     }
     .toggle-label input[type="checkbox"] {
       accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer;
-    }
-    .os-block {
-      background: color-mix(in srgb, var(--bg) 40%, var(--white));
-      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--primary) 20%);
-      border-radius: var(--radius);
-      padding: .75rem .75rem .1rem;
-      margin-bottom: .75rem;
     }
     .actions {
       display: flex; gap: .75rem; justify-content: flex-end; margin-top: .5rem;
@@ -294,6 +267,12 @@ export class PacienteQuickForm implements AfterViewInit {
 
   readonly tieneObraSocial = signal(false);
   readonly confirmCancel = signal(false);
+  readonly coverageValid = signal(true);
+  readonly showCoverageErrors = signal(false);
+  readonly coverageInitialValue = signal<FinanciadorPlanSelectorValue>({
+    esParticular: true,
+    financiadorNombre: 'PARTICULAR',
+  });
 
   readonly form = this.fb.nonNullable.group({
     dni: [
@@ -308,6 +287,9 @@ export class PacienteQuickForm implements AfterViewInit {
     obraSocialNombre: [''],
     obraSocialPlan: [''],
     obraSocialNroAfiliado: [''],
+    obraSocialFinanciadorId: [''],
+    obraSocialPlanId: [''],
+    obraSocialEsParticular: [true],
   });
 
   constructor() {
@@ -343,34 +325,15 @@ export class PacienteQuickForm implements AfterViewInit {
     }
   }
 
-  onToggleObraSocial(): void {
-    const next = !this.tieneObraSocial();
-    this.tieneObraSocial.set(next);
-
-    if (next) {
-      this.form.controls.obraSocialNombre.addValidators(Validators.required);
-      this.form.controls.obraSocialNombre.updateValueAndValidity();
-      setTimeout(() => {
-        const input = this.el.nativeElement.querySelector('#qf-obraSocial') as HTMLInputElement;
-        input?.focus();
-      });
-    } else {
-      this.form.controls.obraSocialNombre.removeValidators(Validators.required);
-      this.form.controls.obraSocialNombre.setValue('');
-      this.form.controls.obraSocialPlan.setValue('');
-      this.form.controls.obraSocialNroAfiliado.setValue('');
-      this.form.controls.obraSocialNombre.updateValueAndValidity();
-    }
-  }
-
   submit(): void {
-    if (this.form.invalid || this.form.pending) {
+    this.showCoverageErrors.set(true);
+    if (this.form.invalid || this.form.pending || !this.isCoverageReadyToSave()) {
       this.form.markAllAsTouched();
       return;
     }
 
     const v = this.form.getRawValue();
-    const withOs = this.tieneObraSocial();
+    const withOs = this.tieneObraSocial() && !v.obraSocialEsParticular;
     this.saved.emit({
       dni: v.dni,
       nombre: v.nombre,
@@ -381,6 +344,41 @@ export class PacienteQuickForm implements AfterViewInit {
       obraSocialPlan: withOs ? this.toOptional(v.obraSocialPlan) : undefined,
       obraSocialNroAfiliado: withOs ? this.toOptional(v.obraSocialNroAfiliado) : undefined,
     });
+  }
+
+  onCoverageChange(selection: FinanciadorPlanSelectorValue): void {
+    this.form.patchValue({
+      obraSocialNombre: selection.esParticular ? '' : (selection.financiadorNombre ?? ''),
+      obraSocialPlan: selection.esParticular ? '' : (selection.planNombre ?? ''),
+      obraSocialNroAfiliado: selection.esParticular ? '' : (selection.nroAfiliado ?? ''),
+      obraSocialFinanciadorId: selection.financiadorId ?? '',
+      obraSocialPlanId: selection.planId ?? '',
+      obraSocialEsParticular: selection.esParticular,
+    }, { emitEvent: false });
+  }
+
+  onToggleObraSocial(): void {
+    const next = !this.tieneObraSocial();
+    this.tieneObraSocial.set(next);
+    this.showCoverageErrors.set(false);
+
+    if (!next) {
+      this.form.patchValue({
+        obraSocialNombre: '',
+        obraSocialPlan: '',
+        obraSocialNroAfiliado: '',
+        obraSocialFinanciadorId: '',
+        obraSocialPlanId: '',
+        obraSocialEsParticular: true,
+      }, { emitEvent: false });
+    }
+  }
+
+  isCoverageReadyToSave(): boolean {
+    if (!this.tieneObraSocial()) {
+      return true;
+    }
+    return this.coverageValid() && !this.form.controls.obraSocialEsParticular.value;
   }
 
   private dniAsyncValidator(): AsyncValidatorFn {

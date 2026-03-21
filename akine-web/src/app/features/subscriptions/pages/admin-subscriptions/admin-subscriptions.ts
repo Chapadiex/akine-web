@@ -24,6 +24,7 @@ export class AdminSubscriptionsPage implements OnInit {
   readonly tabs: StatusTab[] = [
     { value: 'PENDING_APPROVAL', label: 'Pendientes' },
     { value: 'ACTIVE', label: 'Activas' },
+    { value: 'PENDING_RENEWAL', label: 'Renovación pendiente' },
     { value: 'SETUP_PENDING', label: 'Pedir info' },
     { value: 'SUSPENDED', label: 'Suspendidas' },
     { value: 'REJECTED', label: 'Rechazadas' },
@@ -146,8 +147,26 @@ export class AdminSubscriptionsPage implements OnInit {
     this.act(`reactivate:${subscriptionId}`, () => this.subscriptionService.reactivate(subscriptionId), true);
   }
 
+  renewAdmin(subscriptionId: string): void {
+    this.act(`renew:${subscriptionId}`, () => this.subscriptionService.renew(subscriptionId), true);
+  }
+
   isBusy(action: string, id: string): boolean {
     return this.actionLoading() === `${action}:${id}`;
+  }
+
+  daysUntil(dateStr: string | null): number | null {
+    if (!dateStr) return null;
+    const end = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    return Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  chipClass(status: SubscriptionStatus): string {
+    if (status === 'PENDING_RENEWAL') return 'chip chip--pending-renewal';
+    return 'chip';
   }
 
   formatInstant(value: string | null): string {

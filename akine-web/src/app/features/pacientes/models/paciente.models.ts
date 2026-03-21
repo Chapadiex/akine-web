@@ -13,6 +13,9 @@ export interface PacienteRequest {
   obraSocialNombre?: string;
   obraSocialPlan?: string;
   obraSocialNroAfiliado?: string;
+  obraSocialFinanciadorId?: string;
+  obraSocialPlanId?: string;
+  obraSocialEsParticular?: boolean;
 }
 
 export interface PacienteUpdateRequest {
@@ -29,6 +32,9 @@ export interface PacienteUpdateRequest {
   obraSocialNombre?: string;
   obraSocialPlan?: string;
   obraSocialNroAfiliado?: string;
+  obraSocialFinanciadorId?: string;
+  obraSocialPlanId?: string;
+  obraSocialEsParticular?: boolean;
 }
 
 export interface Paciente {
@@ -47,6 +53,9 @@ export interface Paciente {
   obraSocialNombre?: string;
   obraSocialPlan?: string;
   obraSocialNroAfiliado?: string;
+  obraSocialFinanciadorId?: string;
+  obraSocialPlanId?: string;
+  obraSocialEsParticular?: boolean;
   userId?: string;
   activo: boolean;
   createdAt: string;

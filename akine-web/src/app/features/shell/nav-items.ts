@@ -101,29 +101,8 @@ export const NAV_SECTIONS: NavSection[] = [
     title: 'Administraci\u00f3n',
     items: [
       {
-        path: '/app/cobertura',
-        label: 'Cobertura',
-        icon: 'shield-check',
-        roles: STAFF_WITH_ADMIN,
-        children: [
-          { path: '/app/cobertura/financiadores', label: 'Financiadores', icon: 'building', roles: STAFF_WITH_ADMIN },
-          { path: '/app/cobertura/planes', label: 'Planes', icon: 'layers', roles: STAFF_WITH_ADMIN },
-        ],
-      },
-      {
-        path: '/app/facturacion',
-        label: 'Facturaci\u00f3n',
-        icon: 'receipt',
-        roles: STAFF_WITH_ADMIN,
-        children: [
-          { path: '/app/facturacion/convenios', label: 'Convenios', icon: 'handshake', roles: STAFF_WITH_ADMIN },
-          { path: '/app/facturacion/lotes', label: 'Lotes / Presentaci\u00f3n', icon: 'inventory', roles: STAFF_WITH_ADMIN },
-          { path: '/app/facturacion/conciliacion', label: 'Conciliaci\u00f3n', icon: 'account-balance', roles: STAFF_WITH_ADMIN },
-        ],
-      },
-      {
         path: '/app/consultorios',
-        label: 'Consultorios 360',
+        label: 'Consultorio360',
         icon: 'building',
         roles: STAFF_WITH_ADMIN,
         children: [
@@ -141,6 +120,23 @@ export const NAV_SECTIONS: NavSection[] = [
           },
         ],
       },
+      {
+        path: '/app/facturacion',
+        label: 'Facturaci\u00f3n',
+        icon: 'receipt',
+        roles: STAFF_WITH_ADMIN,
+        children: [
+          { path: '/app/facturacion/convenios', label: 'Convenios', icon: 'handshake', roles: STAFF_WITH_ADMIN },
+          { path: '/app/facturacion/lotes', label: 'Lotes / Presentaci\u00f3n', icon: 'inventory', roles: STAFF_WITH_ADMIN },
+          { path: '/app/facturacion/conciliacion', label: 'Conciliaci\u00f3n', icon: 'account-balance', roles: STAFF_WITH_ADMIN },
+        ],
+      },
+      {
+        path: '/app/cobertura/financiadores',
+        label: 'Obra Social',
+        icon: 'shield-check',
+        roles: STAFF_WITH_ADMIN,
+      },
     ],
   },
   {
@@ -153,15 +149,20 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'credit-card',
         roles: PLATFORM_ADMIN,
         children: [
-          { path: '/app/admin/suscripciones', label: 'Plan SaaS', icon: 'layers', roles: PLATFORM_ADMIN },
-          { path: '/app/admin/suscripciones', label: 'Facturaci\u00f3n', icon: 'receipt-text', roles: PLATFORM_ADMIN },
+          { path: '/app/admin/suscripciones', label: 'Gesti\u00f3n', icon: 'layers', roles: PLATFORM_ADMIN },
           {
-            path: '/app/admin/suscripciones',
-            label: 'L\u00edmites / usuarios',
-            icon: 'users-gear',
+            path: '/app/admin/saas/metricas',
+            label: 'M\u00e9tricas SaaS',
+            icon: 'chart-bar',
             roles: PLATFORM_ADMIN,
           },
         ],
+      },
+      {
+        path: '/app/mi-suscripcion',
+        label: 'Mi suscripci\u00f3n',
+        icon: 'credit-card',
+        roles: ['PROFESIONAL_ADMIN'],
       },
     ],
   },

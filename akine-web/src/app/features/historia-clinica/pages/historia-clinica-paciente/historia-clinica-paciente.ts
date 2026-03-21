@@ -1,4 +1,4 @@
-import { CommonModule, DatePipe } from '@angular/common';
+﻿import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
@@ -88,6 +88,46 @@ type CasePanelItem = {
 type StatusSummaryItem = {
   label: string;
   value: string;
+};
+
+type TherapeuticPlanSummary = {
+  caseId: string | null;
+  caseName: string;
+  caseStatus: string;
+  caseSource: string;
+  consultationReason: string;
+  diagnosisSummary: string;
+  treatmentName: string;
+  plannedSessions: number;
+  completedSessions: number;
+  draftSessions: number;
+  pendingSessions: number;
+  lastCompletedSession: SesionClinicaResponse | null;
+  currentConduct: string;
+  assignedProfessionalName: string;
+  sessions: SesionClinicaResponse[];
+};
+
+type PlanSessionItem = {
+  session: SesionClinicaResponse;
+  sessionNumber: number | null;
+  plannedSessions: number;
+  sessionTypeLabel: 'Express' | 'Completa';
+  statusLabel: string;
+  patientResponse: string;
+  painSummary: string;
+  conductSummary: string;
+  clinicalSummary: string;
+};
+
+type SummarySessionRow = {
+  sessionId: string;
+  numberLabel: string;
+  typeLabel: 'Express' | 'Completa';
+  dateLabel: string;
+  statusLabel: string;
+  summaryLabel: string;
+  actionLabel: 'Continuar' | 'Ver';
 };
 
 const TIMELINE_BATCH_SIZE = 12;
@@ -289,8 +329,8 @@ export class HistoriaClinicaPacientePage {
 
   readonly tabOptions: ReadonlyArray<{ value: ClinicalTab; label: string }> = [
     { value: 'summary', label: 'Resumen' },
-    { value: 'cases', label: 'Casos y sesiones' },
-    { value: 'timeline', label: 'Timeline' },
+    { value: 'cases', label: 'Plan y sesiones' },
+    { value: 'timeline', label: 'Actividad clínica' },
   ];
 
   readonly timelineFilters: ReadonlyArray<{ value: TimelineFilter; label: string }> = [
@@ -321,7 +361,7 @@ export class HistoriaClinicaPacientePage {
   readonly hasLegajo = computed(() => !!this.overview()?.legajo.exists);
   readonly hasActiveCases = computed(() =>
     (this.overview()?.casosActivos.length ?? 0) > 0 ||
-    (this.overview()?.casosAtencionActivos.length ?? 0) > 0,
+    (this.overview()?.casosAtencionActivos?.length ?? 0) > 0,
   );
   readonly professionalOptions = computed(() => this.workspaceSnapshot()?.profesionales ?? []);
   readonly screenState = computed<ClinicalScreenState>(() => {
@@ -404,16 +444,19 @@ export class HistoriaClinicaPacientePage {
     }
     return items;
   });
-  readonly contextNotice = computed<{ message: string; actionLabel: string } | null>(() => {
-    switch (this.screenState()) {
-      case 'history-no-case':
-        return {
-          message: 'Todavía no hay un caso clínico activo. Abrí el primero para ordenar sesiones, diagnósticos y evolución.',
-          actionLabel: 'Nuevo caso clínico',
-        };
-      default:
-        return null;
-    }
+  readonly summaryTopLine = computed(() => {
+    const summary = this.therapeuticPlanSummary();
+    const hcLabel = this.hasLegajo() ? 'HC creada' : 'HC pendiente';
+    const activeCases = (this.overview()?.casosActivos?.length ?? 0) + (this.overview()?.casosAtencionActivos?.length ?? 0);
+    const progressLabel = summary
+      ? `${summary.completedSessions}/${summary.plannedSessions} sesiones realizadas`
+      : '0/0 sesiones realizadas';
+    const draftLabel = `${summary?.draftSessions ?? 0} borrador`;
+    const lastSessionLabel = summary?.lastCompletedSession
+      ? `Última sesión ${this.formatDateTime(summary.lastCompletedSession.fechaAtencion)}`
+      : 'Última sesión sin registro';
+    const conductLabel = `Conducta: ${summary?.currentConduct ?? 'Sin conducta registrada'}`;
+    return [hcLabel, `${activeCases} casos activos`, progressLabel, draftLabel, lastSessionLabel, conductLabel].join(' · ');
   });
   readonly compatibilityFilters = computed(() => {
     const state = this.routeState();
@@ -480,6 +523,16 @@ export class HistoriaClinicaPacientePage {
       isActive: !fromCaso.estado.startsWith('CERRADO'),
     };
   });
+  readonly selectedCasoAtencion = computed<CasoAtencionSummary | null>(() => {
+    const selectedId = this.selectedCaseId();
+    if (selectedId) {
+      return this.casosClinicos().find((caso) => caso.id === selectedId) ?? null;
+    }
+    return this.activeCasosClinicos()[0] ?? this.casosClinicos()[0] ?? null;
+  });
+  readonly sessionsForSelectedPlan = computed(() =>
+    this.getSessionsForPlan(this.selectedCasoAtencion(), this.selectedCase()),
+  );
   readonly filteredTimeline = computed(() =>
     this.timeline()
       .filter((event) => this.matchesTimelineType(event))
@@ -490,14 +543,7 @@ export class HistoriaClinicaPacientePage {
   readonly relatedSessions = computed(() => {
     const selectedCase = this.selectedCase();
     const filter = this.sessionListFilter();
-    const base = this.sesiones()
-      .filter((sesion) => {
-        if (!selectedCase) return true;
-        return (
-          sesion.profesionalId === selectedCase.profesionalId &&
-          new Date(sesion.fechaAtencion) >= new Date(`${selectedCase.fechaInicio}T00:00:00`)
-        );
-      })
+    const base = this.sessionsForSelectedPlan()
       .filter((sesion) => (filter === 'all' ? true : sesion.estado === filter))
       .sort((left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime());
 
@@ -527,9 +573,122 @@ export class HistoriaClinicaPacientePage {
       isActive: true,
     };
   });
-  readonly summaryLatestEvent = computed(() => this.overview()?.ultimaSesion ?? null);
-  readonly summaryAntecedentes = computed(() => this.overview()?.antecedentesRelevantes?.slice(0, 4) ?? []);
-  readonly summaryAdjuntos = computed(() => this.overview()?.adjuntosRecientes?.slice(0, 4) ?? []);
+  readonly therapeuticPlanSummary = computed<TherapeuticPlanSummary | null>(() => {
+    const selectedCaso = this.selectedCasoAtencion();
+    const fallbackCase = this.summaryMainCase();
+    const sessions = this.getSessionsForPlan(selectedCaso, fallbackCase);
+    const completedSessions = sessions.filter((sesion) => sesion.estado === 'CERRADA');
+    const draftSessions = sessions.filter((sesion) => sesion.estado === 'BORRADOR');
+    const plannedSessions = selectedCaso?.cantidadSesiones
+      ?? fallbackCase?.cantidadSesiones
+      ?? this.overview()?.planTerapeuticoActivo?.tratamientos?.[0]?.cantidadSesiones
+      ?? 0;
+    const completedCount = completedSessions.length;
+    const draftCount = draftSessions.length;
+    const pendingSessions = Math.max(plannedSessions - completedCount - draftCount, 0);
+    const sortedCompleted = [...completedSessions].sort(
+      (left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime(),
+    );
+    const lastCompletedSession = sortedCompleted[0] ?? null;
+    const treatmentFromPlan = this.overview()?.planTerapeuticoActivo?.tratamientos?.[0]?.tratamientoNombre ?? null;
+    const treatmentName = treatmentFromPlan
+      ?? this.extractTreatmentName(fallbackCase?.ultimaEvolucionResumen ?? null)
+      ?? 'Sin tratamiento definido';
+    const diagnosisSummary = selectedCaso?.diagnosticoMedico ?? 'Sin diagnóstico cargado';
+    const consultationReason = selectedCaso?.motivoConsulta ?? fallbackCase?.descripcion ?? 'Sin motivo de consulta';
+    const assignedProfessionalName = selectedCaso?.profesionalResponsableNombre
+      ?? fallbackCase?.profesionalNombre
+      ?? 'Sin asignar';
+    const currentConduct = lastCompletedSession?.evaluacionEstructurada?.proximaConducta
+      ? this.conductLabel(lastCompletedSession.evaluacionEstructurada.proximaConducta)
+      : 'Sin conducta registrada';
+    const caseSource = this.caseSourceLabel(selectedCaso?.tipoOrigen);
+    return {
+      caseId: selectedCaso?.id ?? fallbackCase?.id ?? null,
+      caseName: selectedCaso?.afeccionPrincipal ?? selectedCaso?.motivoConsulta ?? fallbackCase?.descripcion ?? 'Caso en seguimiento',
+      caseStatus: selectedCaso?.estado ?? fallbackCase?.estado ?? 'Sin estado',
+      caseSource,
+      consultationReason,
+      diagnosisSummary,
+      treatmentName,
+      plannedSessions,
+      completedSessions: completedCount,
+      draftSessions: draftCount,
+      pendingSessions,
+      lastCompletedSession,
+      currentConduct,
+      assignedProfessionalName,
+      sessions,
+    };
+  });
+  readonly planProgressLabel = computed(() => {
+    const summary = this.therapeuticPlanSummary();
+    if (!summary || summary.plannedSessions <= 0) {
+      return 'Progreso del tratamiento: 0/0 sesiones realizadas';
+    }
+    return `Progreso del tratamiento: ${summary.completedSessions}/${summary.plannedSessions} sesiones realizadas`;
+  });
+  readonly summaryRecentSessions = computed(() =>
+    [...(this.therapeuticPlanSummary()?.sessions ?? [])]
+      .sort((left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime())
+      .slice(0, 3),
+  );
+  readonly summarySessionRows = computed<SummarySessionRow[]>(() => {
+    const summary = this.therapeuticPlanSummary();
+    if (!summary || !summary.sessions.length) {
+      return [];
+    }
+    const orderedAsc = [...summary.sessions].sort(
+      (left, right) => new Date(left.fechaAtencion).getTime() - new Date(right.fechaAtencion).getTime(),
+    );
+    const numberById = new Map<string, number>();
+    orderedAsc.forEach((session, index) => numberById.set(session.id, index + 1));
+    return [...summary.sessions]
+      .sort((left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime())
+      .slice(0, 4)
+      .map((session) => ({
+        sessionId: session.id,
+        numberLabel: `#${numberById.get(session.id) ?? '-'}`,
+        typeLabel: this.isCompleteSession(session) ? 'Completa' : 'Express',
+        dateLabel: this.formatDateTime(session.fechaAtencion),
+        statusLabel: this.sessionStateLabel(session.estado),
+        summaryLabel: this.compactSessionSummary(session),
+        actionLabel: session.estado === 'BORRADOR' ? 'Continuar' : 'Ver',
+      }));
+  });
+  readonly planSessionItems = computed<PlanSessionItem[]>(() => {
+    const summary = this.therapeuticPlanSummary();
+    const sessions = this.relatedSessions();
+    if (!sessions.length) return [];
+    const orderedAsc = [...(summary?.sessions ?? sessions)].sort(
+      (left, right) => new Date(left.fechaAtencion).getTime() - new Date(right.fechaAtencion).getTime(),
+    );
+    const numberMap = new Map<string, number>();
+    orderedAsc.forEach((session, index) => numberMap.set(session.id, index + 1));
+    const plannedSessions = summary?.plannedSessions ?? 0;
+    return sessions.map((session) => ({
+      session,
+      sessionNumber: numberMap.get(session.id) ?? null,
+      plannedSessions,
+      sessionTypeLabel: this.isCompleteSession(session) ? 'Completa' : 'Express',
+      statusLabel: this.sessionStateLabel(session.estado),
+      patientResponse: this.patientResponseLabel(session.evaluacionEstructurada?.respuestaPaciente),
+      painSummary: this.sessionPainSummary(session),
+      conductSummary: this.conductLabel(session.evaluacionEstructurada?.proximaConducta),
+      clinicalSummary: this.sessionClinicalSummary(session),
+    }));
+  });
+  readonly summaryAntecedentes = computed(() => this.overview()?.antecedentesRelevantes?.slice(0, 2) ?? []);
+  readonly summaryAdjuntos = computed(() => this.overview()?.adjuntosRecientes?.slice(0, 2) ?? []);
+  readonly quickStatusItems = computed(() => {
+    const summary = this.therapeuticPlanSummary();
+    return [
+      { label: 'Casos activos', value: String((this.overview()?.casosActivos?.length ?? 0) + (this.overview()?.casosAtencionActivos?.length ?? 0)) },
+      { label: 'Profesional', value: summary?.assignedProfessionalName ?? 'Sin asignar' },
+      { label: 'Última sesión', value: summary?.lastCompletedSession ? (this.isCompleteSession(summary.lastCompletedSession) ? 'Completa' : 'Express') : 'Sin registro' },
+      { label: 'Próxima acción', value: summary?.currentConduct ?? 'Sin conducta registrada' },
+    ];
+  });
   readonly selectedCasoDiagnosticos = computed(() => {
     const selectedCodes = new Set(this.casoDiagnosticoCodes());
     return this.diagnosticosMedicos().filter((item) => selectedCodes.has(item.codigoInterno));
@@ -844,15 +1003,23 @@ export class HistoriaClinicaPacientePage {
     if (!this.hasLegajo()) {
       return;
     }
+    if (!this.hasActiveCases()) {
+      this.toast.warning('Primero abrí un caso clínico activo para registrar sesiones.');
+      return;
+    }
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const pacienteId = this.selectedPatient()?.id;
     if (!consultorioId || !pacienteId) {
       return;
     }
+    const requestedProfesionalId = defaultProfesionalId ?? this.defaultProfesionalId() ?? '';
+    const resolvedProfesionalId = this.professionalOptions().some((item) => item.id === requestedProfesionalId)
+      ? requestedProfesionalId
+      : null;
     const request: SesionClinicaRequest = {
-      profesionalId: defaultProfesionalId ?? this.defaultProfesionalId() ?? '',
-      turnoId: undefined,
-      boxId: undefined,
+      profesionalId: resolvedProfesionalId,
+      turnoId: null,
+      boxId: null,
       fechaAtencion: new Date().toISOString().slice(0, 16),
       tipoAtencion: 'SEGUIMIENTO',
       motivoConsulta: '',
@@ -1486,7 +1653,11 @@ export class HistoriaClinicaPacientePage {
         this.patientSearchControl.setValue(`${overview.paciente.apellido}, ${overview.paciente.nombre}`, {
           emitEvent: false,
         });
-        this.selectedCaseId.set(overview.casosActivos[0]?.diagnosticoId ?? null);
+        this.selectedCaseId.set(
+          overview.casosAtencionActivos[0]?.id
+          ?? overview.casosActivos[0]?.diagnosticoId
+          ?? null,
+        );
         this.ensureTabData(this.activeTab());
       },
       error: (err) => {
@@ -1511,6 +1682,7 @@ export class HistoriaClinicaPacientePage {
       return;
     }
     switch (tab) {
+      case 'summary':
       case 'cases':
         this.ensureCasesTabData();
         break;
@@ -1536,10 +1708,6 @@ export class HistoriaClinicaPacientePage {
     forkJoin({
       diagnosticos: this.historiaSvc.listDiagnosticos(consultorioId, pacienteId),
       sesiones: this.historiaSvc.listSesiones(consultorioId, pacienteId, {
-        profesionalId: this.routeState().profesionalId,
-        from: this.routeState().from,
-        to: this.routeState().to,
-        estado: this.routeState().estado,
         page: 0,
         size: SESSION_PAGE_SIZE,
       }),
@@ -1829,7 +1997,7 @@ export class HistoriaClinicaPacientePage {
   private patchSesionForm(sesion: SesionClinicaResponse): void {
     this.sesionForm.reset(
       {
-        profesionalId: sesion.profesionalId,
+        profesionalId: sesion.profesionalId ?? '',
         turnoId: sesion.turnoId ?? '',
         boxId: sesion.boxId ?? '',
         fechaAtencion: this.toInputDateTime(sesion.fechaAtencion),
@@ -2188,8 +2356,180 @@ export class HistoriaClinicaPacientePage {
     return true;
   }
 
-  resolveProfessionalName(profesionalId: string): string {
-    return this.professionalOptions().find((item) => item.id === profesionalId)?.nombre || 'Profesional no disponible';
+  resolveProfessionalName(profesionalId?: string | null): string {
+    if (!profesionalId) {
+      return 'Sin profesional';
+    }
+    return this.professionalOptions().find((item) => item.id === profesionalId)?.nombre || 'Sin profesional';
+  }
+
+  private getSessionsForPlan(
+    casoAtencion: CasoAtencionSummary | null,
+    fallbackCase?: CasePanelItem | null,
+  ): SesionClinicaResponse[] {
+    const sessions = this.sesiones();
+    if (!sessions.length) {
+      return [];
+    }
+    if (casoAtencion) {
+      const direct = sessions.filter((sesion) => sesion.casoAtencionId === casoAtencion.id);
+      if (direct.length) {
+        return direct;
+      }
+      const startDate = new Date(casoAtencion.fechaApertura).getTime();
+      return sessions.filter((sesion) => {
+        if (casoAtencion.profesionalResponsableId && sesion.profesionalId !== casoAtencion.profesionalResponsableId) {
+          return false;
+        }
+        return Number.isNaN(startDate) || new Date(sesion.fechaAtencion).getTime() >= startDate;
+      });
+    }
+    if (!fallbackCase) {
+      return sessions;
+    }
+    const startDate = new Date(`${fallbackCase.fechaInicio}T00:00:00`).getTime();
+    return sessions.filter((sesion) => {
+      if (fallbackCase.profesionalId && sesion.profesionalId !== fallbackCase.profesionalId) {
+        return false;
+      }
+      return Number.isNaN(startDate) || new Date(sesion.fechaAtencion).getTime() >= startDate;
+    });
+  }
+
+  private extractTreatmentName(source?: string | null): string | null {
+    const value = (source ?? '').trim();
+    if (!value) {
+      return null;
+    }
+    const match = value.match(/Tratamiento inicial:\s*([^.]*)/i);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+    return null;
+  }
+
+  isCompleteSession(session: SesionClinicaResponse): boolean {
+    return session.tipoAtencion === 'EVALUACION';
+  }
+
+  private caseSourceLabel(value?: string | null): string {
+    if (value === 'DERIVACION') {
+      return 'Derivación';
+    }
+    if (value === 'CONSULTA_DIRECTA') {
+      return 'Consulta directa';
+    }
+    return 'Sin origen definido';
+  }
+
+  private patientResponseLabel(value?: string | null): string {
+    const labels: Record<string, string> = {
+      FAVORABLE: 'Favorable',
+      SIN_CAMBIOS: 'Sin cambios',
+      REGULAR: 'Regular',
+      EMPEORA: 'Empeora',
+      PARCIAL: 'Parcial',
+    };
+    if (!value) {
+      return 'Sin respuesta registrada';
+    }
+    return labels[value] ?? value;
+  }
+
+  private conductLabel(value?: string | null): string {
+    const labels: Record<string, string> = {
+      CONTINUAR: 'Continuar',
+      AJUSTAR: 'Ajustar',
+      REEVALUAR: 'Reevaluar',
+      ALTA: 'Alta',
+      DERIVAR: 'Derivar',
+      SOLICITAR_ESTUDIO: 'Solicitar estudio',
+      SUSPENDER: 'Suspender',
+    };
+    if (!value) {
+      return 'Sin conducta definida';
+    }
+    return labels[value] ?? value;
+  }
+
+  sessionStateLabel(value?: HistoriaClinicaSesionEstado | null): string {
+    const labels: Record<string, string> = {
+      BORRADOR: 'Borrador',
+      CERRADA: 'Cerrada',
+      ANULADA: 'Anulada',
+    };
+    if (!value) {
+      return 'Sin estado';
+    }
+    return labels[value] ?? value;
+  }
+
+  private sessionPainSummary(session: SesionClinicaResponse): string {
+    const evalData = session.evaluacionEstructurada;
+    if (!evalData || evalData.dolorIntensidad === null || evalData.dolorIntensidad === undefined) {
+      return 'Sin dolor registrado';
+    }
+    const zona = evalData.dolorZona?.trim();
+    return zona ? `${evalData.dolorIntensidad}/10 · ${zona}` : `${evalData.dolorIntensidad}/10`;
+  }
+
+  private sessionClinicalSummary(session: SesionClinicaResponse): string {
+    const evalData = session.evaluacionEstructurada;
+    const interventionSummary = session.intervenciones?.length
+      ? `Intervención: ${session.intervenciones[0]?.tratamientoNombre ?? 'Aplicada'}`
+      : null;
+    if (this.isCompleteSession(session)) {
+      const fullSegments = [
+        evalData?.objetivoSesion ? `Objetivo: ${evalData.objetivoSesion}` : null,
+        interventionSummary,
+        session.resumenClinico ?? null,
+      ].filter((segment): segment is string => !!segment && segment.trim().length > 0);
+      return fullSegments[0] ?? 'Sesión completa sin cierre clínico resumido.';
+    }
+    const expressSegments = [
+      evalData?.evolucionNota ? `Evolución: ${evalData.evolucionNota}` : null,
+      interventionSummary,
+      session.resumenClinico ?? null,
+    ].filter((segment): segment is string => !!segment && segment.trim().length > 0);
+    return expressSegments[0] ?? 'Seguimiento breve sin cierre clínico aún.';
+  }
+
+  private compactSessionSummary(session: SesionClinicaResponse): string {
+    const evalData = session.evaluacionEstructurada;
+    if (session.estado === 'BORRADOR') {
+      if (evalData?.dolorIntensidad !== null && evalData?.dolorIntensidad !== undefined && evalData?.evolucionEstado) {
+        return `Dolor ${evalData.dolorIntensidad}/10 · ${this.evolutionLabel(evalData.evolucionEstado)} · ${this.conductLabel(evalData.proximaConducta)}`;
+      }
+      return 'Sin cierre clínico';
+    }
+    if (this.isCompleteSession(session)) {
+      return `${this.patientResponseLabel(evalData?.respuestaPaciente)} · ${this.toleranceLabel(evalData?.tolerancia)} · ${this.conductLabel(evalData?.proximaConducta)}`;
+    }
+    return `${this.patientResponseLabel(evalData?.respuestaPaciente)} · ${this.conductLabel(evalData?.proximaConducta)}`;
+  }
+
+  private evolutionLabel(value?: string | null): string {
+    const labels: Record<string, string> = {
+      MEJOR: 'Mejor',
+      IGUAL: 'Igual',
+      PEOR: 'Peor',
+    };
+    if (!value) {
+      return 'Sin evolución';
+    }
+    return labels[value] ?? value;
+  }
+
+  private toleranceLabel(value?: string | null): string {
+    const labels: Record<string, string> = {
+      BUENA: 'Tolerancia buena',
+      REGULAR: 'Tolerancia regular',
+      MALA: 'Tolerancia baja',
+    };
+    if (!value) {
+      return 'Sin tolerancia';
+    }
+    return labels[value] ?? value;
   }
 
   private countSessionsAfterDate(profesionalId: string, date: string): number {
@@ -2244,3 +2584,7 @@ export class HistoriaClinicaPacientePage {
     return value.slice(0, 16);
   }
 }
+
+
+
+

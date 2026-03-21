@@ -645,7 +645,7 @@ export class HistoriaClinica {
   private patchSesionForm(sesion: SesionClinicaResponse): void {
     this.sesionForm.reset(
       {
-        profesionalId: sesion.profesionalId,
+        profesionalId: sesion.profesionalId ?? '',
         turnoId: sesion.turnoId ?? '',
         boxId: sesion.boxId ?? '',
         fechaAtencion: this.toInputDateTime(sesion.fechaAtencion),

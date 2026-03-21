@@ -159,6 +159,7 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
         children: [
+          { path: '', redirectTo: 'financiadores', pathMatch: 'full' },
           {
             path: 'financiadores',
             loadComponent: () =>
@@ -166,13 +167,7 @@ export const routes: Routes = [
                 (m) => m.FinanciadoresListComponent,
               ),
           },
-          {
-            path: 'planes',
-            loadComponent: () =>
-              import('./features/cobertura/pages/planes-list/planes-list.component').then(
-                (m) => m.PlanesListComponent,
-              ),
-          },
+          { path: 'planes', redirectTo: 'financiadores', pathMatch: 'full' },
         ],
       },
       {
@@ -232,6 +227,22 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/subscriptions/pages/admin-subscriptions/admin-subscriptions').then(
             (m) => m.AdminSubscriptionsPage,
+          ),
+      },
+      {
+        path: 'admin/saas/metricas',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] },
+        loadComponent: () =>
+          import('./features/subscriptions/pages/saas-metrics/saas-metrics').then(
+            (m) => m.SaasMetricsPage,
+          ),
+      },
+      {
+        path: 'mi-suscripcion',
+        loadComponent: () =>
+          import('./features/subscriptions/pages/my-subscription/my-subscription').then(
+            (m) => m.MySubscriptionPage,
           ),
       },
     ],

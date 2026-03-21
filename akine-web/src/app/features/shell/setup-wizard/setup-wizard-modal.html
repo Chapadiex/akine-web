@@ -1,0 +1,158 @@
+<div class="sw-overlay" role="dialog" aria-modal="true" aria-labelledby="sw-title">
+  <div class="sw-modal">
+
+    <div class="sw-header">
+      <div class="sw-header__icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 21V7l8-4 8 4v14"/>
+          <path d="M9 14h6"/>
+          <path d="M12 11v6"/>
+        </svg>
+      </div>
+      <div class="sw-header__text">
+        <h2 class="sw-header__title" id="sw-title">Configuración inicial del consultorio</h2>
+        <p class="sw-header__subtitle">Completá los datos mínimos para comenzar a operar.</p>
+      </div>
+      <button
+        type="button"
+        class="sw-close"
+        (click)="dismissed.emit()"
+        aria-label="Cerrar"
+        [disabled]="saving()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="confirm()" class="sw-form" novalidate autocomplete="off">
+
+      <!-- Nombre del consultorio -->
+      <div class="sw-field" [class.sw-field--error]="isInvalid('consultorioNombre')">
+        <label class="sw-label" for="consultorioNombre">
+          Nombre del consultorio <span class="sw-required" aria-hidden="true">*</span>
+        </label>
+        <input
+          id="consultorioNombre"
+          type="text"
+          class="sw-input"
+          formControlName="consultorioNombre"
+          placeholder="Ej: Centro de Kinesiología San Martín"
+          [attr.aria-invalid]="isInvalid('consultorioNombre')"
+          aria-describedby="err-nombre"
+          maxlength="100"
+        />
+        @if (isInvalid('consultorioNombre')) {
+          <span id="err-nombre" class="sw-error-msg" role="alert">Ingresá el nombre del consultorio.</span>
+        }
+      </div>
+
+      <!-- Box de atención inicial -->
+      <div class="sw-field" [class.sw-field--error]="isInvalid('boxNombre')">
+        <label class="sw-label" for="boxNombre">
+          Box de atención inicial <span class="sw-required" aria-hidden="true">*</span>
+        </label>
+        <input
+          id="boxNombre"
+          type="text"
+          class="sw-input"
+          formControlName="boxNombre"
+          placeholder="Ej: Box 1"
+          [attr.aria-invalid]="isInvalid('boxNombre')"
+          aria-describedby="err-box"
+          maxlength="50"
+        />
+        @if (isInvalid('boxNombre')) {
+          <span id="err-box" class="sw-error-msg" role="alert">Ingresá el nombre del box.</span>
+        }
+      </div>
+
+      <!-- Horario base -->
+      <fieldset class="sw-fieldset">
+        <legend class="sw-fieldset__legend">Horario base de atención</legend>
+
+        <!-- Selector de días -->
+        <div class="sw-dias" formGroupName="dias" role="group" aria-label="Días de atención">
+          @for (dia of DIAS; track dia.key) {
+            <label
+              class="sw-dia-chip"
+              [class.sw-dia-chip--active]="isDiaChecked(dia.key)"
+              [title]="dia.label"
+            >
+              <input
+                type="checkbox"
+                [formControlName]="dia.key"
+                class="sw-dia-chip__input"
+                [attr.aria-label]="dia.label"
+              />
+              {{ dia.short }}
+            </label>
+          }
+        </div>
+        @if (diasInvalid) {
+          <span class="sw-error-msg" role="alert">Seleccioná al menos un día.</span>
+        }
+
+        <!-- Horarios -->
+        <div class="sw-row">
+          <div class="sw-field sw-field--half" [class.sw-field--error]="isInvalid('horaApertura')">
+            <label class="sw-label" for="horaApertura">Desde</label>
+            <input
+              id="horaApertura"
+              type="time"
+              class="sw-input"
+              formControlName="horaApertura"
+              [attr.aria-invalid]="isInvalid('horaApertura')"
+            />
+          </div>
+          <div class="sw-field sw-field--half" [class.sw-field--error]="isInvalid('horaCierre')">
+            <label class="sw-label" for="horaCierre">Hasta</label>
+            <input
+              id="horaCierre"
+              type="time"
+              class="sw-input"
+              formControlName="horaCierre"
+              [attr.aria-invalid]="isInvalid('horaCierre')"
+            />
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Intervalo de turnos -->
+      <div class="sw-field" [class.sw-field--error]="isInvalid('intervalMinutos')">
+        <label class="sw-label" for="intervalMinutos">
+          Intervalo de turnos <span class="sw-required" aria-hidden="true">*</span>
+        </label>
+        <select
+          id="intervalMinutos"
+          class="sw-select"
+          formControlName="intervalMinutos"
+          [attr.aria-invalid]="isInvalid('intervalMinutos')"
+        >
+          @for (opt of INTERVAL_OPTIONS; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+        <p class="sw-hint">Duración predeterminada de cada turno en la agenda.</p>
+      </div>
+
+      <div class="sw-footer">
+        <button
+          type="submit"
+          class="sw-btn-primary"
+          [disabled]="saving()"
+          [class.sw-btn-primary--loading]="saving()"
+        >
+          @if (saving()) {
+            <span class="sw-spinner" aria-hidden="true"></span>
+            Configurando...
+          } @else {
+            Comenzar a operar
+          }
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
