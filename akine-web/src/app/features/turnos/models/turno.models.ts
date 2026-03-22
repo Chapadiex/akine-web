@@ -1,6 +1,7 @@
 export type TurnoEstado =
   | 'PROGRAMADO'
   | 'CONFIRMADO'
+  | 'CHECK_IN_REALIZADO'
   | 'EN_ESPERA'
   | 'EN_CURSO'
   | 'COMPLETADO'
@@ -10,6 +11,7 @@ export type TurnoEstado =
 export const TURNO_ESTADO_LABELS: Record<TurnoEstado, string> = {
   PROGRAMADO: 'Programado',
   CONFIRMADO: 'Llegó',
+  CHECK_IN_REALIZADO: 'Check-in realizado',
   EN_ESPERA: 'En espera',
   EN_CURSO: 'En atención',
   COMPLETADO: 'Finalizado',
@@ -20,6 +22,7 @@ export const TURNO_ESTADO_LABELS: Record<TurnoEstado, string> = {
 export const TURNO_ESTADO_COLORS: Record<TurnoEstado, string> = {
   PROGRAMADO: '#2563EB',
   CONFIRMADO: '#0F766E',
+  CHECK_IN_REALIZADO: '#059669',
   EN_ESPERA: '#F59E0B',
   EN_CURSO: '#4F46E5',
   COMPLETADO: '#64748B',
@@ -166,6 +169,7 @@ export function buildDaySummary(turnos: Turno[]): DaySummary {
     switch (turno.estado) {
       case 'PROGRAMADO':
       case 'CONFIRMADO':
+      case 'CHECK_IN_REALIZADO':
         summary.pendientes++;
         break;
       case 'EN_ESPERA':

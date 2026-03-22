@@ -202,6 +202,8 @@ export const routes: Routes = [
         path: 'caja',
         loadComponent: () =>
           import('./features/caja/caja').then((m) => m.Caja),
+        loadChildren: () =>
+          import('./features/caja/caja.routes').then((m) => m.CAJA_ROUTES),
       },
       {
         path: 'reportes',

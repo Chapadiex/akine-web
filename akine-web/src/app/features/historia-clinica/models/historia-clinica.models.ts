@@ -239,6 +239,23 @@ export interface SesionClinicaResponse {
   evaluacionEstructurada?: SesionEvaluacionDTO | null;
   examenFisico?: SesionExamenFisicoDTO | null;
   intervenciones?: SesionIntervencionDTO[] | null;
+  // Cierre clínico (Fase 2)
+  cerradaClinicamente?: boolean | null;
+  duracionRealMinutos?: number | null;
+  tratamientoRealizado?: string | null;
+  resultadoClinico?: string | null;
+  conductaSiguiente?: string | null;
+  requiereSeguimiento?: boolean | null;
+  fechaCierreClinco?: string | null;
+}
+
+export interface CierreClinicoRequest {
+  duracionRealMinutos: number;
+  tratamientoRealizado: string;
+  resultadoClinico: string;
+  conductaSiguiente: string;
+  requiereSeguimiento: boolean;
+  observacionesClincias?: string | null;
 }
 
 export interface SesionClinicaRequest {

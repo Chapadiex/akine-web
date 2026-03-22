@@ -24,6 +24,7 @@ import { ErrorMapperService } from '../../../../core/error/error-mapper.service'
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import {
   CasoAtencionSummary,
+  CierreClinicoRequest,
   HistoriaClinicaOverview,
   HistoriaClinicaTipoAtencion,
   SesionClinicaRequest,
@@ -92,6 +93,7 @@ export class SesionPage implements OnInit {
   readonly isSaving = signal(false);
   readonly showCloseSesionConfirm = signal(false);
   readonly showDeleteSesionConfirm = signal(false);
+  readonly showCierreClinicoPanel = signal(false);
   readonly showExamenFisico = signal(false);
   readonly activeStep = signal<SesionStep>('evaluacion');
   readonly selectedMode = signal<'quick' | 'full'>('quick');
@@ -171,6 +173,16 @@ export class SesionPage implements OnInit {
     return this.selectedMode();
   });
 
+  readonly canCerrarClinicamente = computed(() => {
+    const s = this.sesion();
+    return s?.estado === 'CERRADA' && !s.cerradaClinicamente;
+  });
+
+  readonly cierreClinicoComplete = computed(() => {
+    const v = this.cierreClinicoForm.getRawValue();
+    return !!(v.duracionRealMinutos && v.tratamientoRealizado && v.resultadoClinico && v.conductaSiguiente);
+  });
+
   readonly sesionNumero = computed(() => {
     const caso = this.casosClinicos()[0];
     if (caso) return (caso.cantidadSesiones ?? 0) + 1;
@@ -217,6 +229,16 @@ export class SesionPage implements OnInit {
     tipoAtencion: new FormControl<HistoriaClinicaTipoAtencion>('SEGUIMIENTO', Validators.required),
     motivoConsulta: new FormControl(''),
     resumenClinico: new FormControl(''),
+  });
+
+  // ── Cierre clínico form (Fase 2) ──
+  readonly cierreClinicoForm = new FormGroup({
+    duracionRealMinutos: new FormControl<number | null>(null, [Validators.required, Validators.min(1)]),
+    tratamientoRealizado: new FormControl('', Validators.required),
+    resultadoClinico: new FormControl('', Validators.required),
+    conductaSiguiente: new FormControl('', Validators.required),
+    requiereSeguimiento: new FormControl(false),
+    observacionesClincias: new FormControl(''),
   });
 
   ngOnInit(): void {
@@ -565,6 +587,46 @@ export class SesionPage implements OnInit {
           this.evaluacionForm.disable();
           this.examenFisicoForm.disable();
           this.intervencionesForm.disable();
+        }
+      });
+  }
+
+  toggleCierreClinicoPanel(): void {
+    this.showCierreClinicoPanel.update((v) => !v);
+  }
+
+  cerrarClinicamente(): void {
+    if (this.cierreClinicoForm.invalid || !this.cierreClinicoComplete() || this.isSaving()) return;
+    const cid = this.consultorioId();
+    if (!cid) return;
+
+    const v = this.cierreClinicoForm.getRawValue();
+    const req: CierreClinicoRequest = {
+      duracionRealMinutos: v.duracionRealMinutos!,
+      tratamientoRealizado: v.tratamientoRealizado!,
+      resultadoClinico: v.resultadoClinico!,
+      conductaSiguiente: v.conductaSiguiente!,
+      requiereSeguimiento: !!v.requiereSeguimiento,
+      observacionesClincias: v.observacionesClincias || null,
+    };
+
+    this.isSaving.set(true);
+    this.hcService
+      .cerrarClinicamente(cid, this.pacienteId, this.sesionId, req)
+      .pipe(
+        catchError((err) => {
+          this.isSaving.set(false);
+          this.toast.error(this.errorMapper.toMessage(err));
+          return of(null);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((result) => {
+        this.isSaving.set(false);
+        if (result) {
+          this.sesion.set(result);
+          this.showCierreClinicoPanel.set(false);
+          this.toast.success('Cierre clínico registrado');
         }
       });
   }

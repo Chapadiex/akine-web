@@ -1,0 +1,235 @@
+<div class="page-container">
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Caja Diaria</h1>
+      <div class="date-nav">
+        <button class="btn-icon" (click)="prevDay()" title="Día anterior">&#8249;</button>
+        <span class="date-label" [class.today]="isToday()">{{ formattedDate() }}</span>
+        <button class="btn-icon" (click)="nextDay()" title="Día siguiente">&#8250;</button>
+        @if (!isToday()) {
+          <button class="btn-link" (click)="goToday()">Hoy</button>
+        }
+      </div>
+    </div>
+    @if (pageState() === 'con_caja' && caja()?.estado === 'ABIERTA') {
+      <div class="header-actions">
+        <button class="btn-secondary" (click)="iniciarCierre()">Cerrar caja</button>
+        <button class="btn-primary" (click)="irACobrar()">+ Cobrar</button>
+      </div>
+    }
+  </header>
+
+  <main class="page-content">
+
+    <!-- Loading -->
+    @if (pageState() === 'loading') {
+      <div class="state-placeholder">Cargando...</div>
+    }
+
+    <!-- Error -->
+    @if (pageState() === 'error') {
+      <div class="state-placeholder error">No se pudo cargar la caja. Intente nuevamente.</div>
+    }
+
+    <!-- Sin caja: formulario de apertura -->
+    @if (pageState() === 'sin_caja') {
+      <div class="apertura-wrapper">
+        <div class="card apertura-card">
+          <h2 class="card-title">Abrir caja</h2>
+          <p class="card-subtitle">No hay caja registrada para este día.</p>
+          <form [formGroup]="aperturaForm" (ngSubmit)="abrirCaja()" class="form-grid">
+            <div class="form-field">
+              <label class="form-label" for="turnoCaja">Turno</label>
+              <select id="turnoCaja" class="form-select" formControlName="turnoCaja">
+                @for (op of turnoCajaOpciones; track op.value) {
+                  <option [value]="op.value">{{ op.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="saldoInicial">Saldo inicial ($)</label>
+              <input
+                id="saldoInicial"
+                type="number"
+                min="0"
+                step="0.01"
+                class="form-input"
+                formControlName="saldoInicial"
+                placeholder="0.00"
+              />
+            </div>
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="btn-primary"
+                [disabled]="aperturaForm.invalid || submitting()"
+              >
+                {{ submitting() ? 'Abriendo...' : 'Abrir caja' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+    <!-- Con caja -->
+    @if (pageState() === 'con_caja' && caja(); as c) {
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <span class="kpi-label">Estado</span>
+          <span class="badge" [class]="estadoClass(c.estado)">
+            <span class="badge-dot"></span>
+            <strong>{{ estadoLabel(c.estado) }}</strong>
+            @if (c.turnoCaja) { · {{ turnoCajaLabel(c.turnoCaja) }} }
+          </span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Saldo inicial</span>
+          <span class="kpi-value">$ {{ c.saldoInicial | number:'1.2-2' }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Ingresos</span>
+          <span class="kpi-value kpi-success">+ $ {{ c.totalIngresos | number:'1.2-2' }}</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Egresos</span>
+          <span class="kpi-value kpi-error">- $ {{ c.totalEgresos | number:'1.2-2' }}</span>
+        </div>
+        <div class="kpi-card kpi-card--highlight">
+          <span class="kpi-label">Saldo teórico</span>
+          <span class="kpi-value kpi-bold">$ {{ saldoTeorico() | number:'1.2-2' }}</span>
+        </div>
+        @if (c.saldoReal !== null) {
+          <div class="kpi-card">
+            <span class="kpi-label">Saldo real</span>
+            <span class="kpi-value">$ {{ c.saldoReal | number:'1.2-2' }}</span>
+          </div>
+          <div class="kpi-card" [class.kpi-card--warning]="(diferencia() ?? 0) !== 0">
+            <span class="kpi-label">Diferencia</span>
+            <span class="kpi-value" [class.kpi-error]="(diferencia() ?? 0) < 0" [class.kpi-success]="(diferencia() ?? 0) > 0">
+              $ {{ diferencia() | number:'1.2-2' }}
+            </span>
+          </div>
+        }
+      </div>
+
+      <!-- Formulario de cierre -->
+      @if (showCierreForm()) {
+        <div class="card cierre-card">
+          <h2 class="card-title">Cerrar caja</h2>
+          <form [formGroup]="cierreForm" (ngSubmit)="cerrarCaja()" class="form-grid">
+            <div class="form-field">
+              <label class="form-label" for="saldoReal">Saldo real contado ($)</label>
+              <input
+                id="saldoReal"
+                type="number"
+                min="0"
+                step="0.01"
+                class="form-input"
+                formControlName="saldoReal"
+                placeholder="0.00"
+              />
+              <span class="form-hint">Saldo teórico: $ {{ saldoTeorico() | number:'1.2-2' }}</span>
+            </div>
+            <div class="form-field form-field--full">
+              <label class="form-label" for="observaciones">Observaciones</label>
+              <textarea
+                id="observaciones"
+                class="form-textarea"
+                formControlName="observaciones"
+                rows="2"
+                placeholder="Opcional"
+              ></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn-secondary" (click)="cancelarCierre()">Cancelar</button>
+              <button type="submit" class="btn-primary" [disabled]="cierreForm.invalid || submitting()">
+                {{ submitting() ? 'Cerrando...' : 'Confirmar cierre' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      }
+
+      <!-- Cobros de la caja -->
+      <section class="section">
+        <h3 class="section-title">Cobros ({{ cobros().length }})</h3>
+        @if (cobros().length === 0) {
+          <p class="empty-inline">Sin cobros registrados en esta caja.</p>
+        } @else {
+          <div class="table-wrap">
+            <table class="akine-table">
+              <thead>
+                <tr>
+                  <th class="col-text">Comprobante</th>
+                  <th class="col-date">Fecha</th>
+                  <th class="col-numeric">Importe</th>
+                  <th class="col-status">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cobro of cobros(); track cobro.id) {
+                  <tr [class.row-anulado]="cobro.estado === 'ANULADO'">
+                    <td class="col-text">{{ cobro.comprobanteNumero ?? '—' }}</td>
+                    <td class="col-date">{{ cobro.fechaCobro }}</td>
+                    <td class="col-numeric">$ {{ cobro.importeTotal | number:'1.2-2' }}</td>
+                    <td class="col-status">
+                      @if (cobro.estado === 'COBRADO') {
+                        <span class="badge badge-success"><span class="badge-dot"></span><strong>Cobrado</strong></span>
+                      } @else {
+                        <span class="badge badge-error"><span class="badge-dot"></span><strong>Anulado</strong></span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <!-- Movimientos de caja -->
+      <section class="section">
+        <h3 class="section-title">Movimientos ({{ movimientos().length }})</h3>
+        @if (movimientos().length === 0) {
+          <p class="empty-inline">Sin movimientos registrados.</p>
+        } @else {
+          <div class="table-wrap">
+            <table class="akine-table">
+              <thead>
+                <tr>
+                  <th class="col-text">Descripción</th>
+                  <th class="col-text-short">Origen</th>
+                  <th class="col-text-short">Tipo</th>
+                  <th class="col-numeric">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (mov of movimientos(); track mov.id) {
+                  <tr [class.row-anulado]="mov.anulado">
+                    <td class="col-text">{{ mov.descripcion }}</td>
+                    <td class="col-text-short">{{ mov.origen }}</td>
+                    <td class="col-text-short">
+                      <strong [class.text-success]="mov.tipoMovimiento === 'INGRESO'" [class.text-error]="mov.tipoMovimiento === 'EGRESO'">
+                        {{ tipoMovLabel(mov.tipoMovimiento) }}
+                      </strong>
+                    </td>
+                    <td class="col-numeric" [class.text-success]="mov.tipoMovimiento === 'INGRESO'" [class.text-error]="mov.tipoMovimiento === 'EGRESO'">
+                      {{ mov.tipoMovimiento === 'INGRESO' ? '+' : '-' }} $ {{ mov.importe | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+    }
+
+  </main>
+</div>

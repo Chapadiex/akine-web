@@ -72,20 +72,20 @@
         @if (hasPatientContext()) {
           @switch (screenState()) {
             @case ('no-history') {
-              <button type="button" class="btn btn--primary" (click)="openAntecedentesDrawer()">{{ primaryActionLabel() }}</button>
+              <button type="button" class="btn btn--primary btn--sm" (click)="openAntecedentesDrawer()">{{ primaryActionLabel() }}</button>
             }
             @case ('history-no-case') {
-              <button type="button" class="btn btn--primary" (click)="openCasoDrawer()">{{ primaryActionLabel() }}</button>
+              <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">{{ primaryActionLabel() }}</button>
             }
             @case ('history-active-case') {
-              <button type="button" class="btn btn--primary" (click)="openNuevaSesion()">{{ primaryActionLabel() }}</button>
-              <button type="button" class="btn btn--secondary" (click)="openCasoDrawer()">Nuevo caso clínico</button>
+              <button type="button" class="btn btn--primary btn--sm" (click)="openNuevaSesion()">{{ primaryActionLabel() }}</button>
+              <button type="button" class="btn btn--secondary btn--sm" (click)="openCasoDrawer()">Nuevo caso clínico</button>
             }
           }
 
           @if (selectedPatient()) {
             <a
-              class="btn btn--secondary"
+              class="btn btn--secondary btn--sm"
               [routerLink]="['/app/pacientes', selectedPatient()!.id, 'historia-clinica']"
               [queryParams]="patient360QueryParams()"
             >
@@ -125,7 +125,14 @@
     </section>
   } @else if (selectedPatient(); as patient) {
     <div class="patient-strip">
-      <span class="strip-item">{{ summaryTopLine() }}</span>
+      <div class="strip-main">
+        @for (item of summaryTopItems(); track item.label) {
+          <span class="strip-item" [attr.data-tone]="item.tone ?? 'default'">
+            <strong class="strip-item__label">{{ item.label }}</strong>
+            <span class="strip-item__value">{{ item.value }}</span>
+          </span>
+        }
+      </div>
       @if (workspaceSnapshot(); as workspace) {
         <span class="strip-item strip-item--muted">
           {{ consultorioCtx.selectedConsultorio()?.name || 'Sin consultorio' }} · {{ workspace.total }} sesiones visibles

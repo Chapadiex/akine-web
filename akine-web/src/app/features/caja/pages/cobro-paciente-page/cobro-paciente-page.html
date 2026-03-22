@@ -1,0 +1,212 @@
+<div class="page-container">
+
+  <header class="page-header">
+    <div class="header-left">
+      <button class="btn-back" (click)="volverACaja()">&#8592; Caja</button>
+      <h1 class="page-title">Registrar cobro</h1>
+    </div>
+  </header>
+
+  <main class="page-content">
+
+    @if (loadingCaja()) {
+      <div class="state-placeholder">Cargando caja...</div>
+    } @else if (!cajaAbierta()) {
+      <div class="alert-warning">
+        <strong>No hay caja abierta hoy.</strong> Debe abrir la caja antes de registrar un cobro.
+        <button class="btn-link" (click)="volverACaja()">Ir a caja</button>
+      </div>
+    } @else if (resultado(); as cobro) {
+
+      <!-- Resultado exitoso -->
+      <div class="resultado-card">
+        <div class="resultado-icon">&#10003;</div>
+        <h2 class="resultado-titulo">Cobro registrado</h2>
+        <p class="resultado-comprobante">
+          Comprobante: <strong>{{ cobro.comprobanteNumero ?? cobro.id.substring(0, 8) }}</strong>
+        </p>
+        <p class="resultado-importe">$ {{ cobro.importeTotal | number:'1.2-2' }}</p>
+        <div class="resultado-detalles">
+          @for (d of cobro.detalles; track d.id) {
+            <div class="detalle-row">
+              <span>{{ medioPagoLabel(d.medioPago) }}</span>
+              <span>$ {{ d.importe | number:'1.2-2' }}</span>
+            </div>
+          }
+        </div>
+        <div class="resultado-actions">
+          <button class="btn-secondary" (click)="volverACaja()">Volver a caja</button>
+          <button class="btn-primary" (click)="nuevoCobro()">Nuevo cobro</button>
+        </div>
+      </div>
+
+    } @else {
+
+      <!-- Formulario de cobro -->
+      <form [formGroup]="form" (ngSubmit)="cobrar()" class="cobro-layout">
+
+        <!-- Columna principal -->
+        <div class="cobro-main">
+
+          <!-- Datos del cobro -->
+          <div class="card">
+            <h2 class="card-title">Datos del cobro</h2>
+            <div class="form-grid-2">
+              <div class="form-field">
+                <label class="form-label" for="pacienteId">ID de paciente *</label>
+                <input
+                  id="pacienteId"
+                  type="text"
+                  class="form-input"
+                  formControlName="pacienteId"
+                  placeholder="UUID del paciente"
+                />
+                @if (form.get('pacienteId')?.invalid && form.get('pacienteId')?.touched) {
+                  <span class="form-error">Requerido</span>
+                }
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="sesionId">ID de sesión (opcional)</label>
+                <input
+                  id="sesionId"
+                  type="text"
+                  class="form-input"
+                  formControlName="sesionId"
+                  placeholder="UUID de la sesión"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="importeTotal">Importe total ($) *</label>
+                <input
+                  id="importeTotal"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  class="form-input"
+                  formControlName="importeTotal"
+                  placeholder="0.00"
+                />
+                @if (form.get('importeTotal')?.invalid && form.get('importeTotal')?.touched) {
+                  <span class="form-error">Ingrese un importe válido</span>
+                }
+              </div>
+              <div class="form-field">
+                <label class="form-label" for="observaciones">Observaciones</label>
+                <input
+                  id="observaciones"
+                  type="text"
+                  class="form-input"
+                  formControlName="observaciones"
+                  placeholder="Opcional"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Medios de pago -->
+          <div class="card">
+            <div class="card-header-row">
+              <h2 class="card-title">Medios de pago</h2>
+              <button type="button" class="btn-add" (click)="agregarDetalle()">+ Agregar medio</button>
+            </div>
+
+            @for (detalle of detallesArray.controls; track $index; let i = $index) {
+              <div class="detalle-block" [formGroup]="detalle">
+                <div class="detalle-header">
+                  <span class="detalle-num">{{ i + 1 }}</span>
+                  @if (detallesArray.length > 1) {
+                    <button type="button" class="btn-remove" (click)="eliminarDetalle(i)" title="Eliminar">&#215;</button>
+                  }
+                </div>
+                <div class="form-grid-3">
+                  <div class="form-field">
+                    <label class="form-label">Medio de pago *</label>
+                    <select class="form-select" formControlName="medioPago">
+                      @for (mp of mediosPago; track mp.value) {
+                        <option [value]="mp.value">{{ mp.label }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Importe ($) *</label>
+                    <div class="input-with-hint">
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        class="form-input"
+                        formControlName="importe"
+                        placeholder="0.00"
+                      />
+                      @if (detallesArray.length > 1 && i === detallesArray.length - 1 && sumaDiff() > 0) {
+                        <button type="button" class="btn-diff-hint" (click)="completarConDiferencia(i)" title="Completar con la diferencia">
+                          +{{ sumaDiff() | number:'1.2-2' }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                  <div class="form-field">
+                    <label class="form-label">Referencia / operación</label>
+                    <input type="text" class="form-input" formControlName="referenciaOperacion" placeholder="N° operación" />
+                  </div>
+                  @if (medioPagoEsTarjeta(i)) {
+                    <div class="form-field">
+                      <label class="form-label">Cuotas</label>
+                      <input type="number" min="1" class="form-input" formControlName="cuotas" placeholder="1" />
+                    </div>
+                    <div class="form-field">
+                      <label class="form-label">Banco</label>
+                      <input type="text" class="form-input" formControlName="banco" placeholder="Banco emisor" />
+                    </div>
+                    <div class="form-field">
+                      <label class="form-label">Marca de tarjeta</label>
+                      <input type="text" class="form-input" formControlName="marcaTarjeta" placeholder="Visa, Mastercard..." />
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+        </div>
+
+        <!-- Sidebar resumen -->
+        <aside class="cobro-sidebar">
+          <div class="card resumen-card">
+            <h3 class="card-title">Resumen</h3>
+            <div class="resumen-row">
+              <span>Total a cobrar</span>
+              <strong>$ {{ form.get('importeTotal')?.value | number:'1.2-2' }}</strong>
+            </div>
+            <div class="resumen-row">
+              <span>Suma medios de pago</span>
+              <strong [class.text-error]="!sumOk()" [class.text-success]="sumOk()">
+                $ {{ sumaDetalles() | number:'1.2-2' }}
+              </strong>
+            </div>
+            @if (!sumOk()) {
+              <div class="resumen-diff">
+                Diferencia: <strong class="text-error">$ {{ sumaDiff() | number:'1.2-2' }}</strong>
+              </div>
+            } @else {
+              <div class="resumen-ok">&#10003; Suma correcta</div>
+            }
+            <div class="resumen-separator"></div>
+            <button
+              type="submit"
+              class="btn-primary btn-full"
+              [disabled]="form.invalid || !sumOk() || submitting()"
+            >
+              {{ submitting() ? 'Registrando...' : 'Registrar cobro' }}
+            </button>
+            @if (form.errors?.['sumaMismatch']) {
+              <p class="form-error">La suma de los medios de pago no coincide con el total.</p>
+            }
+          </div>
+        </aside>
+
+      </form>
+    }
+
+  </main>
+</div>

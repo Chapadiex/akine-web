@@ -1,17 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { ComingSoon } from '../../shared/ui/coming-soon/coming-soon';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-caja',
   standalone: true,
-  imports: [ComingSoon],
+  imports: [RouterOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <app-coming-soon
-      icon="💰"
-      title="Caja"
-      description="Control de ingresos, pagos, deudas y movimientos diarios del consultorio."
-    />
-  `,
+  template: `<router-outlet />`,
 })
 export class Caja {}

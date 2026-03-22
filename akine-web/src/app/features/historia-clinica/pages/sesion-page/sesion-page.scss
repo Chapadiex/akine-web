@@ -318,3 +318,96 @@
     display: none;
   }
 }
+
+// ── Cierre clínico (Fase 2) ──────────────────────────────────────────────────
+.cierre-clinico-bar {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #fff);
+}
+
+.cierre-clinico-panel {
+  background: var(--color-primary-light, #e6f4f2);
+  border: 1px solid var(--color-primary, #1a6b5e);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.cierre-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary-text, #0d4a40);
+  margin: 0 0 14px;
+}
+
+.cierre-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cierre-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &--full { grid-column: 1 / -1; }
+}
+
+.cierre-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary-text, #0d4a40);
+}
+
+.cierre-input,
+.cierre-textarea {
+  padding: 7px 10px;
+  border: 1px solid var(--color-primary, #1a6b5e);
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--color-neutral-900, #0f172a);
+  outline: none;
+
+  &:focus { box-shadow: 0 0 0 2px rgba(26, 107, 94, 0.15); }
+}
+
+.cierre-textarea { resize: vertical; min-height: 56px; }
+
+.cierre-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-primary-text, #0d4a40);
+  cursor: pointer;
+}
+
+.cierre-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cierre-clinico-done {
+  padding: 8px 24px;
+  font-size: 12px;
+  color: var(--color-success-text, #065f46);
+  background: var(--color-success-light, #ecfdf5);
+  border-top: 1px solid var(--color-success, #059669);
+}
+
+.btn--primary-outline {
+  padding: 7px 14px;
+  background: none;
+  border: 1px solid var(--color-primary, #1a6b5e);
+  color: var(--color-primary, #1a6b5e);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover { background: var(--color-primary-light, #e6f4f2); }
+}

@@ -9,6 +9,7 @@ import {
   CambiarEstadoCasoAtencionRequest,
   CasoAtencionDetalle,
   CasoAtencionSummary,
+  CierreClinicoRequest,
   ClinicalDownload,
   CreateAtencionInicialRequest,
   CreateCasoAtencionRequest,
@@ -151,6 +152,13 @@ export class HistoriaClinicaService {
     return this.api.post<SesionClinicaResponse>(
       API.historiaClinicaGlobal.anularSesion(consultorioId, pacienteId, sesionId),
       {},
+    );
+  }
+
+  cerrarClinicamente(consultorioId: string, pacienteId: string, sesionId: string, req: CierreClinicoRequest): Observable<SesionClinicaResponse> {
+    return this.api.post<SesionClinicaResponse>(
+      API.historiaClinicaGlobal.cerrarClinicamente(consultorioId, pacienteId, sesionId),
+      req,
     );
   }
 

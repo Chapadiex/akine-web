@@ -65,4 +65,8 @@ export class TurnoService {
   getHistorial(consultorioId: string, turnoId: string): Observable<HistorialEstadoTurno[]> {
     return this.api.get<HistorialEstadoTurno[]>(API.turnos.historial(consultorioId, turnoId));
   }
+
+  checkIn(consultorioId: string, turnoId: string): Observable<Turno> {
+    return this.api.post<Turno>(API.turnos.checkIn(consultorioId, turnoId), {});
+  }
 }

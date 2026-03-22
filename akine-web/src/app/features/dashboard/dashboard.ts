@@ -106,13 +106,14 @@ export class Dashboard implements OnInit {
 
   estadoClass(estado: TurnoEstado): string {
     const map: Record<TurnoEstado, string> = {
-      PROGRAMADO: 'estado--programado',
-      CONFIRMADO: 'estado--confirmado',
-      EN_ESPERA:  'estado--espera',
-      EN_CURSO:   'estado--curso',
-      COMPLETADO: 'estado--completado',
-      CANCELADO:  'estado--cancelado',
-      AUSENTE:    'estado--ausente',
+      PROGRAMADO:          'estado--programado',
+      CONFIRMADO:          'estado--confirmado',
+      CHECK_IN_REALIZADO:  'estado--confirmado',
+      EN_ESPERA:           'estado--espera',
+      EN_CURSO:            'estado--curso',
+      COMPLETADO:          'estado--completado',
+      CANCELADO:           'estado--cancelado',
+      AUSENTE:             'estado--ausente',
     };
     return map[estado] ?? '';
   }

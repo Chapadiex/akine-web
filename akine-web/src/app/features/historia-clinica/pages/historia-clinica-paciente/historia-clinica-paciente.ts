@@ -90,6 +90,12 @@ type StatusSummaryItem = {
   value: string;
 };
 
+type SummaryStripItem = {
+  label: string;
+  value: string;
+  tone?: 'default' | 'warning' | 'muted' | 'brand';
+};
+
 type TherapeuticPlanSummary = {
   caseId: string | null;
   caseName: string;
@@ -438,19 +444,25 @@ export class HistoriaClinicaPacientePage {
     }
     return items;
   });
-  readonly summaryTopLine = computed(() => {
+  readonly summaryTopItems = computed<SummaryStripItem[]>(() => {
     const summary = this.therapeuticPlanSummary();
-    const hcLabel = this.hasLegajo() ? 'HC creada' : 'HC pendiente';
+    const hcValue = this.hasLegajo() ? 'creada' : 'pendiente';
     const activeCases = (this.overview()?.casosActivos?.length ?? 0) + (this.overview()?.casosAtencionActivos?.length ?? 0);
-    const progressLabel = summary
-      ? `${summary.completedSessions}/${summary.plannedSessions} sesiones realizadas`
-      : '0/0 sesiones realizadas';
-    const draftLabel = `${summary?.draftSessions ?? 0} borrador`;
-    const lastSessionLabel = summary?.lastCompletedSession
-      ? `Última sesión ${this.formatDateTime(summary.lastCompletedSession.fechaAtencion)}`
-      : 'Última sesión sin registro';
-    const conductLabel = `Conducta: ${summary?.currentConduct ?? 'Sin conducta registrada'}`;
-    return [hcLabel, `${activeCases} casos activos`, progressLabel, draftLabel, lastSessionLabel, conductLabel].join(' · ');
+    const completed = summary?.completedSessions ?? 0;
+    const planned = summary?.plannedSessions ?? 0;
+    const draftCount = summary?.draftSessions ?? 0;
+    const lastSessionValue = summary?.lastCompletedSession
+      ? this.formatDateTime(summary.lastCompletedSession.fechaAtencion)
+      : 'sin registro';
+    const conductValue = summary?.currentConduct ?? 'sin conducta registrada';
+    return [
+      { label: 'HC', value: hcValue },
+      { label: 'casos activos', value: String(activeCases) },
+      { label: 'sesiones realizadas', value: `${completed}/${planned}`, tone: 'brand' },
+      { label: 'borrador', value: String(draftCount), tone: draftCount > 0 ? 'warning' : 'default' },
+      { label: 'Última sesión', value: lastSessionValue, tone: lastSessionValue === 'sin registro' ? 'muted' : 'default' },
+      { label: 'Conducta', value: conductValue, tone: conductValue === 'sin conducta registrada' ? 'muted' : 'default' },
+    ];
   });
   readonly compatibilityFilters = computed(() => {
     const state = this.routeState();
@@ -2650,8 +2662,8 @@ export class HistoriaClinicaPacientePage {
     ).length;
   }
 
-  private emptyToUndefined(value?: string | null): string | undefined {
-    const normalized = value?.trim() ?? '';
+  private emptyToUndefined(value?: string | number | null): string | undefined {
+    const normalized = value === null || value === undefined ? '' : String(value).trim();
     return normalized || undefined;
   }
 

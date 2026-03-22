@@ -92,6 +92,7 @@ export const API = {
     sesiones: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones`,
     sesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}`,
     cerrarSesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}/cerrar`,
+    cerrarClinicamente: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}/cerrar-clinicamente`,
     anularSesion: (cid: string, pid: string, sid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/sesiones/${sid}/anular`,
     diagnosticos: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/diagnosticos`,
     diagnostico: (cid: string, pid: string, did: string) => `/api/v1/consultorios/${cid}/historia-clinica/pacientes/${pid}/diagnosticos/${did}`,
@@ -154,9 +155,16 @@ export const API = {
     create:         (cid: string) => `/api/v1/consultorios/${cid}/turnos`,
     reprogramar:    (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/reprogramar`,
     cambiarEstado:  (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/estado`,
+    checkIn:        (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/check-in`,
     disponibilidad:      (cid: string) => `/api/v1/consultorios/${cid}/turnos/disponibilidad`,
     disponibilidadBoxes: (cid: string) => `/api/v1/consultorios/${cid}/turnos/disponibilidad-boxes`,
     historial:           (cid: string, id: string) => `/api/v1/consultorios/${cid}/turnos/${id}/historial`,
+  },
+  sesionesAdministrativas: {
+    registrar:           (cid: string) => `/api/v1/consultorios/${cid}/sesiones-administrativas`,
+    bySesion:            (cid: string, sid: string) => `/api/v1/consultorios/${cid}/sesiones-administrativas/sesion/${sid}`,
+    byTurno:             (cid: string, tid: string) => `/api/v1/consultorios/${cid}/sesiones-administrativas/turno/${tid}`,
+    confirmarAsistencia: (cid: string, sid: string) => `/api/v1/consultorios/${cid}/sesiones-administrativas/sesion/${sid}/confirmar-asistencia`,
   },
   feriados: {
     list:            (cid: string) => `/api/v1/consultorios/${cid}/feriados`,
@@ -174,6 +182,20 @@ export const API = {
     adjunto: (cid: string, id: string, adjuntoId: string) => `/api/v1/consultorios/${cid}/casos-atencion/${id}/adjuntos/${adjuntoId}`,
     activosByPaciente: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/casos-activos`,
     byPaciente: (cid: string, pid: string) => `/api/v1/consultorios/${cid}/pacientes/${pid}/casos`,
+  },
+  caja: {
+    abrir:      (cid: string) => `/api/v1/consultorios/${cid}/caja`,
+    byId:       (cid: string, id: string) => `/api/v1/consultorios/${cid}/caja/${id}`,
+    byFecha:    (cid: string, fecha: string) => `/api/v1/consultorios/${cid}/caja?fecha=${fecha}`,
+    cerrar:     (cid: string, id: string) => `/api/v1/consultorios/${cid}/caja/${id}/cerrar`,
+    movimientos:(cid: string, id: string) => `/api/v1/consultorios/${cid}/caja/${id}/movimientos`,
+  },
+  cobros: {
+    cobrar:         (cid: string) => `/api/v1/consultorios/${cid}/cobros`,
+    byId:           (cid: string, id: string) => `/api/v1/consultorios/${cid}/cobros/${id}`,
+    byPaciente:     (cid: string, pacienteId: string) => `/api/v1/consultorios/${cid}/cobros?pacienteId=${pacienteId}`,
+    byCaja:         (cid: string, cajaId: string) => `/api/v1/consultorios/${cid}/cobros/caja/${cajaId}`,
+    anular:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/cobros/${id}/anular`,
   },
   obrasSociales: {
     list: (cid: string, params?: { q?: string; estado?: string; conPlanes?: boolean; page?: number; size?: number }) => {

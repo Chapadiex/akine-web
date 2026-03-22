@@ -144,6 +144,67 @@
     </div>
   }
 
+  <!-- Cierre clínico panel (Fase 2) -->
+  @if (canCerrarClinicamente()) {
+    <div class="cierre-clinico-bar">
+      @if (!showCierreClinicoPanel()) {
+        <button class="btn btn--primary-outline" (click)="toggleCierreClinicoPanel()">
+          Registrar cierre clínico
+        </button>
+      } @else {
+        <div class="cierre-clinico-panel" [formGroup]="cierreClinicoForm">
+          <h4 class="cierre-titulo">Cierre clínico</h4>
+          <div class="cierre-grid">
+            <div class="cierre-field">
+              <label class="cierre-label">Duración real (min) *</label>
+              <input type="number" min="1" class="cierre-input" formControlName="duracionRealMinutos" placeholder="ej. 45" />
+            </div>
+            <div class="cierre-field">
+              <label class="cierre-label">Conducta siguiente *</label>
+              <input type="text" class="cierre-input" formControlName="conductaSiguiente" placeholder="Continuar, alta, derivación..." />
+            </div>
+            <div class="cierre-field cierre-field--full">
+              <label class="cierre-label">Tratamiento realizado *</label>
+              <textarea class="cierre-textarea" formControlName="tratamientoRealizado" rows="2" placeholder="Describir intervención..."></textarea>
+            </div>
+            <div class="cierre-field cierre-field--full">
+              <label class="cierre-label">Resultado clínico *</label>
+              <textarea class="cierre-textarea" formControlName="resultadoClinico" rows="2" placeholder="Evolución observada..."></textarea>
+            </div>
+            <div class="cierre-field cierre-field--full">
+              <label class="cierre-label">Observaciones adicionales</label>
+              <input type="text" class="cierre-input" formControlName="observacionesClincias" placeholder="Opcional" />
+            </div>
+            <div class="cierre-field">
+              <label class="cierre-check">
+                <input type="checkbox" formControlName="requiereSeguimiento" />
+                Requiere seguimiento
+              </label>
+            </div>
+          </div>
+          <div class="cierre-actions">
+            <button class="btn btn--ghost" (click)="toggleCierreClinicoPanel()" [disabled]="isSaving()">Cancelar</button>
+            <button
+              class="btn btn--primary"
+              (click)="cerrarClinicamente()"
+              [disabled]="!cierreClinicoComplete() || isSaving()">
+              {{ isSaving() ? 'Guardando...' : 'Confirmar cierre clínico' }}
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (sesion()?.cerradaClinicamente) {
+    <div class="cierre-clinico-done">
+      ✓ Cierre clínico registrado
+      @if (sesion()?.duracionRealMinutos) {
+        · {{ sesion()?.duracionRealMinutos }} min
+      }
+    </div>
+  }
+
   <!-- Footer actions -->
   <footer class="sesion-footer">
     <button class="btn btn--ghost" (click)="goBack()">← Volver al workspace</button>
