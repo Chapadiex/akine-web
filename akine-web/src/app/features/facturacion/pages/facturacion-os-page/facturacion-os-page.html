@@ -1,0 +1,203 @@
+<div class="page-container">
+
+  <header class="page-header compact">
+    <div class="header-content">
+      <h1>Facturación OS</h1>
+      <p class="subtitle">Lotes de presentación por obra social</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="toggleGenerarForm()">
+        <span class="icon">{{ showGenerarForm() ? 'close' : 'add_box' }}</span>
+        {{ showGenerarForm() ? 'Cancelar' : 'Generar Lote' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Generar form panel -->
+  @if (showGenerarForm()) {
+    <div class="form-panel">
+      <h3 class="form-panel__title">Nuevo Lote</h3>
+      <form [formGroup]="generarForm" (ngSubmit)="generar()" class="form-grid">
+        <div class="field">
+          <label class="field__label">ID Financiador <span class="required">*</span></label>
+          <input
+            formControlName="financiadorId"
+            class="field__input"
+            placeholder="UUID del financiador"
+            autocomplete="off"
+          />
+          @if (generarForm.get('financiadorId')?.invalid && generarForm.get('financiadorId')?.touched) {
+            <span class="field__error">Requerido</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">Período <span class="required">*</span></label>
+          <input
+            formControlName="periodo"
+            class="field__input"
+            placeholder="AAAA-MM"
+            maxlength="7"
+          />
+          @if (generarForm.get('periodo')?.invalid && generarForm.get('periodo')?.touched) {
+            <span class="field__error">Formato AAAA-MM</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">Plan (opcional)</label>
+          <input
+            formControlName="planId"
+            class="field__input"
+            placeholder="UUID del plan"
+            autocomplete="off"
+          />
+        </div>
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="generarForm.invalid || submitting()"
+          >
+            @if (submitting()) { Generando… } @else { Generar }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'activos'"
+      (click)="activeTab.set('activos')"
+    >
+      En preparación
+      @if (lotesActivos().length > 0) {
+        <span class="tab-badge">{{ lotesActivos().length }}</span>
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'historial'"
+      (click)="activeTab.set('historial')"
+    >
+      Presentados / Historial
+      @if (lotesPresentados().length > 0) {
+        <span class="tab-badge">{{ lotesPresentados().length }}</span>
+      }
+    </button>
+  </div>
+
+  <main class="page-content">
+
+    @if (pageState() === 'loading') {
+      <div class="skeleton-table">
+        @for (_ of [1,2,3]; track $index) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    }
+
+    @if (pageState() === 'error') {
+      <div class="empty-state empty-state--error">
+        <span class="icon">error_outline</span>
+        <p>No se pudieron cargar los lotes.</p>
+      </div>
+    }
+
+    @if (pageState() === 'loaded') {
+
+      <!-- TAB: En preparación (BORRADOR + CERRADO) -->
+      @if (activeTab() === 'activos') {
+        @if (lotesActivos().length === 0) {
+          <div class="empty-state">
+            <span class="icon">inventory_2</span>
+            <p>No hay lotes en preparación.</p>
+            <p class="empty-hint">Generá un lote para agrupar sesiones liquidables.</p>
+          </div>
+        } @else {
+          <table class="akine-table">
+            <thead>
+              <tr>
+                <th class="col-text">Período</th>
+                <th class="col-text">Financiador</th>
+                <th class="col-numeric">Sesiones</th>
+                <th class="col-numeric">Importe Neto</th>
+                <th class="col-status">Estado</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lote of lotesActivos(); track lote.id) {
+                <tr>
+                  <td class="col-text text-medium">{{ lote.periodo }}</td>
+                  <td class="col-text text-secondary">{{ lote.financiadorId }}</td>
+                  <td class="col-numeric">{{ lote.cantidadSesiones }}</td>
+                  <td class="col-numeric">$ {{ lote.importeNeto | number:'1.2-2' }}</td>
+                  <td class="col-status">
+                    <span class="badge-estado" [ngClass]="'badge-' + lote.estado.toLowerCase()">
+                      <span class="dot"></span>{{ estadoLabel(lote.estado) }}
+                    </span>
+                  </td>
+                  <td class="col-actions">
+                    @if (lote.estado === 'BORRADOR') {
+                      <button class="icon-btn" title="Cerrar lote" (click)="cerrar(lote)">
+                        <span class="icon">lock</span>
+                      </button>
+                    }
+                    @if (lote.estado === 'CERRADO') {
+                      <button class="icon-btn" title="Marcar presentado" (click)="presentar(lote)">
+                        <span class="icon">send</span>
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+
+      <!-- TAB: Presentados + Historial -->
+      @if (activeTab() === 'historial') {
+        @if (lotesPresentados().length === 0 && lotesHistorial().length === 0) {
+          <div class="empty-state">
+            <span class="icon">fact_check</span>
+            <p>No hay presentaciones registradas.</p>
+          </div>
+        } @else {
+          <table class="akine-table">
+            <thead>
+              <tr>
+                <th class="col-text">Período</th>
+                <th class="col-text">Financiador</th>
+                <th class="col-numeric">Sesiones</th>
+                <th class="col-numeric">Importe Neto</th>
+                <th class="col-text">Presentado</th>
+                <th class="col-status">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lote of lotesPresentadosYHistorial(); track lote.id) {
+                <tr>
+                  <td class="col-text text-medium">{{ lote.periodo }}</td>
+                  <td class="col-text text-secondary">{{ lote.financiadorId }}</td>
+                  <td class="col-numeric">{{ lote.cantidadSesiones }}</td>
+                  <td class="col-numeric">$ {{ lote.importeNeto | number:'1.2-2' }}</td>
+                  <td class="col-text text-secondary">
+                    {{ lote.presentadoEn ? (lote.presentadoEn | date:'dd/MM/yy') : '—' }}
+                  </td>
+                  <td class="col-status">
+                    <span class="badge-estado" [ngClass]="'badge-' + lote.estado.toLowerCase()">
+                      <span class="dot"></span>{{ estadoLabel(lote.estado) }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    }
+  </main>
+</div>

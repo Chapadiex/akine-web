@@ -1,0 +1,252 @@
+<div class="page-container">
+
+  <header class="page-header compact">
+    <div class="header-content">
+      <h1>Pagos de Obra Social</h1>
+      <p class="subtitle">Registro e imputación de pagos recibidos de financiadores</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="toggleRegistrarForm()">
+        <span class="icon">{{ showRegistrarForm() ? 'close' : 'add' }}</span>
+        {{ showRegistrarForm() ? 'Cancelar' : 'Registrar Pago' }}
+      </button>
+    </div>
+  </header>
+
+  <!-- Registrar pago panel -->
+  @if (showRegistrarForm()) {
+    <div class="form-panel">
+      <h3 class="form-panel__title">Nuevo Pago OS</h3>
+      <form [formGroup]="registrarForm" (ngSubmit)="registrar()" class="form-grid">
+        <div class="field">
+          <label class="field__label">ID Lote <span class="required">*</span></label>
+          <input
+            formControlName="loteId"
+            class="field__input"
+            placeholder="UUID del lote"
+            autocomplete="off"
+          />
+          @if (registrarForm.get('loteId')?.invalid && registrarForm.get('loteId')?.touched) {
+            <span class="field__error">Requerido</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">Importe Recibido <span class="required">*</span></label>
+          <input
+            formControlName="importeRecibido"
+            type="number"
+            step="0.01"
+            min="0.01"
+            class="field__input text-right"
+            placeholder="0.00"
+          />
+          @if (registrarForm.get('importeRecibido')?.invalid && registrarForm.get('importeRecibido')?.touched) {
+            <span class="field__error">Importe requerido</span>
+          }
+        </div>
+        <div class="field">
+          <label class="field__label">Fecha de Notificación <span class="required">*</span></label>
+          <input
+            formControlName="fechaNotificacion"
+            type="date"
+            class="field__input"
+          />
+        </div>
+        <div class="field field--wide">
+          <label class="field__label">Observaciones</label>
+          <input
+            formControlName="observaciones"
+            class="field__input"
+            placeholder="Opcional"
+          />
+        </div>
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="registrarForm.invalid || submitting()"
+          >
+            @if (submitting()) { Registrando… } @else { Registrar }
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Modal imputar -->
+  @if (imputarTarget()) {
+    <div class="modal-overlay" (click)="cancelImputar()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <h3>Imputar Pago a Caja</h3>
+          <button class="icon-btn" (click)="cancelImputar()"><span class="icon">close</span></button>
+        </div>
+        <div class="modal__body">
+          <div class="info-row">
+            <span class="info-label">Lote</span>
+            <span class="info-value text-mono">{{ imputarTarget()!.loteId }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Importe recibido</span>
+            <span class="info-value">$ {{ imputarTarget()!.importeRecibido | number:'1.2-2' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Diferencia</span>
+            <span class="info-value" [ngClass]="diferenciaClass(imputarTarget()!.diferencia)">
+              $ {{ imputarTarget()!.diferencia | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+        <form [formGroup]="imputarForm" (ngSubmit)="imputar()" class="modal__form">
+          <div class="field">
+            <label class="field__label">ID Caja Diaria <span class="required">*</span></label>
+            <input
+              formControlName="cajaDiariaId"
+              class="field__input"
+              placeholder="UUID de la caja abierta"
+              autocomplete="off"
+            />
+            @if (imputarForm.get('cajaDiariaId')?.invalid && imputarForm.get('cajaDiariaId')?.touched) {
+              <span class="field__error">Requerido</span>
+            }
+          </div>
+          <div class="modal__actions">
+            <button type="button" class="btn-secondary" (click)="cancelImputar()">Cancelar</button>
+            <button type="submit" class="btn-primary" [disabled]="imputarForm.invalid || submitting()">
+              @if (submitting()) { Imputando… } @else { Imputar }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Tabs -->
+  <div class="tabs-bar">
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'pendientes'"
+      (click)="activeTab.set('pendientes')"
+    >
+      Pendientes de imputar
+      @if (pagosNoImputados().length > 0) {
+        <span class="tab-badge">{{ pagosNoImputados().length }}</span>
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'imputados'"
+      (click)="activeTab.set('imputados')"
+    >
+      Imputados
+      @if (pagosImputados().length > 0) {
+        <span class="tab-badge">{{ pagosImputados().length }}</span>
+      }
+    </button>
+  </div>
+
+  <main class="page-content">
+
+    @if (pageState() === 'loading') {
+      <div class="skeleton-table">
+        @for (_ of [1,2,3]; track $index) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    }
+
+    @if (pageState() === 'error') {
+      <div class="empty-state empty-state--error">
+        <span class="icon">error_outline</span>
+        <p>No se pudieron cargar los pagos.</p>
+      </div>
+    }
+
+    @if (pageState() === 'loaded') {
+
+      <!-- TAB: Pendientes -->
+      @if (activeTab() === 'pendientes') {
+        @if (pagosNoImputados().length === 0) {
+          <div class="empty-state">
+            <span class="icon">check_circle</span>
+            <p>No hay pagos pendientes de imputar.</p>
+          </div>
+        } @else {
+          <table class="akine-table">
+            <thead>
+              <tr>
+                <th class="col-text">Lote</th>
+                <th class="col-text">Notificación</th>
+                <th class="col-numeric">Esperado</th>
+                <th class="col-numeric">Recibido</th>
+                <th class="col-numeric">Diferencia</th>
+                <th class="col-actions">Imputar</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pago of pagosNoImputados(); track pago.id) {
+                <tr>
+                  <td class="col-text text-mono text-small">{{ pago.loteId | slice:0:8 }}…</td>
+                  <td class="col-text text-secondary">{{ pago.fechaNotificacion | date:'dd/MM/yy' }}</td>
+                  <td class="col-numeric">$ {{ pago.importeEsperado | number:'1.2-2' }}</td>
+                  <td class="col-numeric text-medium">$ {{ pago.importeRecibido | number:'1.2-2' }}</td>
+                  <td class="col-numeric" [ngClass]="diferenciaClass(pago.diferencia)">
+                    $ {{ pago.diferencia | number:'1.2-2' }}
+                  </td>
+                  <td class="col-actions">
+                    <button class="icon-btn" title="Imputar a caja" (click)="openImputar(pago)">
+                      <span class="icon">account_balance</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+
+      <!-- TAB: Imputados -->
+      @if (activeTab() === 'imputados') {
+        @if (pagosImputados().length === 0) {
+          <div class="empty-state">
+            <span class="icon">receipt_long</span>
+            <p>No hay pagos imputados aún.</p>
+          </div>
+        } @else {
+          <table class="akine-table">
+            <thead>
+              <tr>
+                <th class="col-text">Lote</th>
+                <th class="col-text">Notificación</th>
+                <th class="col-numeric">Recibido</th>
+                <th class="col-numeric">Diferencia</th>
+                <th class="col-text">Imputado</th>
+                <th class="col-status">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pago of pagosImputados(); track pago.id) {
+                <tr>
+                  <td class="col-text text-mono text-small">{{ pago.loteId | slice:0:8 }}…</td>
+                  <td class="col-text text-secondary">{{ pago.fechaNotificacion | date:'dd/MM/yy' }}</td>
+                  <td class="col-numeric text-medium">$ {{ pago.importeRecibido | number:'1.2-2' }}</td>
+                  <td class="col-numeric" [ngClass]="diferenciaClass(pago.diferencia)">
+                    $ {{ pago.diferencia | number:'1.2-2' }}
+                  </td>
+                  <td class="col-text text-secondary">
+                    {{ pago.imputadoEn ? (pago.imputadoEn | date:'dd/MM/yy') : '—' }}
+                  </td>
+                  <td class="col-status">
+                    <span class="badge-estado badge-imputado">
+                      <span class="dot"></span>Imputado
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    }
+  </main>
+</div>

@@ -127,8 +127,8 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: STAFF_WITH_ADMIN,
         children: [
           { path: '/app/facturacion/convenios', label: 'Convenios', icon: 'handshake', roles: STAFF_WITH_ADMIN },
-          { path: '/app/facturacion/lotes', label: 'Lotes / Presentaci\u00f3n', icon: 'inventory', roles: STAFF_WITH_ADMIN },
-          { path: '/app/facturacion/conciliacion', label: 'Conciliaci\u00f3n', icon: 'account-balance', roles: STAFF_WITH_ADMIN },
+          { path: '/app/facturacion/os', label: 'Lotes OS', icon: 'inventory', roles: STAFF_WITH_ADMIN },
+          { path: '/app/facturacion/pagos-os', label: 'Pagos OS', icon: 'account_balance', roles: STAFF_WITH_ADMIN },
         ],
       },
       {

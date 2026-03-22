@@ -101,3 +101,76 @@ export interface ConciliacionAtencion {
   diferencia: number;
   estadoFinal: string;
 }
+
+// ─── Fase 4: Circuito Obra Social ────────────────────────────────────────────
+
+export type EstadoLoteOs = 'BORRADOR' | 'CERRADO' | 'PRESENTADO' | 'LIQUIDADO' | 'ANULADO';
+
+export interface LoteFacturacionOsDetalle {
+  id: string;
+  loteId: string;
+  liquidacionSesionId: string;
+  sesionId: string;
+  pacienteId: string;
+  importeOs: number;
+  observaciones?: string;
+  createdAt: string;
+}
+
+export interface LoteFacturacionOs {
+  id: string;
+  consultorioId: string;
+  financiadorId: string;
+  planId?: string;
+  convenioId?: string;
+  periodo: string;
+  estado: EstadoLoteOs;
+  cantidadSesiones: number;
+  importeTotalOs: number;
+  importeNeto: number;
+  observaciones?: string;
+  cerradoEn?: string;
+  cerradoPor?: string;
+  presentadoEn?: string;
+  creadoPor: string;
+  detalles?: LoteFacturacionOsDetalle[];
+  createdAt: string;
+  updatedAt?: string;
+  version: number;
+}
+
+export interface GenerarLoteOsRequest {
+  financiadorId: string;
+  planId?: string;
+  periodo: string;
+}
+
+export interface PagoObraSocial {
+  id: string;
+  consultorioId: string;
+  loteId: string;
+  financiadorId: string;
+  importeEsperado: number;
+  importeRecibido: number;
+  diferencia: number;
+  fechaNotificacion: string;
+  fechaImputacion?: string;
+  cajaDiariaId?: string;
+  imputadoPor?: string;
+  imputadoEn?: string;
+  observaciones?: string;
+  registradoPor: string;
+  createdAt: string;
+  version: number;
+}
+
+export interface RegistrarPagoOsRequest {
+  loteId: string;
+  importeRecibido: number;
+  fechaNotificacion: string;
+  observaciones?: string;
+}
+
+export interface ImputarPagoOsRequest {
+  cajaDiariaId: string;
+}

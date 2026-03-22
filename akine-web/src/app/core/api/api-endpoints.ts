@@ -203,6 +203,20 @@ export const API = {
     reliquidar:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/reliquidar`,
     convertirParticular:(cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/convertir-particular`,
   },
+  lotesOs: {
+    list:       (cid: string) => `/api/v1/consultorios/${cid}/lotes-os`,
+    byId:       (cid: string, id: string) => `/api/v1/consultorios/${cid}/lotes-os/${id}`,
+    generar:    (cid: string) => `/api/v1/consultorios/${cid}/lotes-os`,
+    cerrar:     (cid: string, id: string) => `/api/v1/consultorios/${cid}/lotes-os/${id}/cerrar`,
+    presentar:  (cid: string, id: string) => `/api/v1/consultorios/${cid}/lotes-os/${id}/presentar`,
+  },
+  pagosOs: {
+    list:       (cid: string) => `/api/v1/consultorios/${cid}/pagos-os`,
+    byId:       (cid: string, id: string) => `/api/v1/consultorios/${cid}/pagos-os/${id}`,
+    byLote:     (cid: string, loteId: string) => `/api/v1/consultorios/${cid}/pagos-os/lote/${loteId}`,
+    registrar:  (cid: string) => `/api/v1/consultorios/${cid}/pagos-os`,
+    imputar:    (cid: string, id: string) => `/api/v1/consultorios/${cid}/pagos-os/${id}/imputar`,
+  },
   obrasSociales: {
     list: (cid: string, params?: { q?: string; estado?: string; conPlanes?: boolean; page?: number; size?: number }) => {
       const query = new URLSearchParams();

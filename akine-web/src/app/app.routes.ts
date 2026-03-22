@@ -196,6 +196,20 @@ export const routes: Routes = [
                 (m) => m.ConciliacionDashboardComponent,
               ),
           },
+          {
+            path: 'os',
+            loadComponent: () =>
+              import('./features/facturacion/pages/facturacion-os-page/facturacion-os-page').then(
+                (m) => m.FacturacionOsPage,
+              ),
+          },
+          {
+            path: 'pagos-os',
+            loadComponent: () =>
+              import('./features/facturacion/pages/pago-os-page/pago-os-page').then(
+                (m) => m.PagoOsPage,
+              ),
+          },
         ],
       },
       {

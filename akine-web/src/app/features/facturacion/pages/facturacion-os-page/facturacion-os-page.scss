@@ -1,0 +1,275 @@
+// Facturacion OS Page — uses global tokens from styles.scss :root
+
+.tabs-bar {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-neutral-200);
+  margin-bottom: var(--space-4);
+  padding: 0 var(--space-4);
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-neutral-600);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover { color: var(--color-neutral-900); }
+
+  &--active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--space-1);
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--color-primary-light);
+  color: var(--color-primary-text);
+}
+
+// Form panel
+.form-panel {
+  background: var(--color-white);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin: 0 var(--space-4) var(--space-4);
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-neutral-900);
+    margin-bottom: var(--space-4);
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  &__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-neutral-600);
+  }
+
+  &__input {
+    height: 36px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--color-neutral-900);
+    background: var(--color-white);
+    outline: none;
+    transition: border-color 0.15s;
+
+    &:focus { border-color: var(--color-primary); }
+  }
+
+  &__error {
+    font-size: 11px;
+    color: var(--color-error);
+  }
+}
+
+.required { color: var(--color-error); }
+
+.form-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+// Buttons
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+
+  .icon { font-size: 16px; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-white);
+  &:hover:not(:disabled) { background: var(--color-primary-hover); }
+}
+
+.btn-secondary {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+  &:hover { background: var(--color-neutral-200); }
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-neutral-600);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  .icon { font-size: 18px; }
+  &:hover { background: var(--color-neutral-100); color: var(--color-neutral-900); }
+}
+
+// Table
+.akine-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    padding: var(--space-2) var(--space-3);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-neutral-600);
+    background: var(--color-neutral-50);
+    border-bottom: 1px solid var(--color-neutral-200);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-neutral-200);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--color-neutral-50); }
+}
+
+.col-text    { text-align: left; }
+.col-numeric { text-align: right; }
+.col-status  { text-align: left; width: 120px; }
+.col-actions { text-align: right; width: 80px; }
+.text-medium  { font-weight: 500; }
+.text-secondary { color: var(--color-neutral-600); }
+
+// Badge estados
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+}
+
+.badge-borrador {
+  background: var(--color-warning-light);
+  color: var(--color-warning-text);
+  .dot { background: #F59E0B; }
+}
+
+.badge-cerrado {
+  background: var(--color-info-light);
+  color: var(--color-info-text);
+  .dot { background: #3B82F6; }
+}
+
+.badge-presentado {
+  background: var(--color-primary-light);
+  color: var(--color-primary-text);
+  .dot { background: var(--color-primary); }
+}
+
+.badge-liquidado {
+  background: var(--color-success-light);
+  color: var(--color-success-text);
+  .dot { background: var(--color-success); }
+}
+
+.badge-anulado {
+  background: var(--color-error-light);
+  color: var(--color-error-text);
+  .dot { background: var(--color-error); }
+}
+
+// Skeleton
+.skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.skeleton-row {
+  height: 40px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--color-neutral-200) 25%, var(--color-neutral-100) 50%, var(--color-neutral-200) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// Empty state
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-4);
+  color: var(--color-neutral-400);
+  text-align: center;
+
+  .icon { font-size: 36px; }
+  p { font-size: 13px; margin: 0; }
+  .empty-hint { font-size: 12px; color: var(--color-neutral-400); }
+
+  &--error { color: var(--color-error); .icon { color: var(--color-error); } }
+}
