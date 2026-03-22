@@ -137,3 +137,53 @@ export interface CobroPacienteRequest {
 export interface AnularCobroRequest {
   motivo: string;
 }
+
+// ── Liquidación de sesión ──────────────────────────────────────────────────
+
+export type TipoLiquidacion = 'PARTICULAR' | 'MIXTA' | 'OS';
+export type EstadoLiquidacion =
+  | 'PENDIENTE_DE_LIQUIDAR'
+  | 'LIQUIDADA_PARTICULAR'
+  | 'LIQUIDADA_MIXTA'
+  | 'LIQUIDADA_OS'
+  | 'BLOQUEADA_POR_DOCUMENTACION'
+  | 'ANULADA';
+export type OrigenTipoCobro = 'AUTOMATICO' | 'MANUAL_ADMINISTRATIVO' | 'CONVERSION_PARTICULAR';
+
+export interface LiquidacionSesion {
+  id: string;
+  consultorioId: string;
+  sesionId: string;
+  pacienteId: string;
+  financiadorId: string | null;
+  planId: string | null;
+  convenioId: string | null;
+  tipoLiquidacion: TipoLiquidacion;
+  estado: EstadoLiquidacion;
+  motivoBloqueo: string | null;
+  valorBruto: number;
+  descuentoImporte: number;
+  copagoImporte: number;
+  coseguroImporte: number;
+  importePaciente: number;
+  importeObraSocial: number;
+  importeTotalLiquidado: number;
+  documentacionCompleta: boolean;
+  esFacturableOs: boolean;
+  requiereRevisionManual: boolean;
+  origenTipoCobro: OrigenTipoCobro;
+  observaciones: string | null;
+  liquidadoPor: string;
+  recalculadaEn: string | null;
+  recalculadaPor: string | null;
+  createdAt: string;
+  version: number;
+}
+
+export interface ReliquidarRequest {
+  motivo: string;
+}
+
+export interface ConvertirParticularRequest {
+  motivo: string;
+}

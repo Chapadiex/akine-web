@@ -197,6 +197,12 @@ export const API = {
     byCaja:         (cid: string, cajaId: string) => `/api/v1/consultorios/${cid}/cobros/caja/${cajaId}`,
     anular:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/cobros/${id}/anular`,
   },
+  liquidaciones: {
+    byId:               (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}`,
+    bySesion:           (cid: string, sesionId: string) => `/api/v1/consultorios/${cid}/liquidaciones/sesion/${sesionId}`,
+    reliquidar:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/reliquidar`,
+    convertirParticular:(cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/convertir-particular`,
+  },
   obrasSociales: {
     list: (cid: string, params?: { q?: string; estado?: string; conPlanes?: boolean; page?: number; size?: number }) => {
       const query = new URLSearchParams();

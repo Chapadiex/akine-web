@@ -1,0 +1,183 @@
+<div class="page-container">
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <button class="btn-ghost btn-back" (click)="volver()">&#8592; Volver</button>
+      <h1 class="page-title">Liquidación de sesión</h1>
+      @if (liquidacion()) {
+        <span class="badge-estado" [ngClass]="estadoCssClass()">
+          <span class="dot"></span>{{ estadoLabel() }}
+        </span>
+      }
+    </div>
+    @if (pageState() === 'loaded') {
+      <div class="header-actions">
+        @if (puedeConvertirAParticular()) {
+          <button class="btn-secondary" (click)="abrirConvertir()">Convertir a particular</button>
+        }
+        @if (puedeReliquidar()) {
+          <button class="btn-secondary" (click)="abrirReliquidar()">Reliquidar</button>
+        }
+        @if (puedeCobrar()) {
+          <button class="btn-primary" (click)="irACobrar()">Ir a cobrar</button>
+        }
+      </div>
+    }
+  </header>
+
+  <main class="page-content">
+
+    <!-- Loading -->
+    @if (pageState() === 'loading') {
+      <div class="skeleton-block"></div>
+      <div class="skeleton-block skeleton-short"></div>
+    }
+
+    <!-- Error -->
+    @if (pageState() === 'error') {
+      <div class="state-placeholder error">No se pudo cargar la liquidación.</div>
+    }
+
+    <!-- Contenido -->
+    @if (pageState() === 'loaded' && liquidacion(); as liq) {
+
+      <!-- Bloque: tipo y origen -->
+      <div class="card section-card">
+        <h2 class="section-title">Tipo y circuito</h2>
+        <div class="field-grid">
+          <div class="field">
+            <span class="field-label">Tipo</span>
+            <span class="field-value">{{ tipoLabel() }}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Origen</span>
+            <span class="field-value origin-label">{{ liq.origenTipoCobro }}</span>
+          </div>
+          @if (liq.motivoBloqueo) {
+            <div class="field field-full">
+              <span class="field-label">Motivo de bloqueo</span>
+              <span class="field-value field-warning">{{ liq.motivoBloqueo }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Bloque: montos -->
+      <div class="card section-card">
+        <h2 class="section-title">Montos</h2>
+        <div class="monto-grid">
+          <div class="monto-row">
+            <span class="monto-label">Valor bruto</span>
+            <span class="monto-value">$ {{ liq.valorBruto | number:'1.2-2' }}</span>
+          </div>
+          @if (liq.copagoImporte > 0) {
+            <div class="monto-row">
+              <span class="monto-label">Copago</span>
+              <span class="monto-value">$ {{ liq.copagoImporte | number:'1.2-2' }}</span>
+            </div>
+          }
+          @if (liq.coseguroImporte > 0) {
+            <div class="monto-row">
+              <span class="monto-label">Coseguro</span>
+              <span class="monto-value">$ {{ liq.coseguroImporte | number:'1.2-2' }}</span>
+            </div>
+          }
+          @if (liq.descuentoImporte > 0) {
+            <div class="monto-row monto-descuento">
+              <span class="monto-label">Descuento</span>
+              <span class="monto-value">- $ {{ liq.descuentoImporte | number:'1.2-2' }}</span>
+            </div>
+          }
+          <div class="monto-divider"></div>
+          <div class="monto-row monto-destacado">
+            <span class="monto-label">A cargo del paciente</span>
+            <span class="monto-value">$ {{ liq.importePaciente | number:'1.2-2' }}</span>
+          </div>
+          @if (liq.importeObraSocial > 0) {
+            <div class="monto-row monto-destacado">
+              <span class="monto-label">A cargo de OS</span>
+              <span class="monto-value">$ {{ liq.importeObraSocial | number:'1.2-2' }}</span>
+            </div>
+          }
+          <div class="monto-row monto-total">
+            <span class="monto-label">Total liquidado</span>
+            <span class="monto-value">$ {{ liq.importeTotalLiquidado | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloque: metadatos -->
+      <div class="card section-card">
+        <h2 class="section-title">Información</h2>
+        <div class="field-grid">
+          <div class="field">
+            <span class="field-label">Facturable OS</span>
+            <span class="field-value">{{ liq.esFacturableOs ? 'Sí' : 'No' }}</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Doc. completa</span>
+            <span class="field-value">{{ liq.documentacionCompleta ? 'Sí' : 'No' }}</span>
+          </div>
+          @if (liq.recalculadaEn) {
+            <div class="field">
+              <span class="field-label">Última recalculación</span>
+              <span class="field-value">{{ liq.recalculadaEn | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          }
+          @if (liq.observaciones) {
+            <div class="field field-full">
+              <span class="field-label">Observaciones</span>
+              <span class="field-value">{{ liq.observaciones }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </main>
+</div>
+
+<!-- Modal: reliquidar / convertir a particular -->
+@if (modalMode() !== 'none') {
+  <div class="modal-backdrop" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">
+        {{ modalMode() === 'reliquidar' ? 'Reliquidar sesión' : 'Convertir a particular' }}
+      </h2>
+      <p class="modal-desc">
+        @if (modalMode() === 'reliquidar') {
+          Se recalcularán los montos de la liquidación según el convenio vigente. La operación quedará registrada en la auditoría.
+        } @else {
+          El importe total pasará a cargo del paciente. Esta acción no se puede deshacer.
+        }
+      </p>
+
+      <div class="form-field">
+        <label class="form-label" for="motivo-input">Motivo <span class="required">*</span></label>
+        <textarea
+          id="motivo-input"
+          class="form-textarea"
+          [class.invalid]="motivoCtrl.invalid && motivoCtrl.touched"
+          [formControl]="motivoCtrl"
+          rows="3"
+          placeholder="Describa el motivo de la operación"
+          autofocus
+        ></textarea>
+        @if (motivoCtrl.invalid && motivoCtrl.touched) {
+          <span class="field-error">El motivo es obligatorio (mínimo 5 caracteres).</span>
+        }
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" (click)="cerrarModal()" [disabled]="submitting()">
+          Cancelar
+        </button>
+        <button class="btn-primary" (click)="confirmarAccion()" [disabled]="submitting()">
+          @if (submitting()) { Procesando... } @else {
+            {{ modalMode() === 'reliquidar' ? 'Reliquidar' : 'Convertir' }}
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
