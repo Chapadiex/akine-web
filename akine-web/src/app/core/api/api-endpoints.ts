@@ -203,6 +203,13 @@ export const API = {
     reliquidar:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/reliquidar`,
     convertirParticular:(cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/convertir-particular`,
   },
+  reportes: {
+    cajaDia:            (cid: string, cajaId: string) => `/api/v1/consultorios/${cid}/reportes/caja-dia/${cajaId}`,
+    facturadoVsCobrado: (cid: string) => `/api/v1/consultorios/${cid}/reportes/facturado-vs-cobrado`,
+    sesionesBloqueadas: (cid: string) => `/api/v1/consultorios/${cid}/reportes/sesiones-bloqueadas`,
+    copagosPendientes:  (cid: string) => `/api/v1/consultorios/${cid}/reportes/copagos-pendientes`,
+    productividad:      (cid: string) => `/api/v1/consultorios/${cid}/reportes/productividad`,
+  },
   lotesOs: {
     list:       (cid: string) => `/api/v1/consultorios/${cid}/lotes-os`,
     byId:       (cid: string, id: string) => `/api/v1/consultorios/${cid}/lotes-os/${id}`,

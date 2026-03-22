@@ -1153,6 +1153,11 @@ textarea:focus {
   cursor: pointer;
 }
 
+.caso-upload-chip--existing {
+  background: color-mix(in srgb, var(--primary) 7%, var(--white));
+  border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+}
+
 .caso-upload-chip strong,
 .caso-upload-chip span {
   overflow: hidden;

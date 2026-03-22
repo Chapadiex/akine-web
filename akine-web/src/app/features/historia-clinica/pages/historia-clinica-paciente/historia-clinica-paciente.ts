@@ -243,6 +243,7 @@ export class HistoriaClinicaPacientePage {
   readonly createLegajoTratamientoCodes = signal<string[]>([]);
   readonly casoDiagnosticoCodes = signal<string[]>([]);
   readonly casoDerivacionAdjuntos = signal<File[]>([]);
+  readonly casoAdjuntosExistentes = signal<AdjuntoClinicoResponse[]>([]);
   readonly selectedTreatmentCode = signal('');
 
   readonly createLegajoStep = signal<LegajoWizardStep>(0);
@@ -1145,6 +1146,7 @@ export class HistoriaClinicaPacientePage {
     this.showCasoCloseConfirm.set(false);
     this.casoDiagnosticoCodes.set([]);
     this.casoDerivacionAdjuntos.set([]);
+    this.casoAdjuntosExistentes.set([]);
     this.casoForm.reset(
       {
         profesionalResponsableId: resolvedProfesionalId,
@@ -1180,6 +1182,7 @@ export class HistoriaClinicaPacientePage {
     this.editingCasoId.set(null);
     this.casoDiagnosticoCodes.set([]);
     this.casoDerivacionAdjuntos.set([]);
+    this.casoAdjuntosExistentes.set([]);
     this.casoForm.markAsPristine();
   }
 
@@ -1337,9 +1340,13 @@ export class HistoriaClinicaPacientePage {
         this.treatmentCatalogItems.set(tratamientosCatalogo?.tratamientos ?? []);
         this.treatmentCatalogCategorias.set(tratamientosCatalogo?.categorias ?? []);
         this.treatmentCatalogTipos.set(tratamientosCatalogo?.tipos ?? []);
-        const isDerivacion = (caso.tipoOrigen ?? '').toUpperCase() === 'DERIVACION';
+        const tipoOrigenRaw = (caso.tipoOrigen ?? '').toString().trim().toUpperCase();
         const motivo = caso.motivoConsulta ?? '';
-        const derivadoMatch = motivo.match(/^Derivación:\s*(.+)$/i);
+        const derivadoMatch = motivo.match(/^Derivaci[oó]n\s*:\s*(.+)$/i);
+        const isDerivacion =
+          tipoOrigenRaw.includes('DERIVACION') ||
+          tipoOrigenRaw.includes('DERIVACIÓN') ||
+          !!derivadoMatch;
         const diagnosticoCodes = this.resolveDiagnosticoCodes(caso.diagnosticoMedico);
         const tratamientoResumen = this.parseTratamientoResumen(caso.diagnosticoFuncional);
         const tratamientoId = this.resolveTreatmentIdByName(tratamientoResumen.treatmentName);
@@ -1348,6 +1355,7 @@ export class HistoriaClinicaPacientePage {
         this.casoModalStep.set(1);
         this.showCasoCloseConfirm.set(false);
         this.casoDerivacionAdjuntos.set([]);
+        this.casoAdjuntosExistentes.set(caso.adjuntos ?? []);
         this.casoDiagnosticoCodes.set(diagnosticoCodes);
         this.casoForm.reset(
           {
@@ -1365,6 +1373,25 @@ export class HistoriaClinicaPacientePage {
         );
         this.showCasoDrawer.set(true);
         this.focusCasoFirstField();
+      },
+      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+    });
+  }
+
+  downloadCasoDerivacionAdjunto(adjuntoId: string): void {
+    const consultorioId = this.consultorioCtx.selectedConsultorioId();
+    const casoId = this.editingCasoId();
+    if (!consultorioId || !casoId) {
+      return;
+    }
+    this.historiaSvc.downloadCasoAtencionAdjunto(consultorioId, casoId, adjuntoId).subscribe({
+      next: ({ filename, blob }) => {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.click();
+        window.URL.revokeObjectURL(url);
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });

@@ -137,6 +137,13 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: 'shield-check',
         roles: STAFF_WITH_ADMIN,
       },
+      {
+        path: '/app/reportes',
+        label: 'Reportes',
+        icon: 'bar_chart',
+        roles: STAFF_WITH_ADMIN,
+        dividerBefore: true,
+      },
     ],
   },
   {

@@ -1,0 +1,308 @@
+<div class="page-container">
+
+  <header class="page-header compact">
+    <div class="header-content">
+      <h1>Reportes</h1>
+      <p class="subtitle">Indicadores operativos y financieros del consultorio</p>
+    </div>
+  </header>
+
+  <!-- Tab bar -->
+  <div class="tabs-bar">
+    @for (tab of tabs; track tab.id) {
+      <button
+        class="tab-btn"
+        [class.tab-btn--active]="activeTab() === tab.id"
+        (click)="selectTab(tab.id)"
+      >
+        <span class="icon">{{ tab.icon }}</span>
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <main class="page-content">
+
+    <!-- ── Reporte 1: Caja del día ─────────────────────────────────────────── -->
+    @if (activeTab() === 'caja') {
+      <div class="report-section">
+        <div class="report-filter-bar">
+          <div class="field field--inline">
+            <label class="field__label">ID Caja</label>
+            <input
+              [formControl]="cajaIdControl"
+              class="field__input"
+              placeholder="UUID de caja"
+              autocomplete="off"
+            />
+          </div>
+          <button class="btn-secondary" (click)="loadCajaDia()">
+            <span class="icon">search</span> Buscar
+          </button>
+        </div>
+
+        @if (cajaState() === 'loading') { <div class="skeleton-row"></div> }
+        @if (cajaState() === 'error') { <p class="text-danger">Error al cargar el reporte.</p> }
+
+        @if (cajaState() === 'loaded' && cajaDia(); as r) {
+          <div class="kpi-row">
+            <div class="kpi-card kpi-card--info">
+              <span class="kpi-label">Saldo inicial</span>
+              <span class="kpi-value">$ {{ r.saldoInicial | number:'1.2-2' }}</span>
+            </div>
+            <div class="kpi-card kpi-card--success">
+              <span class="kpi-label">Total ingresos</span>
+              <span class="kpi-value">$ {{ r.totalIngresos | number:'1.2-2' }}</span>
+            </div>
+            <div class="kpi-card kpi-card--warning">
+              <span class="kpi-label">Total egresos</span>
+              <span class="kpi-value">$ {{ r.totalEgresos | number:'1.2-2' }}</span>
+            </div>
+            @if (r.diferencia !== null) {
+              <div class="kpi-card" [ngClass]="(r.diferencia ?? 0) < 0 ? 'kpi-card--error' : 'kpi-card--success'">
+                <span class="kpi-label">Diferencia cierre</span>
+                <span class="kpi-value">$ {{ r.diferencia | number:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+
+          <table class="akine-table">
+            <thead>
+              <tr>
+                <th class="col-text">Origen</th>
+                <th class="col-text">Descripción</th>
+                <th class="col-text">Medio</th>
+                <th class="col-numeric">Importe</th>
+                <th class="col-status">Tipo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (mov of r.movimientos; track mov.id) {
+                <tr [class.row-anulado]="mov.anulado">
+                  <td class="col-text text-secondary text-small">{{ mov.origenMovimiento }}</td>
+                  <td class="col-text">{{ mov.descripcion }}</td>
+                  <td class="col-text text-secondary">{{ mov.medioPago ?? '—' }}</td>
+                  <td class="col-numeric" [ngClass]="mov.tipoMovimiento === 'INGRESO' ? 'text-success' : 'text-danger'">
+                    {{ mov.signo === 'MINUS' ? '-' : '+' }}$ {{ mov.importe | number:'1.2-2' }}
+                  </td>
+                  <td class="col-status">
+                    <span class="badge-estado" [ngClass]="mov.tipoMovimiento === 'INGRESO' ? 'badge-liquidado' : 'badge-cerrado'">
+                      <span class="dot"></span>{{ mov.tipoMovimiento }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+
+        @if (cajaState() === 'idle') {
+          <div class="empty-state">
+            <span class="icon">account_balance_wallet</span>
+            <p>Ingresá el ID de una caja para ver el resumen del día.</p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Reporte 2: Facturado vs cobrado ────────────────────────────────── -->
+    @if (activeTab() === 'facturado') {
+      <div class="report-section">
+        @if (facturadoState() === 'loading') { <ng-container *ngTemplateOutlet="skeletonTpl"></ng-container> }
+        @if (facturadoState() === 'error') { <p class="text-danger">Error al cargar el reporte.</p> }
+
+        @if (facturadoState() === 'loaded') {
+          @if (facturado().length === 0) {
+            <div class="empty-state">
+              <span class="icon">receipt_long</span>
+              <p>No hay lotes registrados aún.</p>
+            </div>
+          } @else {
+            <div class="summary-bar">
+              <span>Total facturado: <strong>$ {{ facturadoTotales().facturado | number:'1.2-2' }}</strong></span>
+              <span>Total cobrado: <strong>$ {{ facturadoTotales().cobrado | number:'1.2-2' }}</strong></span>
+              <span [ngClass]="diferenciaClass(facturadoTotales().diferencia)">
+                Diferencia: <strong>$ {{ facturadoTotales().diferencia | number:'1.2-2' }}</strong>
+              </span>
+            </div>
+            <table class="akine-table">
+              <thead>
+                <tr>
+                  <th class="col-text">Período</th>
+                  <th class="col-text">Financiador</th>
+                  <th class="col-numeric">Facturado</th>
+                  <th class="col-numeric">Cobrado</th>
+                  <th class="col-numeric">Diferencia</th>
+                  <th class="col-status">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of facturado(); track row.loteId) {
+                  <tr>
+                    <td class="col-text text-medium">{{ row.periodo }}</td>
+                    <td class="col-text text-secondary text-small text-mono">{{ row.financiadorId | slice:0:8 }}…</td>
+                    <td class="col-numeric">$ {{ row.importeFacturado | number:'1.2-2' }}</td>
+                    <td class="col-numeric text-medium">$ {{ row.importeCobrado | number:'1.2-2' }}</td>
+                    <td class="col-numeric" [ngClass]="diferenciaClass(row.diferencia)">
+                      $ {{ row.diferencia | number:'1.2-2' }}
+                    </td>
+                    <td class="col-status">
+                      <span class="badge-estado" [ngClass]="estadoLoteBadge(row.estadoLote)">
+                        <span class="dot"></span>{{ row.estadoLote }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </div>
+    }
+
+    <!-- ── Reporte 3: Sesiones bloqueadas ─────────────────────────────────── -->
+    @if (activeTab() === 'bloqueadas') {
+      <div class="report-section">
+        @if (bloqueadasState() === 'loading') { <ng-container *ngTemplateOutlet="skeletonTpl"></ng-container> }
+        @if (bloqueadasState() === 'error') { <p class="text-danger">Error al cargar el reporte.</p> }
+
+        @if (bloqueadasState() === 'loaded') {
+          @if (bloqueadas().length === 0) {
+            <div class="empty-state">
+              <span class="icon">check_circle</span>
+              <p>No hay sesiones bloqueadas.</p>
+            </div>
+          } @else {
+            <div class="summary-bar">
+              <span><strong>{{ bloqueadas().length }}</strong> sesión/es bloqueadas por documentación incompleta</span>
+            </div>
+            <table class="akine-table">
+              <thead>
+                <tr>
+                  <th class="col-text">Sesión ID</th>
+                  <th class="col-text">Paciente ID</th>
+                  <th class="col-text">Motivo de bloqueo</th>
+                  <th class="col-text">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of bloqueadas(); track row.liquidacionId) {
+                  <tr>
+                    <td class="col-text text-mono text-small">{{ row.sesionId | slice:0:8 }}…</td>
+                    <td class="col-text text-mono text-small">{{ row.pacienteId | slice:0:8 }}…</td>
+                    <td class="col-text">{{ row.motivoBloqueo ?? '—' }}</td>
+                    <td class="col-text text-secondary">{{ row.createdAt | date:'dd/MM/yy HH:mm' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </div>
+    }
+
+    <!-- ── Reporte 4: Copagos OS pendientes ───────────────────────────────── -->
+    @if (activeTab() === 'copagos') {
+      <div class="report-section">
+        @if (copagosState() === 'loading') { <ng-container *ngTemplateOutlet="skeletonTpl"></ng-container> }
+        @if (copagosState() === 'error') { <p class="text-danger">Error al cargar el reporte.</p> }
+
+        @if (copagosState() === 'loaded') {
+          @if (copagos().length === 0) {
+            <div class="empty-state">
+              <span class="icon">done_all</span>
+              <p>No hay copagos OS pendientes.</p>
+            </div>
+          } @else {
+            <div class="summary-bar">
+              <span>Copago total: <strong>$ {{ copagosTotales().copago | number:'1.2-2' }}</strong></span>
+              <span>OS pendiente: <strong>$ {{ copagosTotales().os | number:'1.2-2' }}</strong></span>
+            </div>
+            <table class="akine-table">
+              <thead>
+                <tr>
+                  <th class="col-text">Sesión ID</th>
+                  <th class="col-text">Paciente ID</th>
+                  <th class="col-text">Financiador</th>
+                  <th class="col-numeric">Copago</th>
+                  <th class="col-numeric">Importe OS</th>
+                  <th class="col-status">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of copagos(); track row.liquidacionId) {
+                  <tr>
+                    <td class="col-text text-mono text-small">{{ row.sesionId | slice:0:8 }}…</td>
+                    <td class="col-text text-mono text-small">{{ row.pacienteId | slice:0:8 }}…</td>
+                    <td class="col-text text-mono text-small">{{ row.financiadorId | slice:0:8 }}…</td>
+                    <td class="col-numeric">$ {{ row.copagoImporte | number:'1.2-2' }}</td>
+                    <td class="col-numeric text-medium">$ {{ row.importeObraSocial | number:'1.2-2' }}</td>
+                    <td class="col-status">
+                      <span class="badge-estado badge-presentado">
+                        <span class="dot"></span>{{ row.estado }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </div>
+    }
+
+    <!-- ── Reporte 5: Productividad ───────────────────────────────────────── -->
+    @if (activeTab() === 'productividad') {
+      <div class="report-section">
+        @if (productividadState() === 'loading') { <ng-container *ngTemplateOutlet="skeletonTpl"></ng-container> }
+        @if (productividadState() === 'error') { <p class="text-danger">Error al cargar el reporte.</p> }
+
+        @if (productividadState() === 'loaded') {
+          @if (productividad().length === 0) {
+            <div class="empty-state">
+              <span class="icon">trending_up</span>
+              <p>No hay liquidaciones registradas aún.</p>
+            </div>
+          } @else {
+            <div class="summary-bar">
+              <span>Total sesiones: <strong>{{ productividadTotales().sesiones }}</strong></span>
+              <span>Total liquidado: <strong>$ {{ productividadTotales().total | number:'1.2-2' }}</strong></span>
+            </div>
+            <table class="akine-table">
+              <thead>
+                <tr>
+                  <th class="col-text">Profesional ID</th>
+                  <th class="col-numeric">Sesiones</th>
+                  <th class="col-numeric">Total liquidado</th>
+                  <th class="col-numeric">Importe OS</th>
+                  <th class="col-numeric">Importe paciente</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of productividad(); track row.profesionalId) {
+                  <tr>
+                    <td class="col-text text-mono text-small">{{ row.profesionalId | slice:0:8 }}…</td>
+                    <td class="col-numeric text-medium">{{ row.cantidadSesiones }}</td>
+                    <td class="col-numeric text-medium">$ {{ row.importeTotalLiquidado | number:'1.2-2' }}</td>
+                    <td class="col-numeric">$ {{ row.importeObraSocial | number:'1.2-2' }}</td>
+                    <td class="col-numeric">$ {{ row.importePaciente | number:'1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </div>
+    }
+
+  </main>
+</div>
+
+<!-- Skeleton template -->
+<ng-template #skeletonTpl>
+  <div class="skeleton-table">
+    @for (_ of [1,2,3,4]; track $index) {
+      <div class="skeleton-row"></div>
+    }
+  </div>
+</ng-template>

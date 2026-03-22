@@ -1063,6 +1063,21 @@
                         }
                       </label>
                       <div class="caso-upload-box__actions">
+                        @if (casoAdjuntosExistentes().length) {
+                          <div class="caso-upload-list">
+                            @for (adjunto of casoAdjuntosExistentes(); track adjunto.id) {
+                              <button
+                                type="button"
+                                class="caso-upload-chip caso-upload-chip--existing"
+                                [attr.title]="'Descargar ' + adjunto.originalFilename"
+                                (click)="downloadCasoDerivacionAdjunto(adjunto.id)"
+                              >
+                                <strong>{{ adjunto.originalFilename }}</strong>
+                                <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
+                              </button>
+                            }
+                          </div>
+                        }
                         <label class="caso-upload-trigger">
                           <span>Adjuntar</span>
                           <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="queueCasoDerivacionAdjuntos($event)" />

@@ -274,6 +274,24 @@ export class HistoriaClinicaService {
       );
   }
 
+  downloadCasoAtencionAdjunto(
+    consultorioId: string,
+    casoId: string,
+    adjuntoId: string,
+  ): Observable<ClinicalDownload> {
+    return this.http
+      .get(`${this.apiBase}${API.casosAtencion.adjunto(consultorioId, casoId, adjuntoId)}`, {
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(
+        map((response: HttpResponse<Blob>) => ({
+          filename: this.resolveFilename(response) ?? 'adjunto-caso-clinico',
+          blob: response.body ?? new Blob(),
+        })),
+      );
+  }
+
   deleteAdjunto(consultorioId: string, pacienteId: string, adjuntoId: string): Observable<void> {
     return this.api.delete<void>(API.historiaClinicaGlobal.adjunto(consultorioId, pacienteId, adjuntoId));
   }
