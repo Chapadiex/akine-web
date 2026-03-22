@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   CasoAtencionSummary,
   HistoriaClinicaOverview,
-  HistoriaClinicaSesionEstado,
   HistoriaClinicaTipoAtencion,
   SesionClinicaResponse,
 } from '../../models/historia-clinica.models';
@@ -15,43 +14,41 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="sesion-context" [attr.data-estado]="sesion()?.estado">
-      <div class="context-row">
+      <div class="context-row context-row--primary">
         <div class="context-patient">
           @if (overview()?.paciente; as p) {
             <span class="patient-name">{{ p.apellido }}, {{ p.nombre }}</span>
             <span class="patient-meta">DNI {{ p.dni }}</span>
-            @if (p.fechaNacimiento) {
-              <span class="patient-meta">{{ calcEdad(p.fechaNacimiento) }} años</span>
-            }
-            @if (p.obraSocialNombre) {
-              <span class="patient-badge">{{ p.obraSocialNombre }}</span>
-            }
+          }
+        </div>
+        <div class="context-center">
+          <span class="context-chip context-chip--case">{{ tipoLabel(sesion()?.tipoAtencion) }}</span>
+          @if (sesion()?.fechaAtencion) {
+            <span class="context-chip context-chip--date">{{ sesion()!.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</span>
           }
         </div>
         <div class="context-actions">
-          <span class="estado-badge" [attr.data-estado]="sesion()?.estado">
-            {{ sesion()?.estado }}
-          </span>
-          @if (sesionNumero()) {
-            <span class="sesion-num">
-              Sesión {{ sesionNumero() }}
-              @if (sesionesPlanificadas() > 0) { de {{ sesionesPlanificadas() }} }
-            </span>
+          @if (editable()) {
+            <div class="mode-selector">
+              <button
+                type="button"
+                class="mode-btn"
+                [class.mode-btn--active]="selectedMode() === 'quick'"
+                (click)="modeChanged.emit('quick')"
+              >
+                Express
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                [class.mode-btn--active]="selectedMode() === 'full'"
+                (click)="modeChanged.emit('full')"
+              >
+                Completa
+              </button>
+            </div>
           }
         </div>
-      </div>
-
-      <div class="context-row context-row--secondary">
-        @if (casoLabel(); as label) {
-          <span class="context-chip context-chip--case">{{ label }}</span>
-        }
-        <span class="context-chip">{{ tipoLabel(sesion()?.tipoAtencion) }}</span>
-        @if (sesion()?.fechaAtencion) {
-          <span class="context-chip context-chip--date">{{ sesion()!.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</span>
-        }
-        @for (alerta of overview()?.alertasClinicas ?? []; track alerta) {
-          <span class="context-chip context-chip--alert">{{ alerta }}</span>
-        }
       </div>
     </header>
   `,
@@ -62,85 +59,124 @@ import {
       z-index: 10;
       background: var(--white, #fff);
       border-bottom: 1px solid var(--border, #e2e8f0);
-      padding: 12px 24px;
+      padding: 6px 16px;
     }
     .context-row {
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      gap: 8px;
       flex-wrap: wrap;
     }
-    .context-row--secondary {
-      margin-top: 6px;
+    .context-row--primary {
+      flex-wrap: nowrap;
     }
     .context-patient {
       display: flex;
       align-items: baseline;
-      gap: 10px;
-      flex: 1;
+      gap: 8px;
+      min-width: 0;
+      flex: 1 1 auto;
     }
     .patient-name {
       font-weight: 600;
-      font-size: 1.05rem;
+      font-size: 1rem;
       color: var(--text, #0f172a);
     }
     .patient-meta {
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--text-muted, #64748b);
+      white-space: nowrap;
     }
-    .patient-badge {
-      font-size: 0.75rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: var(--primary, #0f766e);
-      color: #fff;
+    .context-center {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex: 0 1 auto;
+      justify-content: center;
     }
     .context-actions {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 10px;
-    }
-    .estado-badge {
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 999px;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-    .estado-badge[data-estado='BORRADOR'] {
-      background: #f1f5f9;
-      color: #475569;
-    }
-    .estado-badge[data-estado='CERRADA'] {
-      background: #dcfce7;
-      color: #166534;
-    }
-    .estado-badge[data-estado='ANULADA'] {
-      background: #fef2f2;
-      color: #991b1b;
-    }
-    .sesion-num {
-      font-size: 0.82rem;
-      color: var(--text-muted, #64748b);
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      flex: 0 0 auto;
     }
     .context-chip {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       padding: 2px 8px;
       border-radius: 4px;
       background: #f1f5f9;
       color: #334155;
+      white-space: nowrap;
     }
     .context-chip--case {
-      background: #ede9fe;
-      color: #5b21b6;
-    }
-    .context-chip--alert {
-      background: #fef3c7;
-      color: #92400e;
+      background: #ecfeff;
+      color: #155e75;
     }
     .context-chip--date {
       color: var(--text-muted, #64748b);
+    }
+
+    .mode-selector {
+      display: inline-flex;
+      border: 1px solid var(--border, #e2e8f0);
+      border-radius: var(--radius, 6px);
+      overflow: hidden;
+      background: var(--white, #fff);
+    }
+    .mode-btn {
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--white, #fff);
+      border: none;
+      color: var(--text-muted, #64748b);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .mode-btn:hover {
+      background: #f1f5f9;
+      color: var(--text, #0f172a);
+    }
+    .mode-btn--active {
+      background: var(--primary, #0f766e);
+      color: #fff;
+    }
+
+    @media (max-width: 1100px) {
+      .context-row--primary {
+        flex-wrap: wrap;
+      }
+      .context-patient {
+        width: 100%;
+      }
+      .context-center {
+        justify-content: flex-start;
+      }
+      .context-actions {
+        margin-left: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .context-row--primary {
+        align-items: flex-start;
+      }
+      .context-patient {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+      .context-center {
+        width: 100%;
+      }
+      .context-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
     }
   `,
 })
@@ -150,6 +186,9 @@ export class BloqueContextoComponent {
   readonly casoActivo = input<CasoAtencionSummary | { descripcion: string } | null>(null);
   readonly sesionNumero = input<number | null>(null);
   readonly sesionesPlanificadas = input<number>(0);
+  readonly editable = input(false);
+  readonly selectedMode = input<'quick' | 'full'>('quick');
+  readonly modeChanged = output<'quick' | 'full'>();
 
   readonly casoLabel = computed<string | null>(() => {
     const caso = this.casoActivo();
@@ -162,20 +201,11 @@ export class BloqueContextoComponent {
     return (caso as { descripcion: string }).descripcion ?? null;
   });
 
-  calcEdad(fechaNac: string): number {
-    const birth = new Date(fechaNac);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-    return age;
-  }
-
   tipoLabel(tipo?: HistoriaClinicaTipoAtencion | null): string {
     const labels: Record<string, string> = {
       EVALUACION: 'Evaluación',
       SEGUIMIENTO: 'Seguimiento',
-      TRATAMIENTO: 'Tratamiento',
+      TRATAMIENTO: 'Seguimiento',
       INTERCONSULTA: 'Interconsulta',
       OTRO: 'Otro',
     };

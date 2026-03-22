@@ -173,20 +173,10 @@
                       <div class="section-head">
                         <h3>Plan terapéutico activo</h3>
                         <div class="summary-actions">
-                          <span class="state-pill" [attr.data-tone]="plan.caseStatus.startsWith('CERRADO') ? 'muted' : 'success'">
-                            {{ plan.caseStatus }}
-                          </span>
-                          <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver detalle</button>
-                          <button
-                            type="button"
-                            class="btn btn--primary btn--sm"
-                            [disabled]="!hasActiveCases()"
-                            [attr.aria-disabled]="!hasActiveCases()"
-                            [title]="!hasActiveCases() ? 'Primero abrí un caso clínico activo.' : null"
-                            (click)="openNuevaSesion(selectedCase()?.profesionalId)"
-                          >
-                            Nueva sesión
-                          </button>
+                          <button type="button" class="btn btn--ghost btn--sm" disabled aria-disabled="true">{{ plan.caseStatus }}</button>
+                          @if (selectedCasoAtencion()?.id) {
+                            <button type="button" class="btn btn--ghost btn--sm" (click)="openEditCaso(selectedCasoAtencion()!.id)">Editar caso</button>
+                          }
                         </div>
                       </div>
 
@@ -216,9 +206,7 @@
                       <div class="section-head">
                         <h3>Plan terapéutico activo</h3>
                         <div class="summary-actions">
-                          <span class="state-pill" data-tone="muted">Sin estado</span>
-                          <button type="button" class="btn btn--ghost btn--sm" disabled aria-disabled="true">Ver detalle</button>
-                          <button type="button" class="btn btn--primary btn--sm" (click)="openCasoDrawer()">Nuevo caso clínico</button>
+                          <button type="button" class="btn btn--ghost btn--sm" disabled aria-disabled="true">Sin estado</button>
                         </div>
                       </div>
                       <p class="muted-copy">Sin plan terapéutico activo. Abrí un caso clínico para ordenar tratamiento y sesiones.</p>
@@ -230,31 +218,40 @@
                   <article class="surface">
                     <div class="section-head">
                       <h3>Sesiones recientes</h3>
+                      <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver todas</button>
                     </div>
 
-                    @if (summarySessionRows().length) {
-                      <div class="summary-session-table">
-                        <header class="summary-session-table__head">
-                          <span>N°</span>
-                          <span>Tipo</span>
-                          <span>Fecha</span>
-                          <span>Estado</span>
-                          <span>Resumen</span>
-                          <span>Acción</span>
-                        </header>
+                      @if (summarySessionRows().length) {
+                        <div class="summary-session-table">
+                          <header class="summary-session-table__head">
+                            <span>N°</span>
+                            <span>Tipo</span>
+                            <span>Fecha</span>
+                            <span class="summary-session-table__head-icon" title="Estado" aria-label="Estado">◉</span>
+                            <span>Resumen</span>
+                          </header>
                         @for (row of summarySessionRows(); track row.sessionId) {
-                          <article class="summary-session-table__row">
+                          <article
+                            class="summary-session-table__row summary-session-table__row--clickable"
+                            [attr.data-tone]="row.statusTone"
+                            role="button"
+                            tabindex="0"
+                            (click)="openSesion(row.sessionId)"
+                            (keydown.enter)="openSesion(row.sessionId)"
+                            (keydown.space)="openSesion(row.sessionId); $event.preventDefault()"
+                          >
                             <span>{{ row.numberLabel }}</span>
                             <span>{{ row.typeLabel }}</span>
                             <span>{{ row.dateLabel }}</span>
-                            <span>{{ row.statusLabel }}</span>
+                            <span>
+                              <span class="state-pill" [attr.data-tone]="row.statusTone" [attr.title]="row.statusTooltip">
+                                <span class="state-pill__icon" [attr.data-icon]="row.statusIcon" aria-hidden="true"></span>
+                                {{ row.statusLabel }}
+                              </span>
+                            </span>
                             <span class="summary-session-table__summary">{{ row.summaryLabel }}</span>
-                            <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(row.sessionId)">{{ row.actionLabel }}</button>
                           </article>
                         }
-                      </div>
-                      <div class="summary-actions">
-                        <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver todas las sesiones</button>
                       </div>
                     } @else {
                       <p class="muted-copy">Sin sesiones recientes.</p>
@@ -953,47 +950,6 @@
     </aside>
   }
 
-  @if (showEditCasoDrawer()) {
-    <div class="drawer-backdrop" (click)="closeEditCasoDrawer()"></div>
-    <aside class="drawer drawer--wide" role="dialog" aria-modal="true" aria-labelledby="edit-caso-title">
-      <div class="drawer-head">
-        <h3 id="edit-caso-title">Editar caso clínico</h3>
-        <button type="button" class="btn btn--ghost btn--sm" (click)="closeEditCasoDrawer()">Cerrar</button>
-      </div>
-      <form class="drawer-form" [formGroup]="editCasoForm">
-        <label class="field">
-          <span>Profesional responsable</span>
-          <select formControlName="profesionalResponsableId">
-            <option value="">Sin asignar</option>
-            @for (profesional of professionalOptions(); track profesional.id) {
-              <option [value]="profesional.id">{{ profesional.nombre }}</option>
-            }
-          </select>
-        </label>
-        <label class="field">
-          <span>Motivo de consulta</span>
-          <textarea rows="3" formControlName="motivoConsulta"></textarea>
-        </label>
-        <label class="field">
-          <span>Diagnóstico médico</span>
-          <input type="text" formControlName="diagnosticoMedico" />
-        </label>
-        <label class="field">
-          <span>Diagnóstico funcional / tratamiento</span>
-          <input type="text" formControlName="diagnosticoFuncional" />
-        </label>
-        <label class="field">
-          <span>Afección principal</span>
-          <input type="text" formControlName="afeccionPrincipal" />
-        </label>
-      </form>
-      <div class="drawer-actions">
-        <button type="button" class="btn btn--primary" [disabled]="isSavingEditCaso()" (click)="saveEditCaso()">Guardar cambios</button>
-        <button type="button" class="btn btn--secondary" [disabled]="isSavingEditCaso()" (click)="closeEditCasoDrawer()">Cancelar</button>
-      </div>
-    </aside>
-  }
-
   @if (showCasoDrawer()) {
     <div class="overlay">
       <div class="modal-panel modal-panel--caso" role="dialog" aria-modal="true" aria-labelledby="caso-modal-title">
@@ -1003,7 +959,7 @@
             @if (selectedPatient(); as patient) {
               <p class="eyebrow">{{ patient.apellido }}, {{ patient.nombre }}</p>
             }
-            <h3 id="caso-modal-title">Nuevo caso clínico</h3>
+            <h3 id="caso-modal-title">{{ casoModalMode() === 'edit' ? 'Editar caso clínico' : 'Nuevo caso clínico' }}</h3>
           </div>
           <button type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Cerrar" (click)="closeCasoModal()">✕</button>
         </div>
@@ -1239,7 +1195,9 @@
             @if (casoModalStep() < 3) {
               <button type="button" class="btn btn--primary" (click)="nextCasoStep()">Siguiente</button>
             } @else {
-              <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">Crear caso clínico</button>
+              <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">
+                {{ casoModalMode() === 'edit' ? 'Guardar cambios' : 'Crear caso clínico' }}
+              </button>
             }
           </div>
         </footer>
@@ -1249,9 +1207,9 @@
 
     @if (showCasoCloseConfirm()) {
       <app-confirm-dialog
-        title="¿Descartás el caso?"
-        message="Hay datos cargados que se perderán si cerrás ahora."
-        confirmLabel="Descartar"
+        title="Hay cambios sin guardar"
+        message="Hay cambios sin guardar. Si cerrás ahora, se perderán los cambios realizados."
+        confirmLabel="Descartar cambios"
         (confirmed)="confirmCloseCasoModal()"
         (cancelled)="showCasoCloseConfirm.set(false)"
       />

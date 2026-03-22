@@ -11,17 +11,16 @@ import { TratamientoCatalogItem } from '../../../consultorios/models/tratamiento
   template: `
     <section class="bloque bloque-tratamiento">
       <div class="bloque__header">
-        <h3 class="bloque__title">Tratamiento aplicado</h3>
+        <div class="bloque__heading">
+          <h3 class="bloque__title">Tratamiento aplicado</h3>
+          <p class="bloque__subtitle">{{ subtitleText() }}</p>
+        </div>
         @if (editable()) {
           <button type="button" class="btn btn--sm btn--secondary" (click)="addIntervencion.emit()">
             + Intervención
           </button>
         }
       </div>
-
-      @if (form().length === 0) {
-        <p class="empty-msg">Sin intervenciones registradas. Agregá una para documentar el tratamiento.</p>
-      }
 
       @for (ctrl of form().controls; track $index; let i = $index) {
         <div class="intervencion-card" [formGroup]="asGroup(ctrl)">
@@ -68,41 +67,49 @@ import { TratamientoCatalogItem } from '../../../consultorios/models/tratamiento
     </section>
   `,
   styles: `
-    .bloque { margin-bottom: 20px; }
+    .bloque { margin-bottom: 12px; }
     .bloque__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      gap: 10px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--accent, #0284c7);
+    }
+    .bloque__heading {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+      flex: 1;
     }
     .bloque__title {
       font-size: 0.95rem;
       font-weight: 600;
       color: var(--text, #0f172a);
-      padding-bottom: 6px;
-      border-bottom: 2px solid var(--accent, #0284c7);
       margin: 0;
+      flex-shrink: 0;
     }
-    .empty-msg {
-      font-size: 0.85rem;
+    .bloque__subtitle {
+      font-size: 0.78rem;
       color: var(--text-muted, #64748b);
-      text-align: center;
-      padding: 16px;
-      background: #f8fafc;
-      border-radius: var(--radius, 6px);
+      margin: 0;
+      min-width: 0;
     }
     .intervencion-card {
       border: 1px solid var(--border, #e2e8f0);
       border-radius: var(--radius, 6px);
-      padding: 12px;
-      margin-bottom: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
       background: var(--white, #fff);
     }
     .intervencion-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .intervencion-num {
       font-size: 0.78rem;
@@ -112,8 +119,8 @@ import { TratamientoCatalogItem } from '../../../consultorios/models/tratamiento
     .intervencion-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 8px;
+      gap: 8px;
+      margin-bottom: 6px;
     }
     .field-group { display: flex; flex-direction: column; gap: 4px; }
     .field-label { font-size: 0.78rem; font-weight: 500; color: var(--text-muted, #64748b); }
@@ -131,7 +138,7 @@ import { TratamientoCatalogItem } from '../../../consultorios/models/tratamiento
     }
     .field-input--sm { max-width: 100px; }
     .field-textarea--sm { resize: vertical; max-height: 60px; }
-    .btn--sm { padding: 5px 12px; font-size: 0.82rem; }
+    .btn--sm { padding: 5px 10px; font-size: 0.8rem; }
     .btn--secondary {
       background: var(--white, #fff);
       border: 1px solid var(--border, #e2e8f0);
@@ -144,13 +151,18 @@ import { TratamientoCatalogItem } from '../../../consultorios/models/tratamiento
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       line-height: 1;
       padding: 2px 6px;
       border-radius: 4px;
     }
     .btn-icon--danger { color: var(--error, #dc2626); }
     .btn-icon--danger:hover { background: #fef2f2; }
+
+    @media (max-width: 900px) {
+      .bloque__header { align-items: flex-start; }
+      .intervencion-grid { grid-template-columns: 1fr; }
+    }
   `,
 })
 export class BloqueTratamientoComponent {
@@ -160,6 +172,12 @@ export class BloqueTratamientoComponent {
   readonly changed = output<void>();
   readonly addIntervencion = output<void>();
   readonly removeIntervencion = output<number>();
+
+  subtitleText(): string {
+    return this.form().length === 0
+      ? 'Sin intervenciones registradas. Agrega una para documentar el tratamiento.'
+      : 'Intervenciones y técnicas aplicadas en esta sesión.';
+  }
 
   asGroup(ctrl: unknown): FormGroup {
     return ctrl as FormGroup;

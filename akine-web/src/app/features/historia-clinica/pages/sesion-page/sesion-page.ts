@@ -193,7 +193,7 @@ export class SesionPage implements OnInit {
     respuestaPaciente: new FormControl(''),
     tolerancia: new FormControl(''),
     indicacionesDomiciliarias: new FormControl(''),
-    proximaConducta: new FormControl(''),
+    proximaConducta: new FormControl('CONTINUAR'),
   });
 
   // ── Examen fisico form (Block C) ──
@@ -315,7 +315,7 @@ export class SesionPage implements OnInit {
         respuestaPaciente: s.evaluacionEstructurada.respuestaPaciente ?? '',
         tolerancia: s.evaluacionEstructurada.tolerancia ?? '',
         indicacionesDomiciliarias: s.evaluacionEstructurada.indicacionesDomiciliarias ?? '',
-        proximaConducta: s.evaluacionEstructurada.proximaConducta ?? '',
+        proximaConducta: s.evaluacionEstructurada.proximaConducta ?? 'CONTINUAR',
       });
     }
 

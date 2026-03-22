@@ -17,51 +17,6 @@
   font-size: 0.92rem;
 }
 
-// Mode selector bar
-.mode-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 24px;
-  background: var(--white, #fff);
-  border-bottom: 1px solid var(--border, #e2e8f0);
-}
-
-.mode-selector {
-  display: flex;
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: var(--radius, 6px);
-  overflow: hidden;
-}
-
-.mode-btn {
-  padding: 6px 18px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  cursor: pointer;
-  background: var(--white, #fff);
-  border: none;
-  color: var(--text-muted, #64748b);
-  transition: all 0.15s;
-  white-space: nowrap;
-
-  &:hover {
-    background: #f1f5f9;
-    color: var(--text, #0f172a);
-  }
-
-  &--active {
-    background: var(--primary, #0f766e);
-    color: #fff;
-  }
-}
-
-.mode-hint {
-  font-size: 0.78rem;
-  color: var(--text-muted, #64748b);
-  flex: 1;
-}
-
 // Stepper
 .stepper {
   display: flex;
@@ -144,8 +99,8 @@
 .sesion-body {
   display: grid;
   grid-template-columns: 1fr 280px;
-  gap: 20px;
-  padding: 20px 24px;
+  gap: 16px;
+  padding: 14px 20px;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
@@ -154,6 +109,12 @@
 
 .sesion-main {
   min-width: 0;
+}
+
+.express-cierre-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 // Step empty state
@@ -334,6 +295,7 @@
 @media (max-width: 900px) {
   .sesion-body {
     grid-template-columns: 1fr;
+    padding: 12px 16px;
   }
   .sesion-sidebar {
     position: static;

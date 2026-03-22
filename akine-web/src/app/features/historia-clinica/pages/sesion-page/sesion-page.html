@@ -1,4 +1,4 @@
-@if (status() === 'loading') {
+﻿@if (status() === 'loading') {
   <div class="sesion-loading">
     <div class="spinner spinner--primary"></div>
     <span>Cargando sesión...</span>
@@ -20,39 +20,12 @@
     [casoActivo]="casoActivo()"
     [sesionNumero]="currentSessionNumber() ?? sesionNumero()"
     [sesionesPlanificadas]="plannedSessions()"
+    [editable]="isEditable()"
+    [selectedMode]="selectedMode()"
+    (modeChanged)="setMode($event)"
   />
 
-  <!-- Mode selector — only for editable sessions -->
-  @if (isEditable()) {
-    <div class="mode-bar">
-      <div class="mode-selector">
-        <button
-          type="button"
-          class="mode-btn"
-          [class.mode-btn--active]="selectedMode() === 'quick'"
-          (click)="setMode('quick')"
-          title="Vista compacta: todos los bloques en una sola pantalla"
-        >
-          ⚡ Express
-        </button>
-        <button
-          type="button"
-          class="mode-btn"
-          [class.mode-btn--active]="selectedMode() === 'full'"
-          (click)="setMode('full')"
-          title="Vista completa: paso a paso con examen físico"
-        >
-          Completa
-        </button>
-      </div>
-      <span class="mode-hint">
-        @if (selectedMode() === 'quick') { Seguimiento rápido · estado actual, tratamiento y cierre }
-        @else { Evaluación completa · evaluación clínica y examen físico estructurado }
-      </span>
-    </div>
-  }
-
-  <!-- ═══ FULL MODE: stepper + step content ═══ -->
+  <!-- FULL MODE: stepper + step content -->
   @if (sessionMode() === 'full') {
     <nav class="stepper">
       @for (step of steps; track step.key; let i = $index) {
@@ -88,7 +61,7 @@
           } @else if (isEditable()) {
             <div class="step-empty">
               <p class="step-empty__text">El examen físico es opcional para seguimientos habituales.</p>
-              <p class="step-empty__hint">Actívalo si hay re-evaluación, empeoramiento o necesitás medición objetiva.</p>
+              <p class="step-empty__hint">Actívalo si hay reevaluación, empeoramiento o necesitás medición objetiva.</p>
               <button type="button" class="btn btn--secondary" (click)="toggleExamenFisico()">
                 Registrar examen físico
               </button>
@@ -136,7 +109,7 @@
     </div>
   }
 
-  <!-- ═══ EXPRESS / READONLY MODE: single scroll ═══ -->
+  <!-- EXPRESS / READONLY MODE: single scroll -->
   @if (sessionMode() !== 'full') {
     <div class="sesion-body">
       <main class="sesion-main">
@@ -157,10 +130,10 @@
           (removeIntervencion)="removeIntervencion($event)"
         />
 
-        <!-- Block C: Cierre rápido (respuesta + tolerancia + conducta + evolución breve) -->
-        <app-bloque-cierre-express [form]="evaluacionForm" (changed)="triggerAutoSave()" />
-
-        <app-bloque-administrativo [form]="baseForm" (changed)="triggerAutoSave()" />
+        <section class="express-cierre-cluster">
+          <app-bloque-cierre-express [form]="evaluacionForm" (changed)="triggerAutoSave()" />
+          <app-bloque-administrativo [form]="baseForm" (changed)="triggerAutoSave()" />
+        </section>
       </main>
 
       @if (previousSesion(); as prev) {
@@ -304,3 +277,4 @@
     }
   </div>
 </ng-template>
+

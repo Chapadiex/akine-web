@@ -10,13 +10,13 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="bloque bloque-estado">
-      <h3 class="bloque__title">Estado actual</h3>
-      <p class="bloque__subtitle">Cómo llega el paciente a esta sesión</p>
+      <div class="bloque__heading">
+        <h3 class="bloque__title">Estado actual</h3>
+        <p class="bloque__subtitle">Cómo llega el paciente a esta sesión</p>
+      </div>
 
-      <div class="bloque__grid" [formGroup]="form()">
-
-        <!-- Dolor: slider prominente -->
-        <div class="field-group">
+      <div class="estado-grid" [formGroup]="form()">
+        <div class="field-group estado-grid__dolor">
           <label class="field-label">Dolor actual</label>
           <div class="dolor-block">
             <div class="dolor-scale-row">
@@ -40,21 +40,7 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
           </div>
         </div>
 
-        <!-- Zona: solo si dolor > 0 -->
-        @if ((form().get('dolorIntensidad')?.value ?? 0) > 0) {
-          <div class="field-group field-group--inline">
-            <label class="field-label">Zona de dolor</label>
-            <input
-              formControlName="dolorZona"
-              placeholder="Ej: rodilla derecha, hombro..."
-              class="field-input"
-              (input)="changed.emit()"
-            />
-          </div>
-        }
-
-        <!-- Evolución desde la última sesión -->
-        <div class="field-group">
+        <div class="field-group estado-grid__evolucion">
           <label class="field-label">Evolución desde la última sesión</label>
           @if (previousEval()?.dolorIntensidad != null) {
             <div class="comparativa">
@@ -78,37 +64,56 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
           </div>
         </div>
 
+        <div class="field-group estado-grid__zona">
+          <label class="field-label">Zona de dolor</label>
+          <input
+            formControlName="dolorZona"
+            placeholder="Ej: rodilla derecha, hombro..."
+            class="field-input"
+            (input)="changed.emit()"
+          />
+        </div>
       </div>
     </section>
   `,
   styles: `
-    .bloque { margin-bottom: 16px; }
+    .bloque { margin-bottom: 12px; }
+    .bloque__heading {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--primary, #0f766e);
+    }
     .bloque__title {
       font-size: 0.95rem;
       font-weight: 600;
       color: var(--text, #0f172a);
-      margin-bottom: 2px;
-      padding-bottom: 6px;
-      border-bottom: 2px solid var(--primary, #0f766e);
+      margin: 0;
     }
     .bloque__subtitle {
       font-size: 0.78rem;
       color: var(--text-muted, #64748b);
-      margin: 0 0 14px;
+      margin: 0;
     }
-    .bloque__grid { display: flex; flex-direction: column; gap: 16px; }
+    .estado-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .estado-grid__zona { grid-column: 1 / -1; }
 
     .field-group { display: flex; flex-direction: column; gap: 6px; }
-    .field-group--inline { flex-direction: row; align-items: center; gap: 12px; }
-    .field-group--inline .field-label { white-space: nowrap; flex-shrink: 0; }
     .field-label { font-size: 0.82rem; font-weight: 500; color: var(--text-muted, #64748b); }
 
-    /* Dolor block */
     .dolor-block {
       background: #f8fafc;
       border: 1px solid var(--border, #e2e8f0);
       border-radius: var(--radius, 6px);
-      padding: 14px 16px 10px;
+      padding: 10px 12px 8px;
     }
     .dolor-scale-row {
       display: flex;
@@ -127,7 +132,7 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
       height: 6px;
     }
     .dolor-badge {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       min-width: 52px;
       text-align: center;
@@ -149,7 +154,6 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
       color: var(--text-muted, #64748b);
     }
 
-    /* Zona */
     .field-input {
       flex: 1;
       padding: 7px 10px;
@@ -161,15 +165,14 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
     }
     .field-input:focus { outline: none; border-color: var(--primary, #0f766e); }
 
-    /* Evolución */
     .comparativa {
       font-size: 0.75rem;
       color: var(--text-muted, #64748b);
       background: #f8fafc;
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 4px;
       border-left: 3px solid var(--primary, #0f766e);
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     .seg-ctrl {
@@ -179,7 +182,7 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
       overflow: hidden;
     }
     .seg-btn {
-      padding: 8px 20px;
+      padding: 8px 16px;
       font-size: 0.85rem;
       font-weight: 500;
       border: none;
@@ -191,15 +194,20 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
       align-items: center;
       gap: 6px;
       border-right: 1px solid var(--border, #e2e8f0);
-      &:last-child { border-right: none; }
-      &:hover { background: #f1f5f9; color: var(--text, #0f172a); }
-      &--active { color: #fff; }
     }
+    .seg-btn:last-child { border-right: none; }
+    .seg-btn:hover { background: #f1f5f9; color: var(--text, #0f172a); }
+    .seg-btn--active { color: #fff; }
     .seg-icon { font-size: 1rem; }
 
     .seg-ctrl--evol .seg-btn[data-evol='MEJOR'].seg-btn--active { background: #16a34a; border-color: #16a34a; }
     .seg-ctrl--evol .seg-btn[data-evol='IGUAL'].seg-btn--active { background: #64748b; border-color: #64748b; }
     .seg-ctrl--evol .seg-btn[data-evol='PEOR'].seg-btn--active  { background: #dc2626; border-color: #dc2626; }
+
+    @media (max-width: 900px) {
+      .estado-grid { grid-template-columns: 1fr; }
+      .estado-grid__zona { grid-column: auto; }
+    }
   `,
 })
 export class BloqueEstadoActualComponent {

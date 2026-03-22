@@ -38,11 +38,11 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
     .bloque-admin {
       border: 1px solid var(--border, #e2e8f0);
       border-radius: var(--radius, 6px);
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
     .bloque__toggle {
-      padding: 10px 16px;
-      font-size: 0.88rem;
+      padding: 8px 12px;
+      font-size: 0.84rem;
       font-weight: 500;
       color: var(--text-muted, #64748b);
       cursor: pointer;
@@ -56,12 +56,12 @@ import { FormGroup, ReactiveFormsModule } from '@angular/forms';
     }
     details[open] .bloque__toggle::before { content: '▾ '; }
     .bloque__content {
-      padding: 0 16px 16px;
+      padding: 0 12px 12px;
     }
     .admin-grid {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
     }
     .field-group { display: flex; flex-direction: column; gap: 4px; }
     .field-label { font-size: 0.78rem; font-weight: 500; color: var(--text-muted, #64748b); }

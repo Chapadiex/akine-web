@@ -126,8 +126,10 @@ type SummarySessionRow = {
   typeLabel: 'Express' | 'Completa';
   dateLabel: string;
   statusLabel: string;
+  statusTone: 'warning' | 'info' | 'success' | 'error' | 'muted';
+  statusIcon: 'draft' | 'inProgress' | 'done' | 'cancelled' | 'muted';
+  statusTooltip: string;
   summaryLabel: string;
-  actionLabel: 'Continuar' | 'Ver';
 };
 
 const TIMELINE_BATCH_SIZE = 12;
@@ -211,8 +213,8 @@ export class HistoriaClinicaPacientePage {
   readonly showSesionDrawer = signal(false);
   readonly showCasoDrawer = signal(false);
   readonly showCasoCloseConfirm = signal(false);
-  readonly showEditCasoDrawer = signal(false);
-  readonly isSavingEditCaso = signal(false);
+  readonly casoModalMode = signal<'create' | 'edit'>('create');
+  readonly editingCasoId = signal<string | null>(null);
   readonly casoModalStep = signal<1 | 2 | 3>(1);
   readonly showAntecedentesDrawer = signal(false);
   readonly showAntecedentesCloseConfirm = signal(false);
@@ -304,14 +306,6 @@ export class HistoriaClinicaPacientePage {
     tratamientoId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     cantidadSesiones: new FormControl('10', { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
     tratamientoObservacion: new FormControl('', { nonNullable: true }),
-  });
-
-  readonly editCasoForm = new FormGroup({
-    profesionalResponsableId: new FormControl('', { nonNullable: true }),
-    motivoConsulta: new FormControl('', { nonNullable: true }),
-    diagnosticoMedico: new FormControl('', { nonNullable: true }),
-    diagnosticoFuncional: new FormControl('', { nonNullable: true }),
-    afeccionPrincipal: new FormControl('', { nonNullable: true }),
   });
 
   readonly antecedentesForm = new FormGroup({
@@ -652,8 +646,10 @@ export class HistoriaClinicaPacientePage {
         typeLabel: this.isCompleteSession(session) ? 'Completa' : 'Express',
         dateLabel: this.formatDateTime(session.fechaAtencion),
         statusLabel: this.sessionStateLabel(session.estado),
+        statusTone: this.sessionStateTone(session.estado),
+        statusIcon: this.sessionStateIcon(session.estado),
+        statusTooltip: this.sessionStateLabel(session.estado),
         summaryLabel: this.compactSessionSummary(session),
-        actionLabel: session.estado === 'BORRADOR' ? 'Continuar' : 'Ver',
       }));
   });
   readonly planSessionItems = computed<PlanSessionItem[]>(() => {
@@ -1131,6 +1127,8 @@ export class HistoriaClinicaPacientePage {
     const resolvedProfesionalId = this.professionalOptions().some((item) => item.id === requestedProfesionalId)
       ? requestedProfesionalId
       : '';
+    this.casoModalMode.set('create');
+    this.editingCasoId.set(null);
     this.casoModalStep.set(1);
     this.showCasoCloseConfirm.set(false);
     this.casoDiagnosticoCodes.set([]);
@@ -1166,6 +1164,8 @@ export class HistoriaClinicaPacientePage {
   confirmCloseCasoModal(): void {
     this.showCasoCloseConfirm.set(false);
     this.showCasoDrawer.set(false);
+    this.casoModalMode.set('create');
+    this.editingCasoId.set(null);
     this.casoDiagnosticoCodes.set([]);
     this.casoDerivacionAdjuntos.set([]);
     this.casoForm.markAsPristine();
@@ -1215,11 +1215,9 @@ export class HistoriaClinicaPacientePage {
     const derivadoPorInstitucion = this.emptyToUndefined(raw.derivadoPorInstitucion);
     const diagnosticoObservacion = this.emptyToUndefined(raw.diagnosticoObservacion);
     const tratamientoObservacion = this.emptyToUndefined(raw.tratamientoObservacion);
-    const body: CreateCasoAtencionRequest = {
-      pacienteId,
+    const basePayload = {
       profesionalResponsableId: this.emptyToUndefined(raw.profesionalResponsableId) ?? null,
       tipoOrigen: raw.tipoOrigen || 'CONSULTA_DIRECTA',
-      prioridad: 'NORMAL',
       motivoConsulta:
         raw.tipoOrigen === 'DERIVACION'
           ? (derivadoPorInstitucion ? `Derivación: ${derivadoPorInstitucion}` : 'Derivación')
@@ -1232,21 +1230,36 @@ export class HistoriaClinicaPacientePage {
         tratamientoObservacion,
       }),
     };
+    const createBody: CreateCasoAtencionRequest = {
+      pacienteId,
+      ...basePayload,
+      prioridad: 'NORMAL',
+    };
+    const updateBody: UpdateCasoAtencionRequest = {
+      ...basePayload,
+      prioridad: 'NORMAL',
+    };
+    const isEditMode = this.casoModalMode() === 'edit';
+    const editingCasoId = this.editingCasoId();
     this.isSavingCaso.set(true);
-    this.historiaSvc
-      .createCasoAtencion(consultorioId, legajoId, body)
-      .subscribe({
-        next: (caso) => {
+    if (isEditMode) {
+      if (!editingCasoId) {
+        this.isSavingCaso.set(false);
+        this.toast.error('No se pudo identificar el caso clínico a editar.');
+        return;
+      }
+      this.historiaSvc.updateCasoAtencion(consultorioId, editingCasoId, updateBody).subscribe({
+        next: () => {
           const queuedFiles = this.casoForm.controls.tipoOrigen.value === 'DERIVACION' ? this.casoDerivacionAdjuntos() : [];
           if (!queuedFiles.length) {
-            this.finishCasoSave('Caso clínico creado.');
+            this.finishCasoSave('Caso clínico actualizado.');
             return;
           }
-          forkJoin(queuedFiles.map((file) => this.historiaSvc.uploadCasoAtencionAdjunto(consultorioId, caso.id, file))).subscribe({
-            next: () => this.finishCasoSave('Caso clínico creado.'),
+          forkJoin(queuedFiles.map((file) => this.historiaSvc.uploadCasoAtencionAdjunto(consultorioId, editingCasoId, file))).subscribe({
+            next: () => this.finishCasoSave('Caso clínico actualizado.'),
             error: () => {
-              this.finishCasoSave('Caso clínico creado.');
-              this.toast.warning('El caso se creó, pero no se pudieron cargar los adjuntos de derivación.');
+              this.finishCasoSave('Caso clínico actualizado.');
+              this.toast.warning('El caso se actualizó, pero no se pudieron cargar los adjuntos de derivación.');
             },
           });
         },
@@ -1255,6 +1268,28 @@ export class HistoriaClinicaPacientePage {
           this.toast.error(this.errMap.toMessage(err));
         },
       });
+      return;
+    }
+    this.historiaSvc.createCasoAtencion(consultorioId, legajoId, createBody).subscribe({
+      next: (caso) => {
+        const queuedFiles = this.casoForm.controls.tipoOrigen.value === 'DERIVACION' ? this.casoDerivacionAdjuntos() : [];
+        if (!queuedFiles.length) {
+          this.finishCasoSave('Caso clínico creado.');
+          return;
+        }
+        forkJoin(queuedFiles.map((file) => this.historiaSvc.uploadCasoAtencionAdjunto(consultorioId, caso.id, file))).subscribe({
+          next: () => this.finishCasoSave('Caso clínico creado.'),
+          error: () => {
+            this.finishCasoSave('Caso clínico creado.');
+            this.toast.warning('El caso se creó, pero no se pudieron cargar los adjuntos de derivación.');
+          },
+        });
+      },
+      error: (err) => {
+        this.isSavingCaso.set(false);
+        this.toast.error(this.errMap.toMessage(err));
+      },
+    });
   }
 
   closeCaso(caso: HistoriaClinicaActiveCaseSummary | CasePanelItem): void {
@@ -1278,52 +1313,48 @@ export class HistoriaClinicaPacientePage {
   openEditCaso(casoId: string): void {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     if (!consultorioId) return;
-    this.historiaSvc.getCasoAtencion(consultorioId, casoId).subscribe({
-      next: (caso) => {
-        this.editCasoForm.reset({
-          profesionalResponsableId: caso.profesionalResponsableId ?? '',
-          motivoConsulta: caso.motivoConsulta ?? '',
-          diagnosticoMedico: caso.diagnosticoMedico ?? '',
-          diagnosticoFuncional: caso.diagnosticoFuncional ?? '',
-          afeccionPrincipal: caso.afeccionPrincipal ?? '',
-        });
-        this.editCasoForm.markAsPristine();
-        this.showEditCasoDrawer.set(true);
+    forkJoin({
+      caso: this.historiaSvc.getCasoAtencion(consultorioId, casoId),
+      diagnosticosCatalogo: this.diagnosticosMedicosSvc.get(consultorioId).pipe(catchError(() => of(null))),
+      tratamientosCatalogo: this.tratamientoCatalogSvc.get(consultorioId).pipe(catchError(() => of(null))),
+    }).subscribe({
+      next: ({ caso, diagnosticosCatalogo, tratamientosCatalogo }) => {
+        this.diagnosticosMedicos.set(diagnosticosCatalogo?.diagnosticos ?? []);
+        this.diagnosticosMedicosCategorias.set(diagnosticosCatalogo?.categorias ?? []);
+        this.diagnosticosMedicosTipos.set(diagnosticosCatalogo?.tipos ?? []);
+        this.treatmentCatalogItems.set(tratamientosCatalogo?.tratamientos ?? []);
+        this.treatmentCatalogCategorias.set(tratamientosCatalogo?.categorias ?? []);
+        this.treatmentCatalogTipos.set(tratamientosCatalogo?.tipos ?? []);
+        const isDerivacion = (caso.tipoOrigen ?? '').toUpperCase() === 'DERIVACION';
+        const motivo = caso.motivoConsulta ?? '';
+        const derivadoMatch = motivo.match(/^Derivación:\s*(.+)$/i);
+        const diagnosticoCodes = this.resolveDiagnosticoCodes(caso.diagnosticoMedico);
+        const tratamientoResumen = this.parseTratamientoResumen(caso.diagnosticoFuncional);
+        const tratamientoId = this.resolveTreatmentIdByName(tratamientoResumen.treatmentName);
+        this.casoModalMode.set('edit');
+        this.editingCasoId.set(caso.id);
+        this.casoModalStep.set(1);
+        this.showCasoCloseConfirm.set(false);
+        this.casoDerivacionAdjuntos.set([]);
+        this.casoDiagnosticoCodes.set(diagnosticoCodes);
+        this.casoForm.reset(
+          {
+            profesionalResponsableId: caso.profesionalResponsableId ?? '',
+            tipoOrigen: isDerivacion ? 'DERIVACION' : 'CONSULTA_DIRECTA',
+            motivoConsultaDetalle: isDerivacion ? '' : motivo,
+            derivadoPorInstitucion: isDerivacion ? (derivadoMatch?.[1]?.trim() ?? '') : '',
+            diagnosticoCodigo: diagnosticoCodes[0] ?? '',
+            diagnosticoObservacion: caso.afeccionPrincipal ?? '',
+            tratamientoId: tratamientoId ?? '',
+            cantidadSesiones: tratamientoResumen.cantidadSesiones ?? String(caso.cantidadSesiones ?? 10),
+            tratamientoObservacion: tratamientoResumen.observacion ?? '',
+          },
+          { emitEvent: false },
+        );
+        this.showCasoDrawer.set(true);
+        this.focusCasoFirstField();
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
-    });
-  }
-
-  closeEditCasoDrawer(): void {
-    this.showEditCasoDrawer.set(false);
-    this.editCasoForm.markAsPristine();
-  }
-
-  saveEditCaso(): void {
-    const consultorioId = this.consultorioCtx.selectedConsultorioId();
-    const casoId = this.selectedCaseId();
-    if (!consultorioId || !casoId) return;
-    const raw = this.editCasoForm.getRawValue();
-    const body: UpdateCasoAtencionRequest = {
-      profesionalResponsableId: this.emptyToUndefined(raw.profesionalResponsableId) ?? null,
-      motivoConsulta: this.emptyToUndefined(raw.motivoConsulta) ?? null,
-      diagnosticoMedico: this.emptyToUndefined(raw.diagnosticoMedico) ?? null,
-      diagnosticoFuncional: this.emptyToUndefined(raw.diagnosticoFuncional) ?? null,
-      afeccionPrincipal: this.emptyToUndefined(raw.afeccionPrincipal) ?? null,
-    };
-    this.isSavingEditCaso.set(true);
-    this.historiaSvc.updateCasoAtencion(consultorioId, casoId, body).subscribe({
-      next: () => {
-        this.isSavingEditCaso.set(false);
-        this.editCasoForm.markAsPristine();
-        this.showEditCasoDrawer.set(false);
-        this.toast.success('Caso clínico actualizado.');
-        this.ensureCasesTabData(true);
-      },
-      error: (err) => {
-        this.isSavingEditCaso.set(false);
-        this.toast.error(this.errMap.toMessage(err));
-      },
     });
   }
 
@@ -1356,8 +1387,8 @@ export class HistoriaClinicaPacientePage {
 
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
-    if (this.showEditCasoDrawer()) {
-      this.closeEditCasoDrawer();
+    if (this.showCasoDrawer()) {
+      this.closeCasoModal();
       return;
     }
     if (this.showAntecedentesDrawer()) {
@@ -2151,7 +2182,7 @@ export class HistoriaClinicaPacientePage {
   }
 
   treatmentTypeLabel(tipo: TratamientoCatalogTipo | string | null | undefined): string {
-    return tipo === 'TECNICA' ? 'Tecnica' : 'Prestacion principal';
+    return tipo === 'TECNICA' ? 'Técnica' : 'Prestación principal';
   }
 
   resolveTreatmentCategoryName(categoriaCodigo: string | null | undefined): string {
@@ -2259,6 +2290,44 @@ export class HistoriaClinicaPacientePage {
       .map((item) => item.nombre);
   }
 
+  private resolveDiagnosticoCodes(diagnosticoMedico?: string | null): string[] {
+    const names = (diagnosticoMedico ?? '')
+      .split('·')
+      .map((item) => item.trim().toLowerCase())
+      .filter((item) => item.length > 0);
+    if (!names.length) {
+      return [];
+    }
+    const nameSet = new Set(names);
+    return this.diagnosticosMedicos()
+      .filter((item) => nameSet.has(item.nombre.trim().toLowerCase()))
+      .map((item) => item.codigoInterno);
+  }
+
+  private parseTratamientoResumen(value?: string | null): {
+    treatmentName: string | null;
+    cantidadSesiones: string | null;
+    observacion: string | null;
+  } {
+    const source = value ?? '';
+    const treatmentMatch = source.match(/Tratamiento inicial:\s*([^.]*)/i);
+    const cantidadMatch = source.match(/Cantidad de sesiones:\s*(\d+)/i);
+    const observacionMatch = source.match(/Observación:\s*(.*)$/i);
+    return {
+      treatmentName: treatmentMatch?.[1]?.trim() || null,
+      cantidadSesiones: cantidadMatch?.[1]?.trim() || null,
+      observacion: observacionMatch?.[1]?.trim() || null,
+    };
+  }
+
+  private resolveTreatmentIdByName(treatmentName?: string | null): string | null {
+    const normalized = (treatmentName ?? '').trim().toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+    return this.treatmentCatalogItems().find((item) => item.nombre.trim().toLowerCase() === normalized)?.codigoInterno ?? null;
+  }
+
   resolveDiagnosticoCategoriaName(categoriaCodigo: string | null | undefined): string {
     if (!categoriaCodigo) {
       return 'Sin categoría';
@@ -2283,8 +2352,11 @@ export class HistoriaClinicaPacientePage {
   private finishCasoSave(successMessage: string): void {
     this.isSavingCaso.set(false);
     this.showCasoDrawer.set(false);
+    this.casoModalMode.set('create');
+    this.editingCasoId.set(null);
     this.casoDerivacionAdjuntos.set([]);
     this.casoDiagnosticoCodes.set([]);
+    this.casoForm.markAsPristine();
     this.toast.success(successMessage);
     this.reloadSelectedPatient();
   }
@@ -2462,6 +2534,44 @@ export class HistoriaClinicaPacientePage {
       return 'Sin estado';
     }
     return labels[value] ?? value;
+  }
+
+  sessionStateTone(value?: HistoriaClinicaSesionEstado | null): 'warning' | 'info' | 'success' | 'error' | 'muted' {
+    switch ((value ?? '').toUpperCase()) {
+      case 'BORRADOR':
+        return 'warning';
+      case 'ABIERTA':
+      case 'EN_CURSO':
+        return 'info';
+      case 'CERRADA':
+      case 'REALIZADA':
+        return 'success';
+      case 'ANULADA':
+      case 'CANCELADA':
+        return 'error';
+      case 'SUSPENDIDA':
+      default:
+        return 'muted';
+    }
+  }
+
+  private sessionStateIcon(value?: HistoriaClinicaSesionEstado | null): 'draft' | 'inProgress' | 'done' | 'cancelled' | 'muted' {
+    switch ((value ?? '').toUpperCase()) {
+      case 'BORRADOR':
+        return 'draft';
+      case 'ABIERTA':
+      case 'EN_CURSO':
+        return 'inProgress';
+      case 'CERRADA':
+      case 'REALIZADA':
+        return 'done';
+      case 'ANULADA':
+      case 'CANCELADA':
+        return 'cancelled';
+      case 'SUSPENDIDA':
+      default:
+        return 'muted';
+    }
   }
 
   private sessionPainSummary(session: SesionClinicaResponse): string {
