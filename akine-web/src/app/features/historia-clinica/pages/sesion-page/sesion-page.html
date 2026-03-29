@@ -21,8 +21,6 @@
     [sesionNumero]="currentSessionNumber() ?? sesionNumero()"
     [sesionesPlanificadas]="plannedSessions()"
     [editable]="isEditable()"
-    [selectedMode]="selectedMode()"
-    (modeChanged)="setMode($event)"
   />
 
   <!-- FULL MODE: stepper + step content -->
@@ -88,7 +86,6 @@
 
         @if (activeStep() === 'resultado') {
           <app-bloque-resultado [form]="evaluacionForm" (changed)="triggerAutoSave()" />
-          <app-bloque-administrativo [form]="baseForm" (changed)="triggerAutoSave()" />
         }
 
         <div class="step-nav">
@@ -134,7 +131,6 @@
 
         <section class="express-cierre-cluster">
           <app-bloque-cierre-express [form]="evaluacionForm" (changed)="triggerAutoSave()" />
-          <app-bloque-administrativo [form]="baseForm" (changed)="triggerAutoSave()" />
         </section>
       </main>
 
@@ -411,4 +407,3 @@
     }
   </div>
 </ng-template>
-

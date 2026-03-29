@@ -24,6 +24,10 @@ export class LiquidacionSesionService {
     return this.api.get<LiquidacionSesion>(API.liquidaciones.bySesion(consultorioId, sesionId));
   }
 
+  byPaciente(consultorioId: string, pacienteId: string): Observable<LiquidacionSesion[]> {
+    return this.api.get<LiquidacionSesion[]>(API.liquidaciones.byPaciente(consultorioId, pacienteId));
+  }
+
   reliquidar(consultorioId: string, liquidacionId: string, req: ReliquidarRequest): Observable<LiquidacionSesion> {
     return this.api.post<LiquidacionSesion>(API.liquidaciones.reliquidar(consultorioId, liquidacionId), req);
   }

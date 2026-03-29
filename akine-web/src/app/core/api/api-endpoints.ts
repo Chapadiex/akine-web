@@ -202,6 +202,7 @@ export const API = {
     list:               (cid: string) => `/api/v1/consultorios/${cid}/liquidaciones`,
     byId:               (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}`,
     bySesion:           (cid: string, sesionId: string) => `/api/v1/consultorios/${cid}/liquidaciones/sesion/${sesionId}`,
+    byPaciente:         (cid: string, pid: string) => `/api/v1/consultorios/${cid}/liquidaciones/paciente/${pid}`,
     reliquidar:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/reliquidar`,
     convertirParticular:(cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/convertir-particular`,
   },

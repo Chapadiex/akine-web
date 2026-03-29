@@ -42,7 +42,6 @@ import { BloqueContextoComponent } from './bloque-contexto';
 import { BloqueEvaluacionComponent } from './bloque-evaluacion';
 import { BloqueTratamientoComponent } from './bloque-tratamiento';
 import { BloqueResultadoComponent } from './bloque-resultado';
-import { BloqueAdministrativoComponent } from './bloque-administrativo';
 import { BloqueExamenFisicoComponent } from './bloque-examen-fisico';
 import { BloqueEstadoActualComponent } from './bloque-estado-actual';
 import { BloqueCierreExpressComponent } from './bloque-cierre-express';
@@ -63,7 +62,6 @@ const SESSION_CONTEXT_SIZE = 200;
     BloqueEvaluacionComponent,
     BloqueTratamientoComponent,
     BloqueResultadoComponent,
-    BloqueAdministrativoComponent,
     BloqueExamenFisicoComponent,
     BloqueEstadoActualComponent,
     BloqueCierreExpressComponent,

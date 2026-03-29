@@ -235,6 +235,51 @@ describe('HistoriaClinicaPacientePage', () => {
     expect(fixture.nativeElement.textContent).toContain('Último registro clínico');
   });
 
+  it('keeps summary progress scoped to the selected active case id', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          casosActivos: [],
+          casosAtencionActivos: [{
+            id: 'caso-new',
+            pacienteId: 'paciente-1',
+            consultorioId: 'consultorio-1',
+            legajoId: 'legajo-1',
+            profesionalResponsableId: 'prof-1',
+            profesionalResponsableNombre: 'Dr. House',
+            tipoOrigen: 'CONSULTA_DIRECTA',
+            fechaApertura: '2026-03-10T09:00:00',
+            motivoConsulta: 'Control nuevo',
+            diagnosticoMedico: null,
+            afeccionPrincipal: 'Lumbalgia',
+            estado: 'ACTIVO',
+            prioridad: 'NORMAL',
+            cantidadSesiones: 2,
+            cantidadPlanes: 0,
+          }],
+          ultimaSesion: null,
+        }),
+      ),
+    );
+    historiaSvc.listSesiones.and.returnValue(
+      of([
+        {
+          id: 'sesion-old',
+          casoAtencionId: 'caso-old',
+          profesionalId: 'prof-1',
+          fechaAtencion: '2026-03-09T10:00:00',
+          estado: 'CERRADA',
+          tipoAtencion: 'SEGUIMIENTO',
+        },
+      ] as any),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('0 de 2 realizadas');
+  });
+
   it('loads cases and sessions lazily when entering the cases tab', () => {
     historiaSvc.getOverview.and.returnValue(of(patientOverview()));
     historiaSvc.listDiagnosticos.and.returnValue(of([{ id: 'diag-2', profesionalId: 'prof-1', descripcion: 'Cervicalgia', estado: 'RESUELTO', fechaInicio: '2026-02-01' }] as any));
@@ -522,6 +567,44 @@ describe('HistoriaClinicaPacientePage', () => {
       'consultorio-1',
       'paciente-1',
       jasmine.objectContaining({ profesionalId: null }),
+    );
+  });
+
+  it('links new session to selected active case id from summary context', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          casosActivos: [],
+          casosAtencionActivos: [{
+            id: 'caso-1',
+            pacienteId: 'paciente-1',
+            consultorioId: 'consultorio-1',
+            legajoId: 'legajo-1',
+            profesionalResponsableId: 'prof-1',
+            profesionalResponsableNombre: 'Dr. House',
+            tipoOrigen: 'CONSULTA_DIRECTA',
+            fechaApertura: '2026-03-10T09:00:00',
+            motivoConsulta: 'Control',
+            diagnosticoMedico: null,
+            afeccionPrincipal: 'Lumbalgia',
+            estado: 'ACTIVO',
+            prioridad: 'NORMAL',
+            cantidadSesiones: 2,
+            cantidadPlanes: 0,
+          }],
+          ultimaSesion: null,
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    fixture.componentInstance.openNuevaSesion();
+
+    expect(historiaSvc.createSesion).toHaveBeenCalledWith(
+      'consultorio-1',
+      'paciente-1',
+      jasmine.objectContaining({ casoAtencionId: 'caso-1' }),
     );
   });
 

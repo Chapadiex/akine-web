@@ -19,7 +19,7 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, debounceTime, distinctUntilChanged, forkJoin, map, of, startWith, switchMap, tap } from 'rxjs';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
@@ -123,6 +123,7 @@ export class CobroPacientePage implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly errMap = inject(ErrorMapperService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly consultorioId = this.consultorioCtx.selectedConsultorioId;
@@ -229,6 +230,14 @@ export class CobroPacientePage implements OnInit {
     this.cargarCaja();
     this.agregarDetalle();
     this.vincularBusquedaPaciente();
+
+    const pacienteIdParam = this.route.snapshot.queryParamMap.get('pacienteId');
+    if (pacienteIdParam) {
+      this.preseleccionarPaciente(
+        pacienteIdParam,
+        this.route.snapshot.queryParamMap.get('sesionId') ?? undefined,
+      );
+    }
   }
 
   private vincularBusquedaPaciente(): void {
@@ -365,20 +374,46 @@ export class CobroPacientePage implements OnInit {
 
     this.cargandoSesiones.set(true);
 
-    forkJoin({
-      pagos: this.paciente360Svc.getPagos(consultorioId, pacienteId).pipe(catchError(() => of(null))),
-      liquidaciones: this.liquidacionSvc.list(consultorioId).pipe(catchError(() => of([] as LiquidacionSesion[]))),
-    }).subscribe(({ pagos, liquidaciones }) => {
-      this.deudaPaciente.set(toAmount(pagos?.summary.saldoPendiente));
+    this.liquidacionSvc.byPaciente(consultorioId, pacienteId).pipe(
+      catchError(() => of([] as LiquidacionSesion[])),
+    ).subscribe((liquidaciones) => {
+      const cobrables = liquidaciones.filter(
+        (l) => (l.estado === 'LIQUIDADA_PARTICULAR' || l.estado === 'LIQUIDADA_MIXTA') && l.importePaciente > 0,
+      );
 
-      const sesiones = liquidaciones
-        .filter((l) => l.pacienteId === pacienteId)
-        .filter((l) => (l.estado === 'LIQUIDADA_PARTICULAR' || l.estado === 'LIQUIDADA_MIXTA') && l.importePaciente > 0)
+      const deuda = cobrables.reduce((acc, l) => acc + toAmount(l.importePaciente), 0);
+      this.deudaPaciente.set(deuda);
+
+      const sesiones = cobrables
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .map((l) => this.mapSesionPendiente(l));
 
       this.sesionesPendientes.set(sesiones);
       this.cargandoSesiones.set(false);
+    });
+  }
+
+  private preseleccionarPaciente(pacienteId: string, sesionIdParam?: string): void {
+    const consultorioId = this.consultorioId();
+    if (!consultorioId) return;
+
+    this.pacienteSvc.getById(pacienteId, consultorioId).pipe(
+      catchError(() => of(null)),
+    ).subscribe((patient) => {
+      if (!patient) return;
+      const option = this.mapPacienteOption(pacienteId, patient);
+      this.pacienteQuery.setValue(option.nombreCompleto, { emitEvent: false });
+      this.seleccionarPaciente(option);
+
+      if (sesionIdParam) {
+        // Pre-seleccionar sesión después de que carguen las liquidaciones
+        const waitForSesiones = setInterval(() => {
+          if (!this.cargandoSesiones()) {
+            clearInterval(waitForSesiones);
+            this.onSesionSeleccionada(sesionIdParam);
+          }
+        }, 80);
+      }
     });
   }
 

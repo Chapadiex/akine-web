@@ -42,7 +42,7 @@ export const PACIENTE_360_ROUTES: Routes = [
   {
     path: 'pagos',
     canActivate: [roleGuard],
-    data: { roles: ['ADMIN'] },
+    data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
     loadComponent: () =>
       import('./pages/pagos/pagos').then(m => m.PagosPage),
   },

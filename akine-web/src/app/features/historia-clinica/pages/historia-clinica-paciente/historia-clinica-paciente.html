@@ -198,7 +198,7 @@
                             class="btn btn--secondary btn--sm"
                             (click)="openCaseDetail(plan.caseId, plan.caseStatus)"
                           >
-                            Editar caso
+                            {{ caseActionLabel(plan.caseStatus) }}
                           </button>
                         }
                         <button
@@ -241,7 +241,7 @@
                           @if (summaryLatestSession(); as latestSession) {
                             <div class="summary-last-session-inline">
                               <strong>{{ latestSession.dateLabel }}</strong>
-                              <button type="button" class="link-btn summary-inline-link" (click)="openSesion(latestSession.sessionId)">Ver sesión</button>
+                              <button type="button" class="btn btn--secondary btn--sm summary-inline-action" (click)="openSesion(latestSession.sessionId)">Ver sesión</button>
                             </div>
                           } @else {
                             <strong>Sin registro</strong>
@@ -397,18 +397,37 @@
                     @if (activeCasosClinicos().length) {
                       <div class="case-list">
                         @for (caso of activeCasosClinicos(); track caso.id) {
-                          <button type="button" class="case-row" [class.case-row--active]="selectedCaseId() === caso.id" (click)="selectCase(caso.id)">
+                          <article
+                            class="case-row"
+                            [class.case-row--active]="selectedCaseId() === caso.id"
+                            role="button"
+                            tabindex="0"
+                            (click)="selectCase(caso.id)"
+                            (keydown.enter)="selectCase(caso.id)"
+                            (keydown.space)="selectCase(caso.id); $event.preventDefault()"
+                          >
                             <div>
                               <strong>{{ caso.motivoConsulta ?? caso.afeccionPrincipal ?? 'Caso sin motivo' }}</strong>
                               <span>{{ caso.profesionalResponsableNombre ?? 'Sin profesional' }} / {{ caso.fechaApertura | date: 'dd/MM/yyyy' }} · {{ caso.cantidadSesiones }} ses.</span>
                             </div>
-                            @if (casoEstadoBadge(caso.estado); as badge) {
-                              <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
-                                <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
-                                {{ badge.label }}
-                              </span>
-                            }
-                          </button>
+                            <div class="case-row__status-stack">
+                              @if (casoEstadoBadge(caso.estado); as badge) {
+                                <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
+                                  <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                                  {{ badge.label }}
+                                </span>
+                              }
+                              @if (selectedCaseId() === caso.id) {
+                                <button
+                                  type="button"
+                                  class="btn btn--secondary btn--sm case-row__edit-action"
+                                  (click)="$event.stopPropagation(); openCaseDetail(caso.id, caso.estado)"
+                                >
+                                  {{ caseActionLabel(caso.estado) }}
+                                </button>
+                              }
+                            </div>
+                          </article>
                         }
                       </div>
                     }
@@ -420,18 +439,37 @@
                         @if (showClosedCases()) {
                           <div class="case-list case-list--closed">
                             @for (caso of closedCasosClinicos(); track caso.id) {
-                              <button type="button" class="case-row" [class.case-row--active]="selectedCaseId() === caso.id" (click)="selectCase(caso.id)">
+                              <article
+                                class="case-row"
+                                [class.case-row--active]="selectedCaseId() === caso.id"
+                                role="button"
+                                tabindex="0"
+                                (click)="selectCase(caso.id)"
+                                (keydown.enter)="selectCase(caso.id)"
+                                (keydown.space)="selectCase(caso.id); $event.preventDefault()"
+                              >
                                 <div>
                                   <strong>{{ caso.motivoConsulta ?? caso.afeccionPrincipal ?? 'Caso sin motivo' }}</strong>
                                   <span>{{ caso.profesionalResponsableNombre ?? 'Sin profesional' }} / {{ caso.fechaApertura | date: 'dd/MM/yyyy' }}</span>
                                 </div>
-                                @if (casoEstadoBadge(caso.estado); as badge) {
-                                  <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
-                                    <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
-                                    {{ badge.label }}
-                                  </span>
-                                }
-                              </button>
+                                <div class="case-row__status-stack">
+                                  @if (casoEstadoBadge(caso.estado); as badge) {
+                                    <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
+                                      <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                                      {{ badge.label }}
+                                    </span>
+                                  }
+                                  @if (selectedCaseId() === caso.id) {
+                                    <button
+                                      type="button"
+                                      class="btn btn--secondary btn--sm case-row__edit-action"
+                                      (click)="$event.stopPropagation(); openCaseDetail(caso.id, caso.estado)"
+                                    >
+                                      {{ caseActionLabel(caso.estado) }}
+                                    </button>
+                                  }
+                                </div>
+                              </article>
                             }
                           </div>
                         }
@@ -492,17 +530,6 @@
                     <div>
                       <p class="eyebrow">Plan terapéutico</p>
                       <h3>{{ selectedCase()?.descripcion || 'Plan y sesiones del paciente' }}</h3>
-                    </div>
-                    <div class="summary-actions">
-                      @if (selectedCaseId()) {
-                        <button
-                          type="button"
-                          class="btn btn--secondary btn--sm plan-sessions-head__action"
-                          (click)="openCaseDetail(selectedCaseId()!, selectedCase()?.estado)"
-                        >
-                          {{ caseActionLabel(selectedCase()?.estado) }}
-                        </button>
-                      }
                     </div>
                   </div>
 
@@ -1330,6 +1357,24 @@
                   </span>
                 }
               </div>
+              @if (caseViewContextChips().length) {
+                <div class="caso-view-head__chips">
+                  @for (chip of caseViewContextChips(); track chip.label) {
+                    @if (chip.action === 'openImage') {
+                      <button
+                        type="button"
+                        class="state-pill caso-view-chip caso-view-chip--action"
+                        [attr.data-tone]="chip.tone"
+                        (click)="openCaseViewImagePreview()"
+                      >
+                        {{ chip.label }}
+                      </button>
+                    } @else {
+                      <span class="state-pill caso-view-chip" [attr.data-tone]="chip.tone">{{ chip.label }}</span>
+                    }
+                  }
+                </div>
+              }
             </div>
             <button type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Cerrar" (click)="closeCasoViewModal()">✕</button>
           </div>

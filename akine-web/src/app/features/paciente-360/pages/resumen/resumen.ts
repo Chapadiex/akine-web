@@ -129,7 +129,7 @@ export class ResumenPage {
     }
 
     const kpis = current.kpis;
-    const canAccessPagos = this.auth.hasAnyRole('ADMIN');
+    const canAccessPagos = this.auth.hasAnyRole('ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO');
 
     return [
       {
@@ -244,6 +244,7 @@ export class ResumenPage {
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
     }).format(new Date(value));
   }
 

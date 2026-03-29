@@ -813,7 +813,7 @@ export class Paciente360 {
     { label: 'Atenciones', path: 'atenciones', roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'PROFESIONAL'] },
     { label: 'Turnos', path: 'turnos', roles: [] },
     { label: 'Obra Social', path: 'obra-social', roles: [] },
-    { label: 'Pagos', path: 'pagos', roles: ['ADMIN'] },
+    { label: 'Pagos', path: 'pagos', roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
   ];
 
   readonly visibleTabs = computed(() =>
