@@ -12,6 +12,15 @@
             @if (headerStatusBadge(); as badge) {
               <span class="state-pill" [attr.data-tone]="badge.tone">{{ badge.label }}</span>
             }
+            @if (patientCoverageBadge(); as coverageBadge) {
+              <span
+                class="state-pill"
+                data-role="coverage"
+                [attr.data-tone]="coverageBadge.tone"
+              >
+                {{ coverageBadge.label }}
+              </span>
+            }
           </div>
           <p class="patient-meta">{{ patientContextMeta() }}</p>
           @if (overview()?.alertasClinicas?.length) {
@@ -133,11 +142,6 @@
           </span>
         }
       </div>
-      @if (workspaceSnapshot(); as workspace) {
-        <span class="strip-item strip-item--muted">
-          {{ consultorioCtx.selectedConsultorio()?.name || 'Sin consultorio' }} · {{ workspace.total }} sesiones visibles
-        </span>
-      }
     </div>
 
     <section class="tabs-shell">
@@ -174,148 +178,172 @@
               </section>
             } @else {
               <section class="summary-grid">
-                <div class="summary-col summary-col--plan">
-                  <article class="surface">
+                <div class="summary-col summary-col--case">
+                  <article class="surface summary-surface summary-surface--case">
                     @if (therapeuticPlanSummary(); as plan) {
-                      <div class="section-head">
-                        <h3>Plan terapéutico activo</h3>
-                        <div class="summary-actions">
-                          <button type="button" class="btn btn--ghost btn--sm" disabled aria-disabled="true">{{ plan.caseStatus }}</button>
-                          @if (selectedCasoAtencion()?.id) {
-                            <button type="button" class="btn btn--ghost btn--sm" (click)="openEditCaso(selectedCasoAtencion()!.id)">Editar caso</button>
-                          }
-                        </div>
+                      <div class="summary-actions summary-actions--case">
+                        <button
+                          type="button"
+                          class="btn btn--primary btn--sm"
+                          [disabled]="!hasActiveCases()"
+                          [attr.aria-disabled]="!hasActiveCases()"
+                          [title]="!hasActiveCases() ? 'Primero abrí un caso clínico activo.' : null"
+                          (click)="openNuevaSesion(summaryMainCase()?.profesionalId)"
+                        >
+                          Nueva sesión
+                        </button>
+                        @if (plan.caseId) {
+                          <button
+                            type="button"
+                            class="btn btn--secondary btn--sm"
+                            (click)="openCaseDetail(plan.caseId, plan.caseStatus)"
+                          >
+                            Editar caso
+                          </button>
+                        }
+                        <button
+                          type="button"
+                          class="btn btn--danger btn--sm"
+                          [disabled]="!summaryMainCase() || !isCaseEditable(plan.caseStatus)"
+                          [attr.aria-disabled]="!summaryMainCase() || !isCaseEditable(plan.caseStatus)"
+                          (click)="summaryMainCase() && closeCaso(summaryMainCase()!)"
+                        >
+                          Cerrar caso
+                        </button>
+                        @if (casoEstadoBadge(plan.caseStatus); as badge) {
+                          <span class="state-pill caso-estado-badge summary-case-status-inline" [attr.data-tone]="badge.tone">
+                            <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                            {{ badge.label }}
+                          </span>
+                        }
                       </div>
 
-                      <div class="summary-card summary-card--plan">
-                        <p><strong>Caso:</strong> {{ plan.caseName }}</p>
-                        <p><strong>Motivo:</strong> {{ plan.consultationReason }}</p>
-                        <p><strong>Origen:</strong> {{ plan.caseSource }}</p>
-                        <p><strong>Diagnóstico:</strong> {{ plan.diagnosisSummary }}</p>
-                        <p><strong>Tratamiento:</strong> {{ plan.treatmentName }}</p>
-                        <p><strong>Profesional:</strong> {{ plan.assignedProfessionalName }}</p>
-                        <div class="summary-kpi-grid">
-                          <span><strong>{{ plan.plannedSessions }}</strong> planificadas</span>
-                          <span><strong>{{ plan.completedSessions }}</strong> realizadas</span>
-                          <span><strong>{{ plan.draftSessions }}</strong> borrador</span>
-                          <span><strong>{{ plan.pendingSessions }}</strong> pendientes</span>
-                        </div>
-                        <small class="summary-plan-meta">
-                          @if (plan.lastCompletedSession) {
-                            Última sesión: {{ plan.lastCompletedSession.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }} · {{ isCompleteSession(plan.lastCompletedSession) ? 'Completa' : 'Express' }}
-                          } @else {
-                            Última sesión: Sin registro
-                          }
-                        </small>
-                        <small class="summary-plan-meta">Conducta actual: {{ plan.currentConduct }}</small>
+                      <div class="summary-case-head">
+                        @if (summaryCaseInfoLine(); as caseInfoLine) {
+                          <p class="summary-case-derivation-title">{{ caseInfoLine.label }}</p>
+                          <p class="summary-case-derivation-value">{{ caseInfoLine.value }}</p>
+                        } @else {
+                          <h3>{{ plan.caseName }}</h3>
+                        }
                       </div>
-                    } @else {
-                      <div class="section-head">
-                        <h3>Plan terapéutico activo</h3>
-                        <div class="summary-actions">
-                          <button type="button" class="btn btn--ghost btn--sm" disabled aria-disabled="true">Sin estado</button>
+
+                      <div class="summary-case-meta-grid">
+                        <article class="summary-case-meta-item">
+                          <span class="summary-case-meta-item__label">Profesional</span>
+                          <strong>{{ plan.assignedProfessionalName }}</strong>
+                        </article>
+                        <article class="summary-case-meta-item">
+                          <span class="summary-case-meta-item__label">Inicio</span>
+                          <strong>{{ summaryCaseStartDateLabel() }}</strong>
+                        </article>
+                        <article class="summary-case-meta-item">
+                          <span class="summary-case-meta-item__label">Última sesión</span>
+                          @if (summaryLatestSession(); as latestSession) {
+                            <div class="summary-last-session-inline">
+                              <strong>{{ latestSession.dateLabel }}</strong>
+                              <button type="button" class="link-btn summary-inline-link" (click)="openSesion(latestSession.sessionId)">Ver sesión</button>
+                            </div>
+                          } @else {
+                            <strong>Sin registro</strong>
+                          }
+                        </article>
+                        <article class="summary-case-meta-item">
+                          <span class="summary-case-meta-item__label">Próxima conducta</span>
+                          <strong>{{ plan.currentConduct }}</strong>
+                        </article>
+                      </div>
+
+                      @if (summaryDisplayChips().length) {
+                        <div class="summary-alerts">
+                          @for (chip of summaryDisplayChips(); track chip.label + '-' + chip.tone) {
+                            @if (chip.action === 'openMedicalOrder' && summaryMedicalOrderImage()) {
+                              <button
+                                type="button"
+                                class="state-pill summary-alert-pill summary-alert-pill--action"
+                                [attr.data-tone]="chip.tone"
+                                (click)="openSummaryMedicalOrderImage()"
+                              >
+                                <span class="summary-alert-pill__attach-icon" aria-hidden="true">
+                                  <svg viewBox="0 0 16 16" focusable="false" aria-hidden="true">
+                                    <path d="M6.2 8.9 10.7 4.4a2.2 2.2 0 0 1 3.1 3.1L8.6 12.7a3.4 3.4 0 0 1-4.8-4.8l5.2-5.2" />
+                                  </svg>
+                                </span>
+                                {{ chip.label }}
+                              </button>
+                            } @else {
+                              <span class="state-pill summary-alert-pill" [attr.data-tone]="chip.tone">{{ chip.label }}</span>
+                            }
+                          }
                         </div>
+                      }
+                    } @else {
+                      <div class="section-head section-head--compact">
+                        <h3>Caso actual</h3>
                       </div>
                       <p class="muted-copy">Sin plan terapéutico activo. Abrí un caso clínico para ordenar tratamiento y sesiones.</p>
                     }
                   </article>
                 </div>
 
-                <div class="summary-col summary-col--sessions">
-                  <article class="surface">
-                    <div class="section-head">
-                      <h3>Sesiones recientes</h3>
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver todas</button>
+                <div class="summary-col summary-col--right">
+                  <article class="surface summary-surface summary-surface--progress">
+                    <div class="section-head section-head--compact">
+                      <h3>Progreso del tratamiento</h3>
+                      <button type="button" class="btn btn--ghost btn--sm" (click)="setActiveTab('cases')">Ver plan y sesiones</button>
                     </div>
-
-                      @if (summarySessionRows().length) {
-                        <div class="summary-session-table">
-                          <header class="summary-session-table__head">
-                            <span>N°</span>
-                            <span>Tipo</span>
-                            <span>Fecha</span>
-                            <span class="summary-session-table__head-icon" title="Estado" aria-label="Estado">◉</span>
-                            <span>Resumen</span>
-                          </header>
-                        @for (row of summarySessionRows(); track row.sessionId) {
-                          <article
-                            class="summary-session-table__row summary-session-table__row--clickable"
-                            [attr.data-tone]="row.statusTone"
-                            role="button"
-                            tabindex="0"
-                            (click)="openSesion(row.sessionId)"
-                            (keydown.enter)="openSesion(row.sessionId)"
-                            (keydown.space)="openSesion(row.sessionId); $event.preventDefault()"
-                          >
-                            <span>{{ row.numberLabel }}</span>
-                            <span>{{ row.typeLabel }}</span>
-                            <span>{{ row.dateLabel }}</span>
-                            <span>
-                              <span class="state-pill" [attr.data-tone]="row.statusTone" [attr.title]="row.statusTooltip">
-                                <span class="state-pill__icon" [attr.data-icon]="row.statusIcon" aria-hidden="true"></span>
-                                {{ row.statusLabel }}
-                              </span>
-                            </span>
-                            <span class="summary-session-table__summary">{{ row.summaryLabel }}</span>
-                          </article>
-                        }
+                    @if (therapeuticPlanSummary(); as plan) {
+                      <div class="summary-progress-metrics">
+                        <p class="summary-progress-main">{{ plan.completedSessions }} de {{ plan.plannedSessions }} realizadas</p>
+                        <div class="summary-progress-side">
+                          <span><strong>{{ plan.pendingSessions }}</strong> pendientes</span>
+                          <span><strong>{{ plan.draftSessions }}</strong> borrador</span>
+                        </div>
+                      </div>
+                      <div
+                        class="summary-progress-track"
+                        [attr.data-tone]="summaryProgressTone()"
+                        role="progressbar"
+                        [attr.aria-valuemin]="0"
+                        [attr.aria-valuemax]="100"
+                        [attr.aria-valuenow]="summaryProgressPercent()"
+                      >
+                        <span class="summary-progress-track__fill" [style.width.%]="summaryProgressFillPercent()"></span>
                       </div>
                     } @else {
-                      <p class="muted-copy">Sin sesiones recientes.</p>
-                    }
-                  </article>
-                </div>
-
-                <div class="summary-col summary-col--context">
-                  <article class="surface surface--compact">
-                    <div class="section-head">
-                      <h3>Antecedentes</h3>
-                      <button type="button" class="btn btn--ghost btn--sm" (click)="openAntecedentesDrawer()">Editar</button>
-                    </div>
-                    @if (summaryAntecedentes().length) {
-                      <div class="summary-list summary-list--compact">
-                        @for (antecedente of summaryAntecedentes(); track antecedente.label + antecedente.valueText) {
-                          <article class="summary-list__item">
-                            <strong>{{ antecedente.label }}</strong>
-                            <span>{{ antecedente.valueText || 'Sin detalle' }}</span>
-                          </article>
-                        }
-                      </div>
-                    } @else {
-                      <p class="muted-copy">Sin antecedentes cargados.</p>
+                      <p class="muted-copy">Sin progreso de tratamiento disponible.</p>
                     }
                   </article>
 
-                  <article class="surface surface--compact">
-                    <div class="section-head">
-                      <h3>Adjuntos</h3>
-                    </div>
-                    @if (summaryAdjuntos().length) {
-                      <div class="attachment-list">
-                        @for (adjunto of summaryAdjuntos(); track adjunto.id) {
-                          <button type="button" class="attachment-item" (click)="downloadAdjunto(adjunto.id)">
-                            <strong>{{ adjunto.originalFilename }}</strong>
-                            <span>{{ humanFileSize(adjunto.sizeBytes) }}</span>
-                          </button>
-                        }
-                      </div>
-                    } @else {
-                      <p class="muted-copy">Sin adjuntos recientes.</p>
-                    }
-                  </article>
-
-                  <article class="surface surface--compact">
-                    <div class="section-head">
-                      <h3>Estado rápido</h3>
-                    </div>
-                    <div class="summary-list summary-list--compact">
-                      @for (item of quickStatusItems(); track item.label) {
-                        <article class="summary-list__item">
-                          <strong>{{ item.label }}</strong>
-                          <span>{{ item.value }}</span>
-                        </article>
+                  <article class="surface summary-surface summary-surface--latest">
+                    <div class="section-head section-head--compact">
+                      <h3>Último registro clínico</h3>
+                      @if (summaryLatestSession(); as latestSession) {
+                        <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(latestSession.sessionId)">Ver sesión completa</button>
                       }
                     </div>
+                    @if (summaryLatestSession(); as latestSession) {
+                      <div class="summary-latest-grid">
+                        <article class="summary-latest-item">
+                          <span>Respuesta</span>
+                          <strong>{{ latestSession.responseLabel }}</strong>
+                        </article>
+                        <article class="summary-latest-item">
+                          <span>Dolor</span>
+                          <strong>{{ latestSession.painLabel }}</strong>
+                        </article>
+                        <article class="summary-latest-item">
+                          <span>Tipo sesión</span>
+                          <strong>{{ latestSession.sessionTypeLabel }}</strong>
+                        </article>
+                        <article class="summary-latest-item">
+                          <span>Profesional</span>
+                          <strong>{{ latestSession.professionalLabel }}</strong>
+                        </article>
+                      </div>
+                      <p class="summary-latest-note">{{ latestSession.noteLabel }}</p>
+                    } @else {
+                      <p class="muted-copy">Todavía no hay sesiones registradas.</p>
+                    }
                   </article>
                 </div>
               </section>
@@ -344,7 +372,7 @@
               </section>
             } @else {
               <section class="cases-layout">
-                <article class="surface">
+                <article class="surface surface--cases">
                   <div class="section-head">
                     <div>
                       <p class="eyebrow">Casos clínicos</p>
@@ -374,7 +402,12 @@
                               <strong>{{ caso.motivoConsulta ?? caso.afeccionPrincipal ?? 'Caso sin motivo' }}</strong>
                               <span>{{ caso.profesionalResponsableNombre ?? 'Sin profesional' }} / {{ caso.fechaApertura | date: 'dd/MM/yyyy' }} · {{ caso.cantidadSesiones }} ses.</span>
                             </div>
-                            <span class="state-pill" [attr.data-tone]="caso.estado.startsWith('CERRADO') ? 'muted' : 'success'"><strong>{{ caso.estado }}</strong></span>
+                            @if (casoEstadoBadge(caso.estado); as badge) {
+                              <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
+                                <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                                {{ badge.label }}
+                              </span>
+                            }
                           </button>
                         }
                       </div>
@@ -392,7 +425,12 @@
                                   <strong>{{ caso.motivoConsulta ?? caso.afeccionPrincipal ?? 'Caso sin motivo' }}</strong>
                                   <span>{{ caso.profesionalResponsableNombre ?? 'Sin profesional' }} / {{ caso.fechaApertura | date: 'dd/MM/yyyy' }}</span>
                                 </div>
-                                <span class="state-pill" data-tone="muted"><strong>{{ caso.estado }}</strong></span>
+                                @if (casoEstadoBadge(caso.estado); as badge) {
+                                  <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
+                                    <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                                    {{ badge.label }}
+                                  </span>
+                                }
                               </button>
                             }
                           </div>
@@ -407,7 +445,12 @@
                             <strong>{{ caso.descripcion }}</strong>
                             <span>{{ caso.profesionalNombre }} / {{ caso.fechaInicio | date: 'dd/MM/yyyy' }}</span>
                           </div>
-                          <span class="state-pill" data-tone="success"><strong>{{ caso.estado }}</strong></span>
+                          @if (casoEstadoBadge(caso.estado); as badge) {
+                            <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
+                              <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                              {{ badge.label }}
+                            </span>
+                          }
                         </button>
                       }
                     </div>
@@ -430,7 +473,12 @@
                                 <strong>{{ caso.descripcion }}</strong>
                                 <span>{{ caso.profesionalNombre }} / {{ caso.fechaInicio | date: 'dd/MM/yyyy' }}</span>
                               </div>
-                              <span class="state-pill" data-tone="muted"><strong>{{ caso.estado }}</strong></span>
+                              @if (casoEstadoBadge(caso.estado); as badge) {
+                                <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
+                                  <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                                  {{ badge.label }}
+                                </span>
+                              }
                             </button>
                           }
                         </div>
@@ -439,55 +487,55 @@
                   }
                 </article>
 
-                <article class="surface">
+                <article class="surface surface--plan-sessions">
                   <div class="section-head section-head--stack">
                     <div>
                       <p class="eyebrow">Plan terapéutico</p>
                       <h3>{{ selectedCase()?.descripcion || 'Plan y sesiones del paciente' }}</h3>
-                      <p class="muted-copy">{{ planProgressLabel() }}</p>
                     </div>
                     <div class="summary-actions">
                       @if (selectedCaseId()) {
-                        <button type="button" class="btn btn--secondary btn--sm" (click)="openEditCaso(selectedCaseId()!)">Editar caso</button>
+                        <button
+                          type="button"
+                          class="btn btn--secondary btn--sm plan-sessions-head__action"
+                          (click)="openCaseDetail(selectedCaseId()!, selectedCase()?.estado)"
+                        >
+                          {{ caseActionLabel(selectedCase()?.estado) }}
+                        </button>
                       }
-                      <div class="chip-row">
-                        @for (filter of sessionListFilters; track filter.value) {
-                          <button type="button" class="filter-chip" [class.filter-chip--active]="sessionListFilter() === filter.value" (click)="sessionListFilter.set(filter.value)">
-                            {{ filter.label }}
-                          </button>
-                        }
-                      </div>
                     </div>
                   </div>
-                  @if (therapeuticPlanSummary(); as plan) {
-                    <article class="summary-card summary-card--compact plan-progress-strip">
-                      <strong>Progreso del tratamiento: {{ plan.completedSessions }}/{{ plan.plannedSessions }} sesiones realizadas</strong>
-                      <p>{{ plan.plannedSessions }} planificadas · {{ plan.completedSessions }} realizada{{ plan.completedSessions === 1 ? '' : 's' }} · {{ plan.draftSessions }} borrador · {{ plan.pendingSessions }} pendientes</p>
-                    </article>
-                  }
+
+                  <div class="chip-row session-filter-row">
+                    @for (filter of sessionListFilters; track filter.value) {
+                      <button type="button" class="filter-chip" [class.filter-chip--active]="sessionListFilter() === filter.value" (click)="sessionListFilter.set(filter.value)">
+                        {{ filter.label }} ({{ sessionFilterCount(filter.value) }})
+                      </button>
+                    }
+                  </div>
 
                   @if (planSessionItems().length) {
                     <div class="session-list">
                       @for (item of planSessionItems(); track item.session.id) {
                         <article class="session-row">
-                          <div class="session-row__copy">
-                            <strong>
-                              Sesión {{ item.sessionNumber ?? '-' }}
-                              @if (item.plannedSessions > 0) { de {{ item.plannedSessions }} }
-                            </strong>
-                            <p>{{ item.sessionTypeLabel }} · {{ item.statusLabel }} · {{ item.session.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</p>
-                            <p>Profesional: {{ resolveProfessionalName(item.session.profesionalId) }}</p>
-                            <p>Respuesta: {{ item.patientResponse }}</p>
-                            <p>Dolor: {{ item.painSummary }}</p>
-                            <p>Conducta: {{ item.conductSummary }}</p>
-                            <small>Resumen: {{ item.clinicalSummary }}</small>
+                          <div class="session-row__header">
+                            <div class="session-row__title-line">
+                              <strong>Sesión {{ item.sessionNumber ?? '-' }}</strong>
+                              <span class="state-pill" [attr.data-tone]="item.statusTone">{{ item.statusLabel }}</span>
+                              <span>{{ item.session.fechaAtencion | date: 'dd/MM/yyyy HH:mm' }}</span>
+                              <span>{{ item.sessionTypeLabel }}</span>
+                            </div>
+                            <div class="session-row__actions">
+                              @if (item.primaryActionLabel) {
+                                <button type="button" class="btn btn--primary btn--sm" (click)="openSesion(item.session.id)">{{ item.primaryActionLabel }}</button>
+                              }
+                              <button type="button" class="btn btn--secondary btn--sm" (click)="openSesion(item.session.id)">{{ item.secondaryActionLabel }}</button>
+                            </div>
                           </div>
-                          <div class="summary-actions">
-                            <button type="button" class="btn btn--ghost btn--sm" (click)="openSesion(item.session.id)">Ver detalle</button>
-                            @if (selectedCase()?.isActive) {
-                              <button type="button" class="btn btn--danger btn--sm" (click)="closeCaso(selectedCase()!)">Cerrar caso</button>
-                            }
-                          </div>
+                          @if (item.dataLine) {
+                            <p class="session-row__data">{{ item.dataLine }}</p>
+                          }
+                          <p class="session-row__summary">{{ item.summaryLine }}</p>
                         </article>
                       }
                     </div>
@@ -966,7 +1014,13 @@
             @if (selectedPatient(); as patient) {
               <p class="eyebrow">{{ patient.apellido }}, {{ patient.nombre }}</p>
             }
-            <h3 id="caso-modal-title">{{ casoModalMode() === 'edit' ? 'Editar caso clínico' : 'Nuevo caso clínico' }}</h3>
+            <h3 id="caso-modal-title">
+              {{
+                casoModalMode() === 'view'
+                  ? 'Ver caso clínico'
+                  : (casoModalMode() === 'edit' ? 'Editar caso clínico' : 'Nuevo caso clínico')
+              }}
+            </h3>
           </div>
           <button type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Cerrar" (click)="closeCasoModal()">✕</button>
         </div>
@@ -995,42 +1049,48 @@
 
               @case (1) {
                 <div class="caso-panel">
-                  <label class="field">
-                    <span>Responsable de carga</span>
-                    <select #casoResponsableSelect formControlName="profesionalResponsableId">
-                      <option value="">Sin asignar</option>
-                      @for (profesional of professionalOptions(); track profesional.id) {
-                        <option [value]="profesional.id">{{ profesional.nombre }}</option>
-                      }
-                    </select>
-                    @if (defaultProfesionalId() && casoForm.controls.profesionalResponsableId.value === defaultProfesionalId()) {
-                      <span class="field__hint">Se asignó automáticamente el usuario logueado. Podés cambiarlo si corresponde.</span>
-                    } @else {
-                      <span class="field__hint">Podés dejarlo sin asignar o elegir un responsable manualmente.</span>
-                    }
-                  </label>
-
-                  <div class="tipo-origen-grid">
-                    <button
-                      #casoOriginDirectButton
-                      type="button"
-                      class="tipo-origen-card"
-                      [class.tipo-origen-card--selected]="casoForm.controls.tipoOrigen.value === 'CONSULTA_DIRECTA'"
-                      [attr.title]="'El paciente consulta por iniciativa propia.'"
-                      (click)="casoForm.controls.tipoOrigen.setValue('CONSULTA_DIRECTA'); casoForm.controls.derivadoPorInstitucion.setValue(''); casoDerivacionAdjuntos.set([])"
-                    >
-                      <strong>Consulta directa</strong>
-                    </button>
-                    <button
-                      type="button"
-                      class="tipo-origen-card"
-                      [class.tipo-origen-card--selected]="casoForm.controls.tipoOrigen.value === 'DERIVACION'"
-                      [attr.title]="'El paciente fue derivado por otro profesional o institución.'"
-                      (click)="casoForm.controls.tipoOrigen.setValue('DERIVACION'); casoForm.controls.motivoConsultaDetalle.setValue('')"
-                    >
-                      <strong>Derivación</strong>
-                    </button>
+                  <div class="caso-step-split caso-step-split--apertura">
+                    <label class="field">
+                      <span>Responsable de carga</span>
+                      <select #casoResponsableSelect formControlName="profesionalResponsableId">
+                        <option value="">Sin asignar</option>
+                        @for (profesional of professionalOptions(); track profesional.id) {
+                          <option [value]="profesional.id">{{ profesional.nombre }}</option>
+                        }
+                      </select>
+                    </label>
+                    <div class="field field--origen">
+                      <span>Tipo de origen</span>
+                      <div class="tipo-origen-grid">
+                        <button
+                          #casoOriginDirectButton
+                          type="button"
+                          class="tipo-origen-card"
+                          [class.tipo-origen-card--selected]="casoForm.controls.tipoOrigen.value === 'CONSULTA_DIRECTA'"
+                          [attr.title]="'El paciente consulta por iniciativa propia.'"
+                          [disabled]="isCasoReadOnly()"
+                          (click)="!isCasoReadOnly() && (casoForm.controls.tipoOrigen.setValue('CONSULTA_DIRECTA')); !isCasoReadOnly() && casoForm.controls.derivadoPorInstitucion.setValue(''); !isCasoReadOnly() && casoDerivacionAdjuntos.set([])"
+                        >
+                          <strong>Consulta directa</strong>
+                        </button>
+                        <button
+                          type="button"
+                          class="tipo-origen-card"
+                          [class.tipo-origen-card--selected]="casoForm.controls.tipoOrigen.value === 'DERIVACION'"
+                          [attr.title]="'El paciente fue derivado por otro profesional o institución.'"
+                          [disabled]="isCasoReadOnly()"
+                          (click)="!isCasoReadOnly() && casoForm.controls.tipoOrigen.setValue('DERIVACION'); !isCasoReadOnly() && casoForm.controls.motivoConsultaDetalle.setValue('')"
+                        >
+                          <strong>Derivación</strong>
+                        </button>
+                      </div>
+                    </div>
                   </div>
+                  @if (defaultProfesionalId() && casoForm.controls.profesionalResponsableId.value === defaultProfesionalId()) {
+                    <span class="field__hint">Se asignó automáticamente el usuario logueado. Podés cambiarlo si corresponde.</span>
+                  } @else {
+                    <span class="field__hint">Podés dejarlo sin asignar o elegir un responsable manualmente.</span>
+                  }
 
                   @if (casoForm.controls.tipoOrigen.value === 'CONSULTA_DIRECTA') {
                     <label class="field" [class.field--invalid]="casoForm.controls.motivoConsultaDetalle.touched && !casoForm.controls.motivoConsultaDetalle.value.trim()">
@@ -1080,11 +1140,11 @@
                         }
                         <label class="caso-upload-trigger">
                           <span>Adjuntar</span>
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="queueCasoDerivacionAdjuntos($event)" />
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" [disabled]="isCasoReadOnly()" (change)="queueCasoDerivacionAdjuntos($event)" />
                         </label>
                         <label class="caso-upload-trigger caso-upload-trigger--soft">
                           <span>Foto</span>
-                          <input type="file" accept="image/*" capture="environment" (change)="queueCasoDerivacionAdjuntos($event)" />
+                          <input type="file" accept="image/*" capture="environment" [disabled]="isCasoReadOnly()" (change)="queueCasoDerivacionAdjuntos($event)" />
                         </label>
                         @if (casoDerivacionAdjuntos().length) {
                           <div class="caso-upload-list">
@@ -1094,6 +1154,7 @@
                                 class="caso-upload-chip"
                                 [attr.aria-label]="'Quitar ' + file.name"
                                 [attr.title]="'Quitar ' + file.name"
+                                [disabled]="isCasoReadOnly()"
                                 (click)="removeCasoDerivacionAdjunto($index)"
                               >
                                 <strong>{{ file.name }}</strong>
@@ -1133,7 +1194,13 @@
                       <span class="caso-selection-panel__label">Diagnósticos seleccionados</span>
                       <div class="caso-selection-panel__list caso-selection-panel__list--scroll">
                         @for (item of selectedCasoDiagnosticos(); track item.codigoInterno) {
-                          <button type="button" class="caso-selection-chip caso-selection-chip--removable" [title]="resolveDiagnosticoCategoriaName(item.categoriaCodigo)" (click)="removeCasoDiagnostico(item.codigoInterno)">
+                          <button
+                            type="button"
+                            class="caso-selection-chip caso-selection-chip--removable"
+                            [title]="resolveDiagnosticoCategoriaName(item.categoriaCodigo)"
+                            [disabled]="isCasoReadOnly()"
+                            (click)="removeCasoDiagnostico(item.codigoInterno)"
+                          >
                             <div class="caso-selection-chip__copy">
                               <strong>{{ item.nombre }}</strong>
                             </div>
@@ -1211,15 +1278,21 @@
           @if (casoModalStep() > 1) {
             <button type="button" class="btn btn--secondary" (click)="prevCasoStep()">Anterior</button>
           } @else {
-            <button type="button" class="btn btn--secondary" (click)="closeCasoModal()">Cancelar</button>
+            <button type="button" class="btn btn--secondary" (click)="closeCasoModal()">
+              {{ casoModalMode() === 'view' ? 'Cerrar' : 'Cancelar' }}
+            </button>
           }
           <div class="modal-footer__right">
             @if (casoModalStep() < 3) {
               <button type="button" class="btn btn--primary" (click)="nextCasoStep()">Siguiente</button>
             } @else {
-              <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">
-                {{ casoModalMode() === 'edit' ? 'Guardar cambios' : 'Crear caso clínico' }}
-              </button>
+              @if (casoModalMode() === 'view') {
+                <button type="button" class="btn btn--primary" (click)="closeCasoModal()">Cerrar</button>
+              } @else {
+                <button type="button" class="btn btn--primary" [disabled]="isSavingCaso()" (click)="saveCaso()">
+                  {{ casoModalMode() === 'edit' ? 'Guardar cambios' : 'Crear caso clínico' }}
+                </button>
+              }
             }
           </div>
         </footer>
@@ -1235,6 +1308,118 @@
         (confirmed)="confirmCloseCasoModal()"
         (cancelled)="showCasoCloseConfirm.set(false)"
       />
+    }
+  }
+
+  @if (showCasoViewModal()) {
+    @if (viewingCaso(); as caso) {
+      <div class="overlay" (click)="closeCasoViewModal()">
+        <div class="modal-panel modal-panel--caso-view" role="dialog" aria-modal="true" aria-labelledby="caso-view-title" (click)="$event.stopPropagation()">
+
+          <div class="modal-head">
+            <div class="caso-view-head__title-row">
+              @if (selectedPatient(); as patient) {
+                <p class="eyebrow">{{ patient.apellido }}, {{ patient.nombre }}</p>
+              }
+              <div class="caso-view-head__title-main">
+                <h3 id="caso-view-title">Caso clínico</h3>
+                @if (casoEstadoBadge(caso.estado); as badge) {
+                  <span class="state-pill caso-estado-badge" [attr.data-tone]="badge.tone">
+                    <span class="caso-estado-badge__dot" [style.background]="badge.dot"></span>
+                    {{ badge.label }}
+                  </span>
+                }
+              </div>
+            </div>
+            <button type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Cerrar" (click)="closeCasoViewModal()">✕</button>
+          </div>
+
+          <div class="caso-view-body">
+
+            <div class="caso-view-section">
+              <p class="caso-view-section__title">Apertura del caso</p>
+              <div class="caso-view-fields">
+                <div class="caso-view-field">
+                  <span class="caso-view-field__label">Profesional responsable</span>
+                  <span class="caso-view-field__value">{{ caso.profesionalResponsableNombre || '—' }}</span>
+                </div>
+                <div class="caso-view-field">
+                  <span class="caso-view-field__label">Fecha de apertura</span>
+                  <span class="caso-view-field__value">{{ caso.fechaApertura | date: 'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="caso-view-field">
+                  <span class="caso-view-field__label">Origen</span>
+                  <span class="caso-view-field__value">
+                    {{ (caso.tipoOrigen ?? '').includes('DERIVACION') ? 'Derivación' : 'Consulta directa' }}
+                  </span>
+                </div>
+                @if (caso.motivoConsulta) {
+                  <div class="caso-view-field caso-view-field--full">
+                    <span class="caso-view-field__label">Motivo de consulta</span>
+                    <span class="caso-view-field__value">{{ caso.motivoConsulta }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            @if (caso.afeccionPrincipal || caso.diagnosticoMedico) {
+              <div class="caso-view-section">
+                <p class="caso-view-section__title">Diagnóstico</p>
+                <div class="caso-view-fields">
+                  @if (caso.diagnosticoMedico) {
+                    <div class="caso-view-field">
+                      <span class="caso-view-field__label">Diagnóstico médico</span>
+                      <span class="caso-view-field__value">{{ caso.diagnosticoMedico }}</span>
+                    </div>
+                  }
+                  @if (caso.afeccionPrincipal) {
+                    <div class="caso-view-field caso-view-field--full">
+                      <span class="caso-view-field__label">Afección principal</span>
+                      <span class="caso-view-field__value">{{ caso.afeccionPrincipal }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (viewingCasoTratamiento(); as trat) {
+              @if (trat.treatmentName || trat.cantidadSesiones) {
+                <div class="caso-view-section">
+                  <p class="caso-view-section__title">Tratamiento</p>
+                  <div class="caso-view-fields">
+                    @if (trat.treatmentName) {
+                      <div class="caso-view-field">
+                        <span class="caso-view-field__label">Tratamiento</span>
+                        <span class="caso-view-field__value">{{ trat.treatmentName }}</span>
+                      </div>
+                    }
+                    @if (trat.cantidadSesiones) {
+                      <div class="caso-view-field">
+                        <span class="caso-view-field__label">Sesiones planificadas</span>
+                        <span class="caso-view-field__value">{{ trat.cantidadSesiones }}</span>
+                      </div>
+                    }
+                    @if (trat.observacion) {
+                      <div class="caso-view-field caso-view-field--full">
+                        <span class="caso-view-field__label">Observación</span>
+                        <span class="caso-view-field__value">{{ trat.observacion }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
+
+          </div>
+
+          <footer class="modal-footer">
+            <div class="modal-footer__right">
+              <button type="button" class="btn btn--primary" (click)="closeCasoViewModal()">Cerrar</button>
+            </div>
+          </footer>
+
+        </div>
+      </div>
     }
   }
 
@@ -1255,6 +1440,7 @@
           <app-antecedente-selector
             [categories]="antecedenteCatalogCategories()"
             [formArray]="antecedentesItems"
+            [autoFocusSearch]="true"
             context="edit"
             emptySelectionMessage="Todavía no hay antecedentes cargados."
           />
@@ -1266,6 +1452,38 @@
         </footer>
       </div>
     </div>
+  }
+
+  @if (showCaseImagePreview()) {
+    <div class="overlay" (click)="closeCaseImagePreview()">
+      <div class="modal-panel modal-panel--image-preview" role="dialog" aria-modal="true" aria-labelledby="case-image-preview-title" (click)="$event.stopPropagation()">
+        <div class="modal-head">
+          <div>
+            <h3 id="case-image-preview-title">Imagen adjunta del caso</h3>
+            @if (caseImagePreviewName()) {
+              <p class="eyebrow">{{ caseImagePreviewName() }}</p>
+            }
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Cerrar vista previa de imagen" (click)="closeCaseImagePreview()">✕</button>
+        </div>
+        <div class="image-preview-body">
+          @if (caseImagePreviewUrl(); as imageUrl) {
+            <img [src]="imageUrl" [alt]="'Imagen adjunta: ' + (caseImagePreviewName() || 'caso clínico')" />
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (showCloseCaseConfirm()) {
+    <app-confirm-dialog
+      title="¿Cerrar caso clínico?"
+      message="Se marcará el caso como cerrado por alta y no se permitirán nuevas sesiones sobre este caso."
+      confirmLabel="Cerrar caso"
+      variant="warning"
+      (cancelled)="cancelCloseCaso()"
+      (confirmed)="confirmCloseCaso()"
+    />
   }
 
   @if (showAntecedentesCloseConfirm()) {

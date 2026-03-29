@@ -6,6 +6,7 @@ import {
   AperturaCajaRequest,
   CajaDiaria,
   CierreCajaRequest,
+  EgresoManualRequest,
   MovimientoCaja,
 } from '../models/caja.models';
 
@@ -31,5 +32,9 @@ export class CajaDiariaService {
 
   movimientos(consultorioId: string, cajaId: string): Observable<MovimientoCaja[]> {
     return this.api.get<MovimientoCaja[]>(API.caja.movimientos(consultorioId, cajaId));
+  }
+
+  registrarEgreso(consultorioId: string, cajaId: string, req: EgresoManualRequest): Observable<MovimientoCaja> {
+    return this.api.post<MovimientoCaja>(API.caja.egreso(consultorioId, cajaId), req);
   }
 }

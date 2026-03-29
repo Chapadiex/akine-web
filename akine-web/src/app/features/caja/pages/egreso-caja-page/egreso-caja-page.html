@@ -1,0 +1,199 @@
+<div class="page-container">
+  <header class="page-header">
+    <div class="header-left">
+      <button type="button" class="btn-back" (click)="volverACaja()">
+        <span class="icon" aria-hidden="true">arrow_back</span>
+        Caja
+      </button>
+      <h1 class="page-title">Registrar egreso</h1>
+    </div>
+    <span class="consultorio-chip">{{ consultorioNombre() }}</span>
+  </header>
+
+  <main class="page-content">
+    @if (loadingCaja()) {
+      <div class="state-placeholder">Cargando caja...</div>
+    } @else if (!cajaAbierta()) {
+      <div class="alert-warning">
+        <strong>No hay caja abierta hoy.</strong>
+        <span>Debe abrir la caja antes de registrar un egreso.</span>
+        <button type="button" class="btn-link" (click)="volverACaja()">Ir a caja</button>
+      </div>
+    } @else {
+      <form [formGroup]="form" (ngSubmit)="guardar()" class="egreso-layout" [class.is-submitting]="submitting()">
+
+        <section class="card bloque">
+          <h2 class="card-title">Datos del egreso</h2>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label class="form-label" for="tipoEgreso">Tipo de egreso *</label>
+              <select id="tipoEgreso" class="form-select" formControlName="tipoEgreso" [disabled]="submitting()">
+                @for (op of tiposEgreso; track op.value) {
+                  <option [value]="op.value">{{ op.label }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="importeTotal">Importe total ($) *</label>
+              <input
+                id="importeTotal"
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="form-input"
+                formControlName="importeTotal"
+                placeholder="0.00"
+                [disabled]="submitting()"
+              />
+              @if (form.controls.importeTotal.invalid && form.controls.importeTotal.touched) {
+                <span class="form-error">Ingresá un importe mayor a 0 con hasta 2 decimales.</span>
+              }
+            </div>
+
+            <div class="form-field form-field--full">
+              <label class="form-label" for="concepto">Concepto / destinatario</label>
+              <input
+                id="concepto"
+                type="text"
+                class="form-input"
+                formControlName="concepto"
+                placeholder="Ej: Pago a proveedor de insumos, alquiler, etc."
+                maxlength="200"
+                [disabled]="submitting()"
+              />
+            </div>
+
+            <div class="form-field form-field--full">
+              <label class="form-label" for="observaciones">Observaciones</label>
+              <textarea
+                id="observaciones"
+                class="form-textarea"
+                rows="3"
+                maxlength="500"
+                formControlName="observaciones"
+                placeholder="Notas opcionales sobre el egreso..."
+                [disabled]="submitting()"
+              ></textarea>
+              <span class="field-helper">{{ form.controls.observaciones.value?.length ?? 0 }}/500</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card bloque">
+          <h2 class="card-title">Formas de pago</h2>
+
+          <div class="medios-header">
+            <p class="medios-hint">La suma de medios debe igualar el importe total.</p>
+            <button type="button" class="btn-add" (click)="agregarDetalle()" [disabled]="submitting()">
+              + Agregar medio
+            </button>
+          </div>
+
+          <div class="medios-list" formArrayName="detalles">
+            @for (detalle of detallesArray.controls; track $index; let i = $index) {
+              <div class="medio-row" [formGroupName]="i">
+                <div class="form-field">
+                  <label class="form-label">Medio de pago *</label>
+                  <select class="form-select" formControlName="medioPago" [disabled]="submitting()">
+                    @for (mp of mediosPago; track mp.value) {
+                      <option [value]="mp.value">{{ mp.label }}</option>
+                    }
+                  </select>
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label">Importe ($) *</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    class="form-input"
+                    formControlName="importe"
+                    [disabled]="submitting()"
+                  />
+                </div>
+
+                <div class="form-field">
+                  <label class="form-label">Referencia / operación</label>
+                  <input
+                    type="text"
+                    class="form-input"
+                    maxlength="100"
+                    formControlName="referenciaOperacion"
+                    [placeholder]="placeholderReferencia(i)"
+                    [disabled]="submitting()"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-icon"
+                  (click)="eliminarDetalle(i)"
+                  aria-label="Eliminar medio de pago"
+                  title="Eliminar medio"
+                  [disabled]="detallesArray.length === 1 || submitting()"
+                >
+                  <span class="icon" aria-hidden="true">delete</span>
+                </button>
+              </div>
+            }
+          </div>
+        </section>
+
+        <aside class="card bloque bloque-sticky">
+          <h2 class="card-title">Resumen y confirmar</h2>
+
+          <div class="resumen-tipo">
+            <span class="tipo-label">{{ tipoEgresoLabel() }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span>Total del egreso</span>
+            <strong>$ {{ form.controls.importeTotal.value | number:'1.2-2' }}</strong>
+          </div>
+          <div class="resumen-row">
+            <span>Total distribuido</span>
+            <strong>$ {{ sumaDetalles() | number:'1.2-2' }}</strong>
+          </div>
+          <div class="resumen-row resumen-medios">
+            <span>Medios utilizados</span>
+            <small>{{ mediosUtilizadosTexto() || '—' }}</small>
+          </div>
+
+          <div class="delta-chip" [class.delta-ok]="deltaState().ok" [class.delta-error]="!deltaState().ok">
+            @if (deltaState().ok) {
+              <span class="icon" aria-hidden="true">check_circle</span>
+              {{ deltaState().mensaje }}
+            } @else {
+              <span class="icon" aria-hidden="true">error</span>
+              {{ deltaState().mensaje }}
+            }
+          </div>
+
+          @if (submitError()) {
+            <div class="submit-error">{{ submitError() }}</div>
+          }
+
+          <button type="submit" class="btn-primary btn-full" [disabled]="!canSubmit()">
+            @if (submitting()) {
+              <span class="spinner"></span>
+              Guardando...
+            } @else if (submitSuccess()) {
+              <span class="icon" aria-hidden="true">check</span>
+              Egreso registrado
+            } @else {
+              Guardar egreso
+            }
+          </button>
+
+          <button type="button" class="btn-cancel btn-full" (click)="volverACaja()" [disabled]="submitting()">
+            Cancelar
+          </button>
+        </aside>
+
+      </form>
+    }
+  </main>
+</div>

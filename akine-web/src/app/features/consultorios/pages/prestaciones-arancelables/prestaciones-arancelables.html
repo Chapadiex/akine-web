@@ -1,0 +1,88 @@
+<div class="prest-page">
+
+  <div class="prest-header">
+    <div>
+      <h3 class="prest-title">Prestaciones arancelables</h3>
+      <p class="prest-subtitle">Catálogo de servicios que ofrece el consultorio. Se usan al configurar convenios con obras sociales.</p>
+    </div>
+    @if (!showForm()) {
+      <button class="btn-primary" (click)="abrirForm()">
+        <span class="icon">add</span> Nueva prestación
+      </button>
+    }
+  </div>
+
+  @if (showForm()) {
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="inline-form">
+      <div class="inline-form__fields">
+        <div class="field">
+          <label class="field__label">Código interno</label>
+          <input formControlName="codigoInterno" class="field__input" placeholder="Ej: KIN-001" autocomplete="off" />
+        </div>
+        <div class="field field--wide">
+          <label class="field__label">Nombre</label>
+          <input formControlName="nombre" class="field__input" placeholder="Ej: Kinesiología individual" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label class="field__label">Unidad</label>
+          <select formControlName="unidadFacturacion" class="field__input field__select">
+            @for (u of unidades; track u.value) {
+              <option [value]="u.value">{{ u.label }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="inline-form__actions">
+        <button type="submit" class="btn-primary" [disabled]="form.invalid || submitting()">
+          {{ submitting() ? 'Guardando…' : 'Guardar' }}
+        </button>
+        <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
+      </div>
+    </form>
+  }
+
+  @if (pageState() === 'loading') {
+    <div class="skeleton-rows">
+      @for (_ of [1,2,3]; track $index) { <div class="skeleton-row"></div> }
+    </div>
+  }
+
+  @if (pageState() === 'error') {
+    <p class="text-danger">Error al cargar las prestaciones.</p>
+  }
+
+  @if (pageState() === 'loaded') {
+    @if (prestaciones().length === 0 && !showForm()) {
+      <div class="empty-state">
+        <span class="icon">receipt_long</span>
+        <p>No hay prestaciones configuradas. Creá la primera para usarla en convenios.</p>
+      </div>
+    } @else if (prestaciones().length > 0) {
+      <table class="akine-table">
+        <thead>
+          <tr>
+            <th class="col-text">Código</th>
+            <th class="col-text">Nombre</th>
+            <th class="col-text">Unidad</th>
+            <th class="col-status">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of prestaciones(); track p.id) {
+            <tr>
+              <td class="col-text text-mono text-small">{{ p.codigoInterno }}</td>
+              <td class="col-text text-medium">{{ p.nombre }}</td>
+              <td class="col-text text-secondary">{{ unidadLabel(p.unidadFacturacion) }}</td>
+              <td class="col-status">
+                <span class="badge-estado" [class.badge-liquidado]="p.activo" [class.badge-anulado]="!p.activo">
+                  <span class="dot"></span>{{ p.activo ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+
+</div>

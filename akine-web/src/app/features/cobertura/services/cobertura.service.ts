@@ -18,10 +18,12 @@ export class CoberturaService {
     });
   }
 
-  seedFinanciadores(consultorioId: string): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/financiadores/seed`, null, {
-      params: { consultorioId }
-    });
+  seedFinanciadores(consultorioId: string, precioLista?: number): Observable<void> {
+    const params: Record<string, string> = { consultorioId };
+    if (precioLista != null && precioLista > 0) {
+      params['precioLista'] = precioLista.toString();
+    }
+    return this.http.post<void>(`${this.apiUrl}/financiadores/seed`, null, { params });
   }
 
   getFinanciadorById(id: string): Observable<FinanciadorSalud> {

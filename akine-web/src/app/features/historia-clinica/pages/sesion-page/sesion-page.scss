@@ -17,7 +17,7 @@
   font-size: 0.92rem;
 }
 
-// Stepper
+// ── Stepper — estados: pendiente / hover / activo / completado ─────────────
 .stepper {
   display: flex;
   align-items: center;
@@ -29,21 +29,36 @@
   width: 100%;
   box-sizing: border-box;
 }
+
 .stepper__item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 8px 14px;
   background: none;
   border: none;
   cursor: pointer;
   border-radius: 999px;
-  transition: all 0.2s;
+  transition: background 0.15s;
   white-space: nowrap;
+
+  // Hover solo en pasos que NO son el activo
+  &:not(.stepper__item--active):hover {
+    background: var(--color-primary-light, #e6f4f2);
+
+    .stepper__number {
+      border-color: var(--color-primary, #1a6b5e);
+      color: var(--color-primary, #1a6b5e);
+      background: var(--color-primary-light, #e6f4f2);
+    }
+
+    .stepper__label {
+      color: var(--color-primary-text, #0d4a40);
+    }
+  }
 }
-.stepper__item:hover {
-  background: #f1f5f9;
-}
+
+// Paso pendiente (estado base)
 .stepper__number {
   display: flex;
   align-items: center;
@@ -53,46 +68,57 @@
   border-radius: 50%;
   font-size: 0.78rem;
   font-weight: 600;
-  border: 2px solid var(--border, #e2e8f0);
-  color: var(--text-muted, #64748b);
-  background: var(--white, #fff);
-  transition: all 0.2s;
+  border: 2px solid var(--color-neutral-200, #e2e8f0);
+  color: var(--color-neutral-400, #94a3b8);
+  background: var(--color-white, #fff);
+  transition: all 0.15s;
   flex-shrink: 0;
 }
+
 .stepper__label {
   font-size: 0.82rem;
   font-weight: 500;
-  color: var(--text-muted, #64748b);
-  transition: color 0.2s;
+  color: var(--color-neutral-400, #94a3b8);
+  transition: color 0.15s;
 }
+
+// Paso activo — color principal, mayor protagonismo
 .stepper__item--active .stepper__number {
-  background: var(--primary, #0f766e);
-  border-color: var(--primary, #0f766e);
-  color: #fff;
+  background: var(--color-primary, #1a6b5e);
+  border-color: var(--color-primary, #1a6b5e);
+  color: var(--color-white, #fff);
 }
+
 .stepper__item--active .stepper__label {
-  color: var(--text, #0f172a);
+  color: var(--color-neutral-900, #0f172a);
   font-weight: 600;
 }
+
+// Paso completado — distinto del pendiente Y distinto del activo
 .stepper__item--done .stepper__number {
-  background: #d1fae5;
-  border-color: #16a34a;
-  color: #16a34a;
+  background: var(--color-success-light, #ecfdf5);
+  border-color: var(--color-success, #059669);
+  color: var(--color-success-text, #065f46);
 }
+
 .stepper__item--done .stepper__label {
-  color: #16a34a;
+  color: var(--color-neutral-600, #475569);
+  font-weight: 400;
 }
+
+// Conector entre pasos
 .stepper__connector {
   flex: 1;
   height: 2px;
   min-width: 20px;
   max-width: 48px;
-  background: var(--border, #e2e8f0);
+  background: var(--color-neutral-200, #e2e8f0);
   border-radius: 1px;
-  transition: background 0.2s;
+  transition: background 0.15s;
 }
+
 .stepper__connector--done {
-  background: #16a34a;
+  background: var(--color-success, #059669);
 }
 
 // Body
@@ -410,4 +436,144 @@
   cursor: pointer;
 
   &:hover { background: var(--color-primary-light, #e6f4f2); }
+}
+
+// ── Treatment close modal ──────────────────────────────────────────────────
+.treatment-close-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal, 300);
+}
+
+.treatment-close-dialog {
+  background: var(--color-white, #fff);
+  border-radius: var(--radius-lg, 10px);
+  width: min(480px, 92vw);
+  box-shadow: var(--shadow-md, 0 4px 12px rgb(0 0 0 / 0.1));
+  overflow: hidden;
+}
+
+.treatment-close-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--color-neutral-200, #e2e8f0);
+}
+
+.treatment-close-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: var(--color-success-light, #ecfdf5);
+  color: var(--color-success-text, #065f46);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 10px;
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success, #059669);
+    flex-shrink: 0;
+  }
+}
+
+.treatment-close-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-neutral-900, #0f172a);
+  margin: 0 0 6px;
+}
+
+.treatment-close-desc {
+  font-size: 13px;
+  color: var(--color-neutral-600, #475569);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.treatment-close-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.treatment-close-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.treatment-close-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-neutral-600, #475569);
+}
+
+.treatment-close-optional {
+  font-weight: 400;
+  color: var(--color-neutral-400, #94a3b8);
+}
+
+.required-mark {
+  color: var(--color-error, #dc2626);
+  margin-left: 2px;
+}
+
+.treatment-close-select,
+.treatment-close-textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--color-neutral-200, #e2e8f0);
+  border-radius: var(--radius-sm, 6px);
+  font-size: 13px;
+  font-family: var(--font-primary, system-ui);
+  color: var(--color-neutral-900, #0f172a);
+  background: var(--color-white, #fff);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary, #1a6b5e);
+    box-shadow: 0 0 0 2px var(--color-primary-light, #e6f4f2);
+  }
+}
+
+.treatment-close-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.treatment-close-option-desc {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--color-neutral-400, #94a3b8);
+  line-height: 1.4;
+}
+
+.treatment-close-actions {
+  padding: 16px 24px;
+  border-top: 1px solid var(--color-neutral-200, #e2e8f0);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+
+  .btn-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgb(255 255 255 / 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 6px;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

@@ -78,14 +78,13 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
       },
       {
-        path: '/app/caja',
+        path: '/app/caja/hoy',
         label: 'Caja',
         icon: 'wallet',
-        roles: ['ADMINISTRATIVO'],
+        roles: STAFF_WITH_ADMIN,
         children: [
-          { path: '/app/caja', label: 'Cobros', icon: 'receipt', roles: ['ADMINISTRATIVO'] },
-          { path: '/app/caja', label: 'Movimientos', icon: 'arrows-left-right', roles: ['ADMINISTRATIVO'] },
-          { path: '/app/caja', label: 'Cierres', icon: 'lock', roles: ['ADMINISTRATIVO'] },
+          { path: '/app/caja/hoy',   label: 'Caja diaria', icon: 'receipt',     roles: STAFF_WITH_ADMIN },
+          { path: '/app/caja/cobrar', label: 'Cobrar paciente', icon: 'payments', roles: STAFF_WITH_ADMIN },
         ],
       },
       {

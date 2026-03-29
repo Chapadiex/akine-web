@@ -36,7 +36,9 @@
           [class.stepper__item--done]="isStepBefore(step.key)"
           (click)="setStep(step.key)"
         >
-          <span class="stepper__number">{{ step.icon }}</span>
+          <span class="stepper__number">
+            @if (isStepBefore(step.key)) { ✓ } @else { {{ step.icon }} }
+          </span>
           <span class="stepper__label">{{ step.label }}</span>
         </button>
         @if (i < steps.length - 1) {
@@ -246,6 +248,77 @@
       (cancelled)="cancelDeleteSesion()"
       (confirmed)="confirmDeleteSesion()"
     />
+  }
+
+  @if (showTreatmentCloseModal()) {
+    <div class="treatment-close-overlay">
+      <div class="treatment-close-dialog" role="dialog" aria-modal="true" aria-labelledby="treatment-close-title">
+        <div class="treatment-close-header">
+          <span class="treatment-close-badge">
+            <span class="treatment-close-badge__dot"></span>
+            Plan completado
+          </span>
+          <h3 class="treatment-close-title" id="treatment-close-title">Sesiones del plan completadas</h3>
+          <p class="treatment-close-desc">
+            Se realizaron las <strong>{{ completedSessions() }}</strong> sesiones planificadas para este tratamiento.
+            Registrá cómo cierra el caso antes de continuar.
+          </p>
+        </div>
+
+        <div class="treatment-close-body" [formGroup]="treatmentCloseForm">
+          <div class="treatment-close-field">
+            <label class="treatment-close-label" for="conductaCierre">Cierre del tratamiento <span class="required-mark">*</span></label>
+            <select id="conductaCierre" formControlName="conductaCierre" class="treatment-close-select">
+              @for (opcion of conductaCierreOpciones; track opcion.value) {
+                <option [value]="opcion.value">{{ opcion.label }}</option>
+              }
+            </select>
+            @if (treatmentCloseForm.get('conductaCierre')?.value; as selected) {
+              @for (opcion of conductaCierreOpciones; track opcion.value) {
+                @if (opcion.value === selected) {
+                  <p class="treatment-close-option-desc">{{ opcion.desc }}</p>
+                }
+              }
+            }
+          </div>
+
+          <div class="treatment-close-field">
+            <label class="treatment-close-label" for="observaciones">Observaciones de cierre <span class="treatment-close-optional">(opcional)</span></label>
+            <textarea
+              id="observaciones"
+              formControlName="observaciones"
+              class="treatment-close-textarea"
+              rows="3"
+              placeholder="Evolución final, indicaciones al paciente, motivo de derivación..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="treatment-close-actions">
+          <button
+            type="button"
+            class="btn btn--secondary"
+            (click)="cancelTreatmentCloseModal()"
+            [disabled]="isClosingTreatment()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="confirmarCierreTratamiento()"
+            [disabled]="treatmentCloseForm.invalid || isClosingTreatment()"
+          >
+            @if (isClosingTreatment()) {
+              <span class="btn-spinner" aria-hidden="true"></span>
+              Cerrando...
+            } @else {
+              Cerrar tratamiento
+            }
+          </button>
+        </div>
+      </div>
+    </div>
   }
 }
 

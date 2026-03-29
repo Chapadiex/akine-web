@@ -69,6 +69,6 @@ describe('Paciente360 HistoriaClinicaPage', () => {
   });
 
   it('renders the global workspace link', () => {
-    expect(fixture.nativeElement.textContent).toContain('Global');
+    expect(fixture.nativeElement.textContent).toContain('Historia clínica');
   });
 });

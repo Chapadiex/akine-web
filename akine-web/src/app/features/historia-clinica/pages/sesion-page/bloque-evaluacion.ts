@@ -28,10 +28,11 @@ import {
                 type="range" min="0" max="10"
                 formControlName="dolorIntensidad"
                 class="dolor-slider"
+                [style.accentColor]="dolorColor()"
                 (input)="changed.emit()"
               />
-              <span class="dolor-value" [class.dolor-high]="(form().get('dolorIntensidad')?.value ?? 0) >= 7">
-                {{ form().get('dolorIntensidad')?.value ?? 0 }}/10
+              <span class="dolor-value" [style.color]="dolorColor()">
+                {{ form().get('dolorIntensidad')?.value ?? 5 }}/10
               </span>
             </div>
             <input
@@ -183,8 +184,13 @@ import {
     .dolor-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .dolor-scale { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 200px; }
     .dolor-slider { flex: 1; accent-color: var(--primary, #0f766e); }
-    .dolor-value { font-weight: 600; font-size: 1rem; min-width: 44px; text-align: center; }
-    .dolor-high { color: var(--error, #dc2626); }
+    .dolor-value {
+      font-weight: 600;
+      font-size: 1rem;
+      min-width: 44px;
+      text-align: center;
+      transition: color 90ms linear;
+    }
 
     /* Chips */
     .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -280,6 +286,29 @@ export class BloqueEvaluacionComponent {
     'Deporte',
     'Sueño',
   ];
+
+  readonly dolorColor = () => {
+    const raw = this.form().get('dolorIntensidad')?.value ?? 5;
+    const value = Number.isNaN(Number(raw)) ? 5 : Math.min(10, Math.max(0, Number(raw)));
+    return this.dolorScaleColor(value);
+  };
+
+  private dolorScaleColor(value: number): string {
+    const green: [number, number, number] = [22, 163, 74];  // 0
+    const amber: [number, number, number] = [217, 119, 6];  // 5
+    const red: [number, number, number] = [220, 38, 38];    // 10
+    const p = Math.min(10, Math.max(0, value));
+
+    const from = p <= 5 ? green : amber;
+    const to = p <= 5 ? amber : red;
+    const t = p <= 5 ? p / 5 : (p - 5) / 5;
+
+    const r = Math.round(from[0] + (to[0] - from[0]) * t);
+    const g = Math.round(from[1] + (to[1] - from[1]) * t);
+    const b = Math.round(from[2] + (to[2] - from[2]) * t);
+
+    return `rgb(${r}, ${g}, ${b})`;
+  }
 
   setField(controlName: string, value: string): void {
     const ctrl = this.form().get(controlName);

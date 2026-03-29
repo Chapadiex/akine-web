@@ -1,5 +1,5 @@
 ﻿import { CommonModule, DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import {
   FormArray,
@@ -38,6 +38,7 @@ import { PacienteService } from '../../../pacientes/services/paciente.service';
 import {
   AdjuntoClinicoResponse,
   AtencionInicialTipoIngreso,
+  CasoAtencionDetalle,
   CasoAtencionSummary,
   CreateAtencionInicialRequest,
   CreateCasoAtencionRequest,
@@ -58,7 +59,8 @@ import { HistoriaClinicaService } from '../../services/historia-clinica.service'
 
 type ViewState = 'idle' | 'loading' | 'success' | 'error';
 type TimelineFilter = 'all' | 'sessions' | 'cases' | 'antecedents' | 'attachments';
-type SessionListFilter = 'all' | HistoriaClinicaSesionEstado;
+type SessionOperationalState = 'PENDIENTE' | HistoriaClinicaSesionEstado;
+type SessionListFilter = 'all' | SessionOperationalState;
 type ClinicalTab = 'summary' | 'cases' | 'timeline';
 type ClinicalScreenState = 'no-patient' | 'no-history' | 'history-no-case' | 'history-active-case';
 type LegajoWizardStep = 0 | 1 | 2;
@@ -119,23 +121,54 @@ type PlanSessionItem = {
   sessionNumber: number | null;
   plannedSessions: number;
   sessionTypeLabel: 'Express' | 'Completa';
-  statusLabel: string;
-  patientResponse: string;
-  painSummary: string;
-  conductSummary: string;
-  clinicalSummary: string;
+  statusLabel: 'Pendiente' | 'Borrador' | 'Cerrada' | 'Anulada';
+  statusTone: 'info' | 'warning' | 'muted' | 'error';
+  operationalState: SessionOperationalState;
+  dataLine: string;
+  summaryLine: string;
+  primaryActionLabel: 'Iniciar' | null;
+  secondaryActionLabel: 'Reprogramar' | 'Editar sesión' | 'Ver sesión' | 'Ver detalle';
 };
 
 type SummarySessionRow = {
   sessionId: string;
   numberLabel: string;
   typeLabel: 'Express' | 'Completa';
+  typeChip: 'E' | 'C';
   dateLabel: string;
   statusLabel: string;
   statusTone: 'warning' | 'info' | 'success' | 'error' | 'muted';
   statusIcon: 'draft' | 'inProgress' | 'done' | 'cancelled' | 'muted';
   statusTooltip: string;
+  actionLabel: 'Editar sesión' | 'Ver sesión';
   summaryLabel: string;
+  summaryLines: string[];
+};
+
+type SummaryAlertChip = {
+  label: string;
+  tone: 'warning' | 'info' | 'muted' | 'error';
+};
+
+type SummaryCaseInfoLine = {
+  label: string;
+  value: string;
+};
+
+type SummaryDisplayChip = {
+  label: string;
+  tone: 'warning' | 'info' | 'muted' | 'error' | 'success';
+  action: 'openMedicalOrder' | null;
+};
+
+type SummaryLatestSession = {
+  sessionId: string;
+  dateLabel: string;
+  responseLabel: string;
+  painLabel: string;
+  sessionTypeLabel: 'Express' | 'Completa';
+  professionalLabel: string;
+  noteLabel: string;
 };
 
 const TIMELINE_BATCH_SIZE = 12;
@@ -218,19 +251,28 @@ export class HistoriaClinicaPacientePage {
   readonly showLegajoModal = signal(false);
   readonly showSesionDrawer = signal(false);
   readonly showCasoDrawer = signal(false);
+  readonly showCasoViewModal = signal(false);
+  readonly viewingCaso = signal<CasoAtencionDetalle | null>(null);
   readonly showCasoCloseConfirm = signal(false);
-  readonly casoModalMode = signal<'create' | 'edit'>('create');
+  readonly showCaseImagePreview = signal(false);
+  readonly showTreatmentObservationTooltip = signal(false);
+  readonly caseImagePreviewUrl = signal<string | null>(null);
+  readonly caseImagePreviewName = signal('');
+  readonly casoModalMode = signal<'create' | 'edit' | 'view'>('create');
   readonly editingCasoId = signal<string | null>(null);
   readonly casoModalStep = signal<1 | 2 | 3>(1);
   readonly showAntecedentesDrawer = signal(false);
   readonly showAntecedentesCloseConfirm = signal(false);
   readonly showClearPatientConfirm = signal(false);
   readonly showLegajoCloseConfirm = signal(false);
+  readonly showCloseCaseConfirm = signal(false);
+  readonly closingCaseTarget = signal<HistoriaClinicaActiveCaseSummary | CasePanelItem | null>(null);
   readonly isSavingLegajo = signal(false);
   readonly isSavingSesion = signal(false);
   readonly isSavingCaso = signal(false);
   readonly isSavingAntecedentes = signal(false);
   readonly isUploadingAdjunto = signal(false);
+  readonly activePopoverSessionId = signal<string | null>(null);
   readonly antecedenteCatalogCategories = signal<AntecedenteCatalogCategory[]>([]);
   readonly diagnosticosMedicos = signal<DiagnosticoMedicoItem[]>([]);
   readonly diagnosticosMedicosCategorias = signal<DiagnosticoMedicoCategoria[]>([]);
@@ -244,10 +286,20 @@ export class HistoriaClinicaPacientePage {
   readonly casoDiagnosticoCodes = signal<string[]>([]);
   readonly casoDerivacionAdjuntos = signal<File[]>([]);
   readonly casoAdjuntosExistentes = signal<AdjuntoClinicoResponse[]>([]);
+  readonly summaryCaseAdjuntos = signal<AdjuntoClinicoResponse[]>([]);
+  readonly summaryCaseAdjuntosLoadedCaseId = signal<string | null>(null);
+  readonly summaryCaseTreatmentObservation = signal<string | null>(null);
   readonly selectedTreatmentCode = signal('');
 
   readonly createLegajoStep = signal<LegajoWizardStep>(0);
   readonly maxLegajoStepReached = signal<LegajoWizardStep>(0);
+  readonly isCasoReadOnly = computed(() => this.casoModalMode() === 'view');
+
+  readonly viewingCasoTratamiento = computed(() => {
+    const caso = this.viewingCaso();
+    if (!caso) return null;
+    return this.parseTratamientoResumen(caso.diagnosticoFuncional);
+  });
 
   readonly createLegajoForm = new FormGroup({
     profesionalId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -344,6 +396,7 @@ export class HistoriaClinicaPacientePage {
 
   readonly sessionListFilters: ReadonlyArray<{ value: SessionListFilter; label: string }> = [
     { value: 'all', label: 'Todas' },
+    { value: 'PENDIENTE', label: 'Pendientes' },
     { value: 'BORRADOR', label: 'Borrador' },
     { value: 'CERRADA', label: 'Cerradas' },
     { value: 'ANULADA', label: 'Anuladas' },
@@ -380,7 +433,16 @@ export class HistoriaClinicaPacientePage {
   readonly patientContextMeta = computed(() => {
     const patient = this.selectedPatient();
     if (!patient) return 'Cargando contexto clínico...';
-    return `${patient.dni} / ${this.patientAge()} / ${this.patientCoverage()}`;
+    return `${patient.dni} / ${this.patientAge()}`;
+  });
+  readonly patientCoverageBadge = computed(() => {
+    const patient = this.selectedPatient();
+    if (!patient) return null;
+    const hasCoverage = !!patient.obraSocialNombre?.trim();
+    return {
+      label: this.patientCoverage(),
+      tone: hasCoverage ? 'success' as const : 'warning' as const,
+    };
   });
   readonly headerStatusBadge = computed(() => {
     switch (this.screenState()) {
@@ -551,12 +613,12 @@ export class HistoriaClinicaPacientePage {
     const selectedCase = this.selectedCase();
     const filter = this.sessionListFilter();
     const base = this.sessionsForSelectedPlan()
-      .filter((sesion) => (filter === 'all' ? true : sesion.estado === filter))
+      .filter((sesion) => (filter === 'all' ? true : this.sessionOperationalState(sesion) === filter))
       .sort((left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime());
 
     return base.length
       ? base
-      : this.sesiones().filter((sesion) => (filter === 'all' ? true : sesion.estado === filter));
+      : this.sesiones().filter((sesion) => (filter === 'all' ? true : this.sessionOperationalState(sesion) === filter));
   });
   readonly recentCriticalAntecedentes = computed(() =>
     this.backgroundStatus() === 'success'
@@ -628,12 +690,147 @@ export class HistoriaClinicaPacientePage {
       sessions,
     };
   });
-  readonly planProgressLabel = computed(() => {
+  readonly summaryCaseStartDateLabel = computed(() => {
+    const caseDate =
+      this.selectedCasoAtencion()?.fechaApertura ??
+      this.summaryMainCase()?.fechaInicio ??
+      null;
+    if (!caseDate) {
+      return 'Sin fecha';
+    }
+    return this.formatDateOnly(caseDate);
+  });
+  readonly summaryDerivacionInstitutionLabel = computed(() => {
+    const selectedCase = this.selectedCasoAtencion();
+    const summary = this.therapeuticPlanSummary();
+    const derivationDetail =
+      this.extractDerivationInstitution(selectedCase?.motivoConsulta)
+      ?? this.extractDerivationInstitution(summary?.consultationReason)
+      ?? '';
+    return derivationDetail || null;
+  });
+  readonly summaryCaseInfoLine = computed<SummaryCaseInfoLine | null>(() => {
+    const summary = this.therapeuticPlanSummary();
+    if (!summary) {
+      return null;
+    }
+    const selectedCase = this.selectedCasoAtencion();
+    const sourceType = this.normalizeUpper(selectedCase?.tipoOrigen);
+    const derivationValue =
+      this.extractDerivationInstitution(selectedCase?.motivoConsulta)
+      ?? this.extractDerivationInstitution(summary.consultationReason)
+      ?? null;
+    const isDerivacion = sourceType.includes('DERIV') || !!derivationValue;
+    if (isDerivacion) {
+      return {
+        label: 'Derivado por Institución / Medico',
+        value: derivationValue ?? 'Sin detalle de derivación',
+      };
+    }
+    const directReason = (selectedCase?.motivoConsulta ?? summary.consultationReason ?? '').trim();
+    return {
+      label: 'Motivo de la consulta',
+      value: directReason || 'Sin motivo de consulta',
+    };
+  });
+  readonly summaryRequiresMedicalOrder = computed(() => {
+    const selectedCase = this.selectedCasoAtencion();
+    if (!selectedCase) {
+      return false;
+    }
+    return this.isDerivacionCase(selectedCase.tipoOrigen, selectedCase.motivoConsulta);
+  });
+  readonly summaryHasMedicalOrder = computed(() => {
+    if (!this.summaryRequiresMedicalOrder()) {
+      return false;
+    }
+    return this.summaryCaseAdjuntos().length > 0;
+  });
+  readonly summaryMedicalOrderImage = computed(() => {
+    const caseId = this.therapeuticPlanSummary()?.caseId;
+    const imageAdjunto = this.summaryCaseImageAdjunto();
+    if (!caseId || !imageAdjunto) {
+      return null;
+    }
+    return {
+      caseId,
+      adjuntoId: imageAdjunto.id,
+      filename: imageAdjunto.originalFilename || 'Orden médica',
+    };
+  });
+  readonly summaryDisplayChips = computed<SummaryDisplayChip[]>(() => {
+    const chips: SummaryDisplayChip[] = this.summaryAlertChips().map((chip) => ({
+      label: chip.label,
+      tone: chip.tone,
+      action: null,
+    }));
+    const hasMedicalOrderChip = this.summaryRequiresMedicalOrder() && this.summaryHasMedicalOrder();
+    if (!hasMedicalOrderChip) {
+      return chips;
+    }
+    const medicalOrderChip: SummaryDisplayChip = {
+      label: 'Orden médica',
+      tone: 'success',
+      action: 'openMedicalOrder',
+    };
+    const coverageIndex = chips.findIndex((chip) => chip.label === 'Sin cobertura declarada');
+    if (coverageIndex >= 0) {
+      chips.splice(coverageIndex + 1, 0, medicalOrderChip);
+    } else {
+      chips.push(medicalOrderChip);
+    }
+    return chips;
+  });
+  readonly summaryProgressPercent = computed(() => {
     const summary = this.therapeuticPlanSummary();
     if (!summary || summary.plannedSessions <= 0) {
-      return 'Progreso del tratamiento: 0/0 sesiones realizadas';
+      return 0;
     }
-    return `Progreso del tratamiento: ${summary.completedSessions}/${summary.plannedSessions} sesiones realizadas`;
+    return Math.min(100, Math.round((summary.completedSessions / summary.plannedSessions) * 100));
+  });
+  readonly summaryProgressTone = computed<'neutral' | 'progress' | 'complete'>(() => {
+    const summary = this.therapeuticPlanSummary();
+    if (!summary || summary.plannedSessions <= 0 || summary.completedSessions <= 0) {
+      return 'neutral';
+    }
+    return this.summaryProgressPercent() >= 100 ? 'complete' : 'progress';
+  });
+  readonly summaryProgressFillPercent = computed(() => {
+    const percent = this.summaryProgressPercent();
+    return percent === 0 ? 4 : percent;
+  });
+  readonly summaryLatestSession = computed<SummaryLatestSession | null>(() => {
+    const summary = this.therapeuticPlanSummary();
+    const latest = [...(summary?.sessions ?? [])]
+      .sort((left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime())[0];
+    if (!latest) {
+      return null;
+    }
+    return {
+      sessionId: latest.id,
+      dateLabel: this.formatDateTime(latest.fechaAtencion),
+      responseLabel: this.patientResponseLabel(latest.evaluacionEstructurada?.respuestaPaciente),
+      painLabel: this.sessionPainSummary(latest),
+      sessionTypeLabel: this.isCompleteSession(latest) ? 'Completa' : 'Express',
+      professionalLabel: this.resolveProfessionalName(latest.profesionalId),
+      noteLabel: this.sessionClinicalSummary(latest),
+    };
+  });
+  readonly summaryAlertChips = computed<SummaryAlertChip[]>(() => {
+    const chips: SummaryAlertChip[] = [];
+    const patient = this.selectedPatient();
+    const selectedCase = this.selectedCasoAtencion();
+    const summary = this.therapeuticPlanSummary();
+    if (!patient?.obraSocialNombre?.trim()) {
+      chips.push({ label: 'Sin cobertura declarada', tone: 'warning' });
+    }
+    if ((summary?.assignedProfessionalName ?? 'Sin asignar') === 'Sin asignar') {
+      chips.push({ label: 'Sin profesional asignado', tone: 'warning' });
+    }
+    if (selectedCase && this.summaryRequiresMedicalOrder() && !this.summaryHasMedicalOrder()) {
+      chips.push({ label: 'Falta orden médica', tone: 'error' });
+    }
+    return chips;
   });
   readonly summaryRecentSessions = computed(() =>
     [...(this.therapeuticPlanSummary()?.sessions ?? [])]
@@ -653,17 +850,23 @@ export class HistoriaClinicaPacientePage {
     return [...summary.sessions]
       .sort((left, right) => new Date(right.fechaAtencion).getTime() - new Date(left.fechaAtencion).getTime())
       .slice(0, 4)
-      .map((session) => ({
-        sessionId: session.id,
-        numberLabel: `#${numberById.get(session.id) ?? '-'}`,
-        typeLabel: this.isCompleteSession(session) ? 'Completa' : 'Express',
-        dateLabel: this.formatDateTime(session.fechaAtencion),
-        statusLabel: this.sessionStateLabel(session.estado),
-        statusTone: this.sessionStateTone(session.estado),
-        statusIcon: this.sessionStateIcon(session.estado),
-        statusTooltip: this.sessionStateLabel(session.estado),
-        summaryLabel: this.compactSessionSummary(session),
-      }));
+      .map((session) => {
+        const isComplete = this.isCompleteSession(session);
+        return {
+          sessionId: session.id,
+          numberLabel: `#${numberById.get(session.id) ?? '-'}`,
+          typeLabel: isComplete ? 'Completa' : 'Express',
+          typeChip: (isComplete ? 'C' : 'E') as 'C' | 'E',
+          dateLabel: this.formatDateTime(session.fechaAtencion),
+          statusLabel: this.sessionStateLabel(session.estado),
+          statusTone: this.sessionStateTone(session.estado),
+          statusIcon: this.sessionStateIcon(session.estado),
+          statusTooltip: this.sessionStateLabel(session.estado),
+          actionLabel: this.sessionActionLabel(session),
+          summaryLabel: this.compactSessionSummary(session),
+          summaryLines: this.compactSessionSummary(session).split(' · ').filter(Boolean),
+        };
+      });
   });
   readonly planSessionItems = computed<PlanSessionItem[]>(() => {
     const summary = this.therapeuticPlanSummary();
@@ -675,20 +878,66 @@ export class HistoriaClinicaPacientePage {
     const numberMap = new Map<string, number>();
     orderedAsc.forEach((session, index) => numberMap.set(session.id, index + 1));
     const plannedSessions = summary?.plannedSessions ?? 0;
-    return sessions.map((session) => ({
-      session,
-      sessionNumber: numberMap.get(session.id) ?? null,
-      plannedSessions,
-      sessionTypeLabel: this.isCompleteSession(session) ? 'Completa' : 'Express',
-      statusLabel: this.sessionStateLabel(session.estado),
-      patientResponse: this.patientResponseLabel(session.evaluacionEstructurada?.respuestaPaciente),
-      painSummary: this.sessionPainSummary(session),
-      conductSummary: this.conductLabel(session.evaluacionEstructurada?.proximaConducta),
-      clinicalSummary: this.sessionClinicalSummary(session),
-    }));
+    return sessions.map((session) => {
+      const operationalState = this.sessionOperationalState(session);
+      const dataLine = this.sessionOperationalDataLine(session, operationalState);
+      return {
+        session,
+        sessionNumber: numberMap.get(session.id) ?? null,
+        plannedSessions,
+        sessionTypeLabel: this.isCompleteSession(session) ? 'Completa' : 'Express',
+        statusLabel: this.sessionOperationalStateLabel(operationalState),
+        statusTone: this.sessionOperationalStateTone(operationalState),
+        operationalState,
+        dataLine,
+        summaryLine: this.sessionOperationalSummaryLine(session, operationalState),
+        primaryActionLabel: operationalState === 'PENDIENTE' ? 'Iniciar' : null,
+        secondaryActionLabel:
+          operationalState === 'PENDIENTE'
+            ? 'Reprogramar'
+            : operationalState === 'BORRADOR'
+              ? 'Editar sesión'
+              : operationalState === 'ANULADA'
+                ? 'Ver detalle'
+                : 'Ver sesión',
+      };
+    });
   });
+  readonly planSessionCounters = computed(() => {
+    const source = this.sessionsForSelectedPlan();
+    const counters = { total: source.length, pendiente: 0, borrador: 0, cerrada: 0, anulada: 0 };
+    for (const session of source) {
+      const state = this.sessionOperationalState(session);
+      if (state === 'PENDIENTE') counters.pendiente += 1;
+      else if (state === 'BORRADOR') counters.borrador += 1;
+      else if (state === 'CERRADA') counters.cerrada += 1;
+      else if (state === 'ANULADA') counters.anulada += 1;
+    }
+    return counters;
+  });
+
+  sessionFilterCount(filter: SessionListFilter): number {
+    const counters = this.planSessionCounters();
+    switch (filter) {
+      case 'all':
+        return counters.total;
+      case 'PENDIENTE':
+        return counters.pendiente;
+      case 'BORRADOR':
+        return counters.borrador;
+      case 'CERRADA':
+        return counters.cerrada;
+      case 'ANULADA':
+        return counters.anulada;
+      default:
+        return 0;
+    }
+  }
   readonly summaryAntecedentes = computed(() => this.overview()?.antecedentesRelevantes?.slice(0, 2) ?? []);
   readonly summaryAdjuntos = computed(() => this.overview()?.adjuntosRecientes?.slice(0, 2) ?? []);
+  readonly summaryCaseImageAdjunto = computed(() =>
+    this.summaryCaseAdjuntos().find((adjunto) => this.isImageAttachment(adjunto)) ?? null,
+  );
   readonly quickStatusItems = computed(() => {
     const summary = this.therapeuticPlanSummary();
     return [
@@ -740,6 +989,22 @@ export class HistoriaClinicaPacientePage {
     combineLatest([toObservable(this.consultorioCtx.selectedConsultorioId), this.route.queryParamMap])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(([consultorioId, queryParams]) => this.hydrateFromRoute(consultorioId, queryParams));
+
+    effect(() => {
+      const consultorioId = this.consultorioCtx.selectedConsultorioId();
+      const caseId = this.selectedCasoAtencion()?.id ?? null;
+      if (!consultorioId || !caseId || !this.hasLegajo()) {
+        this.summaryCaseAdjuntos.set([]);
+        this.summaryCaseAdjuntosLoadedCaseId.set(null);
+        this.summaryCaseTreatmentObservation.set(null);
+        this.showTreatmentObservationTooltip.set(false);
+        return;
+      }
+      if (this.summaryCaseAdjuntosLoadedCaseId() === caseId) {
+        return;
+      }
+      this.loadSummaryCaseAdjuntos(consultorioId, caseId);
+    });
   }
 
   get antecedentesItems(): FormArray {
@@ -814,6 +1079,54 @@ export class HistoriaClinicaPacientePage {
 
   selectCase(caseId: string): void {
     this.selectedCaseId.set(caseId);
+  }
+
+  isCaseEditable(status?: string | null): boolean {
+    const normalized = (status ?? '').trim().toUpperCase();
+    return normalized.length > 0 && !normalized.startsWith('CERRADO') && !normalized.includes('FINALIZ');
+  }
+
+  caseActionLabel(status?: string | null): 'Editar caso' | 'Ver caso' {
+    return this.isCaseEditable(status) ? 'Editar caso' : 'Ver caso';
+  }
+
+  casoEstadoBadge(estado?: string | null): { label: string; tone: string; dot: string } {
+    switch ((estado ?? '').toUpperCase()) {
+      case 'BORRADOR':           return { label: 'Borrador',    tone: 'warning',  dot: '#F59E0B' };
+      case 'EN_EVALUACION':      return { label: 'En evaluación', tone: 'info',   dot: '#3B82F6' };
+      case 'ACTIVO':             return { label: 'Activo',      tone: 'success',  dot: '#10B981' };
+      case 'EN_TRATAMIENTO':     return { label: 'En tratamiento', tone: 'success', dot: '#059669' };
+      case 'EN_PAUSA':           return { label: 'En pausa',    tone: 'warning',  dot: '#F59E0B' };
+      case 'CERRADO_ALTA':       return { label: 'Alta',        tone: 'muted',    dot: '#9CA3AF' };
+      case 'CERRADO_ABANDONO':   return { label: 'Suspendido',  tone: 'muted',    dot: '#9CA3AF' };
+      case 'CERRADO_DERIVACION': return { label: 'Derivado',    tone: 'muted',    dot: '#9CA3AF' };
+      default:                   return { label: estado ?? '—', tone: 'muted',    dot: '#9CA3AF' };
+    }
+  }
+
+  sessionActionLabel(session?: SesionClinicaResponse | null): 'Editar sesión' | 'Ver sesión' {
+    return session?.estado === 'BORRADOR' ? 'Editar sesión' : 'Ver sesión';
+  }
+
+  openCaseDetail(casoId: string, status?: string | null): void {
+    if (!this.isCaseEditable(status)) {
+      const consultorioId = this.consultorioCtx.selectedConsultorioId();
+      if (!consultorioId) return;
+      this.historiaSvc.getCasoAtencion(consultorioId, casoId).subscribe({
+        next: (caso) => {
+          this.viewingCaso.set(caso);
+          this.showCasoViewModal.set(true);
+        },
+        error: (err) => this.toast.error(this.errMap.toMessage(err)),
+      });
+    } else {
+      this.openEditCaso(casoId, 'edit');
+    }
+  }
+
+  closeCasoViewModal(): void {
+    this.showCasoViewModal.set(false);
+    this.viewingCaso.set(null);
   }
 
   toggleClosedCases(): void {
@@ -1161,6 +1474,7 @@ export class HistoriaClinicaPacientePage {
       },
       { emitEvent: false },
     );
+    this.casoForm.enable({ emitEvent: false });
     this.loadDiagnosticosMedicos();
     this.loadTratamientoCatalog();
     this.showCasoDrawer.set(true);
@@ -1168,7 +1482,7 @@ export class HistoriaClinicaPacientePage {
   }
 
   closeCasoModal(): void {
-    if (this.casoForm.dirty || this.casoDerivacionAdjuntos().length > 0) {
+    if (this.casoModalMode() !== 'view' && (this.casoForm.dirty || this.casoDerivacionAdjuntos().length > 0)) {
       this.showCasoCloseConfirm.set(true);
       return;
     }
@@ -1183,18 +1497,19 @@ export class HistoriaClinicaPacientePage {
     this.casoDiagnosticoCodes.set([]);
     this.casoDerivacionAdjuntos.set([]);
     this.casoAdjuntosExistentes.set([]);
+    this.casoForm.enable({ emitEvent: false });
     this.casoForm.markAsPristine();
   }
 
   nextCasoStep(): void {
     const step = this.casoModalStep();
     if (step === 1) {
-      if (!this.validateCasoStepOne()) {
+      if (!this.isCasoReadOnly() && !this.validateCasoStepOne()) {
         return;
       }
       this.casoModalStep.set(2);
     } else if (step === 2) {
-      if (!this.casoDiagnosticoCodes().length) {
+      if (!this.isCasoReadOnly() && !this.casoDiagnosticoCodes().length) {
         this.casoForm.controls.diagnosticoCodigo.markAsTouched();
         return;
       }
@@ -1209,6 +1524,10 @@ export class HistoriaClinicaPacientePage {
   }
 
   saveCaso(): void {
+    if (this.isCasoReadOnly()) {
+      this.closeCasoModal();
+      return;
+    }
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     const legajoId = this.overview()?.legajo.legajoId;
     const pacienteId = this.selectedPatient()?.id;
@@ -1308,24 +1627,63 @@ export class HistoriaClinicaPacientePage {
   }
 
   closeCaso(caso: HistoriaClinicaActiveCaseSummary | CasePanelItem): void {
+    this.closingCaseTarget.set(caso);
+    this.showCloseCaseConfirm.set(true);
+  }
+
+  cancelCloseCaso(): void {
+    this.showCloseCaseConfirm.set(false);
+    this.closingCaseTarget.set(null);
+  }
+
+  confirmCloseCaso(): void {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
+    const caso = this.closingCaseTarget();
+    if (!consultorioId || !caso) {
+      return;
+    }
+    this.showCloseCaseConfirm.set(false);
+
+    // CasoAtencion actual: cierre por cambio de estado del caso (no por diagnóstico clínico legacy).
+    if ('id' in caso) {
+      this.historiaSvc
+        .cambiarEstadoCaso(consultorioId, caso.id, { nuevoEstado: 'CERRADO_ALTA' })
+        .subscribe({
+          next: () => {
+            this.toast.info('Caso clínico cerrado.');
+            this.closingCaseTarget.set(null);
+            this.reloadSelectedPatient();
+          },
+          error: (err) => {
+            this.toast.error(this.errMap.toMessage(err));
+            this.closingCaseTarget.set(null);
+          },
+        });
+      return;
+    }
+
+    // Compatibilidad legacy: cierre por diagnóstico clínico cuando la acción proviene de ese modelo.
     const pacienteId = this.selectedPatient()?.id;
-    const diagnosticoId = 'diagnosticoId' in caso ? caso.diagnosticoId : caso.id;
-    if (!consultorioId || !pacienteId || !window.confirm('Se marcará el caso como resuelto.')) {
+    if (!pacienteId) {
+      this.closingCaseTarget.set(null);
       return;
     }
     this.historiaSvc
-      .resolveDiagnostico(consultorioId, pacienteId, diagnosticoId, { fechaFin: this.todayForInput() })
+      .resolveDiagnostico(consultorioId, pacienteId, caso.diagnosticoId, { fechaFin: this.todayForInput() })
       .subscribe({
         next: () => {
           this.toast.info('Caso clínico cerrado.');
+          this.closingCaseTarget.set(null);
           this.reloadSelectedPatient();
         },
-        error: (err) => this.toast.error(this.errMap.toMessage(err)),
+        error: (err) => {
+          this.toast.error(this.errMap.toMessage(err));
+          this.closingCaseTarget.set(null);
+        },
       });
   }
 
-  openEditCaso(casoId: string): void {
+  openEditCaso(casoId: string, mode: 'edit' | 'view' = 'edit'): void {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     if (!consultorioId) return;
     forkJoin({
@@ -1334,6 +1692,7 @@ export class HistoriaClinicaPacientePage {
       tratamientosCatalogo: this.tratamientoCatalogSvc.get(consultorioId).pipe(catchError(() => of(null))),
     }).subscribe({
       next: ({ caso, diagnosticosCatalogo, tratamientosCatalogo }) => {
+        const effectiveMode: 'edit' | 'view' = this.isCaseEditable(caso.estado) ? mode : 'view';
         this.diagnosticosMedicos.set(diagnosticosCatalogo?.diagnosticos ?? []);
         this.diagnosticosMedicosCategorias.set(diagnosticosCatalogo?.categorias ?? []);
         this.diagnosticosMedicosTipos.set(diagnosticosCatalogo?.tipos ?? []);
@@ -1350,7 +1709,7 @@ export class HistoriaClinicaPacientePage {
         const diagnosticoCodes = this.resolveDiagnosticoCodes(caso.diagnosticoMedico);
         const tratamientoResumen = this.parseTratamientoResumen(caso.diagnosticoFuncional);
         const tratamientoId = this.resolveTreatmentIdByName(tratamientoResumen.treatmentName);
-        this.casoModalMode.set('edit');
+        this.casoModalMode.set(effectiveMode);
         this.editingCasoId.set(caso.id);
         this.casoModalStep.set(1);
         this.showCasoCloseConfirm.set(false);
@@ -1371,6 +1730,11 @@ export class HistoriaClinicaPacientePage {
           },
           { emitEvent: false },
         );
+        if (effectiveMode === 'view') {
+          this.casoForm.disable({ emitEvent: false });
+        } else {
+          this.casoForm.enable({ emitEvent: false });
+        }
         this.showCasoDrawer.set(true);
         this.focusCasoFirstField();
       },
@@ -1395,6 +1759,44 @@ export class HistoriaClinicaPacientePage {
       },
       error: (err) => this.toast.error(this.errMap.toMessage(err)),
     });
+  }
+
+  openCaseImagePreview(casoId: string, adjuntoId: string, filename: string): void {
+    const consultorioId = this.consultorioCtx.selectedConsultorioId();
+    if (!consultorioId) {
+      return;
+    }
+    this.historiaSvc.downloadCasoAtencionAdjunto(consultorioId, casoId, adjuntoId).subscribe({
+      next: ({ blob }) => {
+        this.revokeCaseImagePreviewUrl();
+        const objectUrl = window.URL.createObjectURL(blob);
+        this.caseImagePreviewUrl.set(objectUrl);
+        this.caseImagePreviewName.set(filename);
+        this.showCaseImagePreview.set(true);
+      },
+      error: (err) => this.toast.error(this.errMap.toMessage(err)),
+    });
+  }
+
+  closeCaseImagePreview(): void {
+    this.showCaseImagePreview.set(false);
+    this.caseImagePreviewName.set('');
+    this.revokeCaseImagePreviewUrl();
+  }
+
+  openSummaryMedicalOrderImage(): void {
+    const medicalOrderImage = this.summaryMedicalOrderImage();
+    if (!medicalOrderImage) {
+      return;
+    }
+    this.openCaseImagePreview(medicalOrderImage.caseId, medicalOrderImage.adjuntoId, medicalOrderImage.filename);
+  }
+
+  toggleTreatmentObservationTooltip(): void {
+    if (!this.summaryCaseTreatmentObservation()) {
+      return;
+    }
+    this.showTreatmentObservationTooltip.update((current) => !current);
   }
 
   openAntecedentesDrawer(): void {
@@ -1424,8 +1826,38 @@ export class HistoriaClinicaPacientePage {
     this.antecedentesForm.markAsPristine();
   }
 
+  toggleSummaryPopover(sessionId: string, event: MouseEvent): void {
+    event.stopPropagation();
+    this.activePopoverSessionId.set(
+      this.activePopoverSessionId() === sessionId ? null : sessionId,
+    );
+  }
+
+  @HostListener('document:click')
+  closePopoverOnOutsideClick(): void {
+    if (this.activePopoverSessionId()) {
+      this.activePopoverSessionId.set(null);
+    }
+  }
+
   @HostListener('document:keydown.escape')
   onEscapeKey(): void {
+    if (this.activePopoverSessionId()) {
+      this.activePopoverSessionId.set(null);
+      return;
+    }
+    if (this.showCaseImagePreview()) {
+      this.closeCaseImagePreview();
+      return;
+    }
+    if (this.showCasoViewModal()) {
+      this.closeCasoViewModal();
+      return;
+    }
+    if (this.showTreatmentObservationTooltip()) {
+      this.showTreatmentObservationTooltip.set(false);
+      return;
+    }
     if (this.showCasoDrawer()) {
       this.closeCasoModal();
       return;
@@ -1872,6 +2304,8 @@ export class HistoriaClinicaPacientePage {
     this.showLegajoModal.set(false);
     this.showSesionDrawer.set(false);
     this.showCasoDrawer.set(false);
+    this.closeCaseImagePreview();
+    this.showTreatmentObservationTooltip.set(false);
     this.showAntecedentesDrawer.set(false);
     this.showClearPatientConfirm.set(false);
     this.resetLazyData();
@@ -1885,6 +2319,9 @@ export class HistoriaClinicaPacientePage {
     this.casosClinicos.set([]);
     this.backgroundLatestSesion.set(null);
     this.selectedCaseId.set(null);
+    this.summaryCaseAdjuntos.set([]);
+    this.summaryCaseAdjuntosLoadedCaseId.set(null);
+    this.summaryCaseTreatmentObservation.set(null);
     this.timelineVisibleCount.set(TIMELINE_BATCH_SIZE);
     this.showClosedCases.set(false);
     this.casesStatus.set('idle');
@@ -2205,6 +2642,19 @@ export class HistoriaClinicaPacientePage {
       });
   }
 
+  private loadSummaryCaseAdjuntos(consultorioId: string, caseId: string): void {
+    this.historiaSvc
+      .getCasoAtencion(consultorioId, caseId)
+      .pipe(catchError(() => of(null)))
+      .subscribe((caso) => {
+        const tratamientoResumen = this.parseTratamientoResumen(caso?.diagnosticoFuncional ?? null);
+        this.summaryCaseAdjuntos.set(caso?.adjuntos ?? []);
+        this.summaryCaseTreatmentObservation.set(tratamientoResumen.observacion ?? null);
+        this.showTreatmentObservationTooltip.set(false);
+        this.summaryCaseAdjuntosLoadedCaseId.set(caseId);
+      });
+  }
+
   private loadTratamientoCatalog(): void {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
     if (!consultorioId) {
@@ -2280,6 +2730,9 @@ export class HistoriaClinicaPacientePage {
   }
 
   updateCasoDiagnosticos(codes: string[]): void {
+    if (this.isCasoReadOnly()) {
+      return;
+    }
     this.casoDiagnosticoCodes.set(codes);
     this.casoForm.controls.diagnosticoCodigo.setValue(codes[0] ?? '', { emitEvent: false });
     this.casoForm.controls.diagnosticoCodigo.markAsDirty();
@@ -2290,6 +2743,9 @@ export class HistoriaClinicaPacientePage {
   }
 
   queueCasoDerivacionAdjuntos(event: Event): void {
+    if (this.isCasoReadOnly()) {
+      return;
+    }
     const input = event.target as HTMLInputElement | null;
     const files = Array.from(input?.files ?? []);
     if (!files.length) {
@@ -2316,6 +2772,9 @@ export class HistoriaClinicaPacientePage {
   }
 
   removeCasoDerivacionAdjunto(index: number): void {
+    if (this.isCasoReadOnly()) {
+      return;
+    }
     this.casoDerivacionAdjuntos.update((files) => files.filter((_, fileIndex) => fileIndex !== index));
   }
 
@@ -2357,6 +2816,23 @@ export class HistoriaClinicaPacientePage {
       cantidadSesiones: cantidadMatch?.[1]?.trim() || null,
       observacion: observacionMatch?.[1]?.trim() || null,
     };
+  }
+
+  private isImageAttachment(adjunto: AdjuntoClinicoResponse): boolean {
+    const contentType = (adjunto.contentType ?? '').toLowerCase();
+    if (contentType.startsWith('image/')) {
+      return true;
+    }
+    const filename = (adjunto.originalFilename ?? '').toLowerCase();
+    return ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.gif', '.bmp'].some((ext) => filename.endsWith(ext));
+  }
+
+  private revokeCaseImagePreviewUrl(): void {
+    const currentUrl = this.caseImagePreviewUrl();
+    if (currentUrl) {
+      window.URL.revokeObjectURL(currentUrl);
+      this.caseImagePreviewUrl.set(null);
+    }
   }
 
   private resolveTreatmentIdByName(treatmentName?: string | null): string | null {
@@ -2524,7 +3000,7 @@ export class HistoriaClinicaPacientePage {
   }
 
   private caseSourceLabel(value?: string | null): string {
-    if (value === 'DERIVACION') {
+    if (this.normalizeUpper(value).includes('DERIV')) {
       return 'Derivación';
     }
     if (value === 'CONSULTA_DIRECTA') {
@@ -2561,6 +3037,110 @@ export class HistoriaClinicaPacientePage {
       return 'Sin conducta definida';
     }
     return labels[value] ?? value;
+  }
+
+  private normalizeUpper(value?: string | null): string {
+    return (value ?? '').toString().trim().toUpperCase();
+  }
+
+  private extractDerivationInstitution(source?: string | null): string | null {
+    const value = (source ?? '').trim();
+    if (!value) {
+      return null;
+    }
+    const derivationMatch = value.match(/^Derivaci[oó]n\s*:\s*(.+)$/i);
+    if (!derivationMatch?.[1]) {
+      return null;
+    }
+    const detail = derivationMatch[1].trim();
+    return detail || null;
+  }
+
+  private isDerivacionCase(tipoOrigen?: string | null, motivoConsulta?: string | null): boolean {
+    if (this.normalizeUpper(tipoOrigen).includes('DERIV')) {
+      return true;
+    }
+    return this.extractDerivationInstitution(motivoConsulta) !== null;
+  }
+
+  private sessionOperationalState(session: SesionClinicaResponse): SessionOperationalState {
+    if (session.estado !== 'BORRADOR') {
+      return session.estado;
+    }
+    const evalData = session.evaluacionEstructurada;
+    const hasClinicalData = !!(
+      evalData ||
+      (session.resumenClinico && session.resumenClinico.trim().length > 0) ||
+      (session.subjetivo && session.subjetivo.trim().length > 0) ||
+      (session.objetivo && session.objetivo.trim().length > 0) ||
+      (session.evaluacion && session.evaluacion.trim().length > 0) ||
+      (session.plan && session.plan.trim().length > 0) ||
+      (session.intervenciones?.length ?? 0) > 0 ||
+      session.examenFisico
+    );
+    return hasClinicalData ? 'BORRADOR' : 'PENDIENTE';
+  }
+
+  private sessionOperationalStateLabel(value: SessionOperationalState): 'Pendiente' | 'Borrador' | 'Cerrada' | 'Anulada' {
+    switch (value) {
+      case 'PENDIENTE':
+        return 'Pendiente';
+      case 'BORRADOR':
+        return 'Borrador';
+      case 'CERRADA':
+        return 'Cerrada';
+      case 'ANULADA':
+      default:
+        return 'Anulada';
+    }
+  }
+
+  private sessionOperationalStateTone(value: SessionOperationalState): 'info' | 'warning' | 'muted' | 'error' {
+    switch (value) {
+      case 'PENDIENTE':
+        return 'info';
+      case 'BORRADOR':
+        return 'warning';
+      case 'CERRADA':
+        return 'muted';
+      case 'ANULADA':
+      default:
+        return 'error';
+    }
+  }
+
+  private sessionOperationalDataLine(session: SesionClinicaResponse, state: SessionOperationalState): string {
+    const evalData = session.evaluacionEstructurada;
+    if (state === 'PENDIENTE') {
+      const pendingParts = [
+        `Profesional: ${session.profesionalId ? this.resolveProfessionalName(session.profesionalId) : 'Sin asignar'}`,
+        session.boxId ? `Espacio: ${session.boxId}` : null,
+      ].filter((part): part is string => !!part);
+      return pendingParts.join(' · ');
+    }
+    if (state === 'ANULADA') {
+      const motivo = session.motivoConsulta?.trim() || session.resumenClinico?.trim();
+      return motivo ? `Motivo: ${motivo}` : 'Motivo: Sin detalle';
+    }
+    const parts = [
+      `Profesional: ${this.resolveProfessionalName(session.profesionalId)}`,
+      evalData?.respuestaPaciente ? `Respuesta: ${this.patientResponseLabel(evalData.respuestaPaciente)}` : null,
+      evalData?.dolorIntensidad !== null && evalData?.dolorIntensidad !== undefined
+        ? `Dolor: ${evalData.dolorIntensidad}/10`
+        : null,
+      evalData?.proximaConducta ? `Conducta: ${this.conductLabel(evalData.proximaConducta)}` : null,
+    ].filter((part): part is string => !!part);
+    return parts.join(' · ');
+  }
+
+  private sessionOperationalSummaryLine(session: SesionClinicaResponse, state: SessionOperationalState): string {
+    if (state === 'PENDIENTE') {
+      return 'Próxima sesión programada. Pendiente de inicio.';
+    }
+    if (state === 'ANULADA') {
+      return 'Sesión anulada. Sin atención registrada.';
+    }
+    return `Resumen: ${this.sessionClinicalSummary(session)}`;
   }
 
   sessionStateLabel(value?: HistoriaClinicaSesionEstado | null): string {
@@ -2718,6 +3298,19 @@ export class HistoriaClinicaPacientePage {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      hour12: false,
+    }).format(date);
+  }
+
+  private formatDateOnly(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return 'Sin fecha';
+    }
+    return new Intl.DateTimeFormat('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
     }).format(date);
   }
 

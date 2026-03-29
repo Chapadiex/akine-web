@@ -233,6 +233,7 @@
   font-weight: 700;
 }
 
+// ── Step tabs — estados: pendiente / hover / activo / completado ──────────
 .steps-nav {
   gap: .25rem;
   width: 100%;
@@ -243,31 +244,63 @@
 .step-tab {
   gap: .5rem;
   min-height: 2.5rem;
-  padding: .35rem 0 .45rem;
+  padding: .35rem .5rem .45rem;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--color-neutral-400, #94a3b8);
   text-align: left;
+  border-radius: 6px 6px 0 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  // Hover solo en pasos que NO son el activo
+  &:not(.step-tab-active):hover {
+    background: var(--color-primary-light, #e6f4f2);
+    color: var(--color-primary-text, #0d4a40);
+    border-bottom-color: transparent;
+
+    .step-index {
+      border-color: var(--color-primary, #1a6b5e);
+      color: var(--color-primary, #1a6b5e);
+      background: var(--color-primary-light, #e6f4f2);
+    }
+  }
 }
 
+// Paso activo
 .step-tab-active {
-  border-bottom-color: var(--primary);
-  color: var(--text);
+  border-bottom-color: var(--color-primary, #1a6b5e);
+  color: var(--color-neutral-900, #0f172a);
+
+  .step-index {
+    border-color: var(--color-primary, #1a6b5e);
+    background: var(--color-primary, #1a6b5e);
+    color: var(--color-white, #fff);
+  }
 }
 
+// Paso completado — distinto del pendiente Y distinto del activo
 .step-tab-done:not(.step-tab-active) {
-  color: color-mix(in srgb, var(--text) 82%, var(--success) 18%);
+  color: var(--color-neutral-600, #475569);
+
+  .step-index {
+    border-color: var(--color-success, #059669);
+    background: var(--color-success-light, #ecfdf5);
+    color: var(--color-success-text, #065f46);
+  }
 }
 
+// Número del paso (estado base: pendiente)
 .step-index {
   width: 1.25rem;
   height: 1.25rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-neutral-200, #e2e8f0);
   border-radius: 999px;
-  background: var(--bg);
+  background: var(--color-neutral-50, #f8fafc);
+  color: var(--color-neutral-400, #94a3b8);
   font-size: .66rem;
   flex: 0 0 auto;
+  transition: all 0.15s;
 }
 
 .editor-panel {

@@ -1,16 +1,31 @@
+﻿import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ConsultorioContextService } from '../../../../core/consultorio/consultorio-context.service';
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
-import { Patient360Summary } from '../../models/paciente-360.models';
+import { Patient360Summary, Patient360SummaryKpis } from '../../models/paciente-360.models';
 import { Paciente360Service } from '../../services/paciente-360.service';
+
+type KpiTone = 'neutral' | 'success' | 'warning' | 'danger';
+
+interface ResumenKpiCard {
+  key: 'proximo-turno' | 'ultima-atencion' | 'diagnosticos-activos' | 'sesiones-mes' | 'saldo-pendiente';
+  label: string;
+  value: string;
+  helper: string;
+  tone: KpiTone;
+  clickable: boolean;
+  route: string;
+  queryParams: Params;
+  cta: string;
+}
 
 @Component({
   selector: 'app-resumen-page',
   standalone: true,
-  imports: [RouterLink, DatePipe, CurrencyPipe],
+  imports: [RouterLink, DatePipe],
   styleUrl: './resumen.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -19,57 +34,25 @@ import { Paciente360Service } from '../../services/paciente-360.service';
         <p class="loading-msg">Cargando resumen operativo...</p>
       } @else if (summary(); as current) {
         <div class="kpi-grid">
-          <article class="kpi-card"
-            [class.kpi-card-success]="!!current.kpis.proximoTurnoFecha"
-            [class.kpi-card-warning]="!current.kpis.proximoTurnoFecha">
-            <span class="kpi-label">Próximo turno</span>
-            <strong class="kpi-value">
-              {{ current.kpis.proximoTurnoFecha ? (current.kpis.proximoTurnoFecha | date:'dd MMM · HH:mm') : 'Sin turno' }}
-            </strong>
-            <small class="kpi-helper">{{ current.kpis.proximoTurnoProfesional || 'Pendiente de agenda' }}</small>
-          </article>
-
-          <article class="kpi-card"
-            [class.kpi-card-success]="!!current.kpis.ultimaAtencionFecha"
-            [class.kpi-card-warning]="!current.kpis.ultimaAtencionFecha">
-            <span class="kpi-label">Última atención</span>
-            <strong class="kpi-value">
-              {{ current.kpis.ultimaAtencionFecha ? (current.kpis.ultimaAtencionFecha | date:'dd MMM · HH:mm') : 'Sin registros' }}
-            </strong>
-            <small class="kpi-helper">{{ current.kpis.ultimaAtencionProfesional || 'Sin profesional' }}</small>
-          </article>
-
-          <article class="kpi-card"
-            [class.kpi-card-warning]="current.kpis.diagnosticosActivos > 0"
-            [class.kpi-card-success]="current.kpis.diagnosticosActivos === 0">
-            <span class="kpi-label">Diagnósticos activos</span>
-            <strong class="kpi-value">{{ current.kpis.diagnosticosActivos }}</strong>
-            <small class="kpi-helper">Pendientes de seguimiento clínico</small>
-          </article>
-
-          <article class="kpi-card"
-            [class.kpi-card-success]="current.kpis.sesionesMes > 0"
-            [class.kpi-card-warning]="current.kpis.sesionesMes === 0">
-            <span class="kpi-label">Sesiones del mes</span>
-            <strong class="kpi-value">{{ current.kpis.sesionesMes }}</strong>
-            <small class="kpi-helper">Atenciones efectivas registradas</small>
-          </article>
-
-          <article class="kpi-card"
-            [class.kpi-card-success]="current.kpis.coberturaEstado && !current.kpis.coberturaEstado.toLowerCase().startsWith('sin')"
-            [class.kpi-card-warning]="!current.kpis.coberturaEstado || current.kpis.coberturaEstado.toLowerCase().startsWith('sin')">
-            <span class="kpi-label">Cobertura</span>
-            <strong class="kpi-value">{{ current.kpis.coberturaEstado }}</strong>
-            <small class="kpi-helper">Convenio y autorizaciones</small>
-          </article>
-
-          <article class="kpi-card"
-            [class.kpi-card-warning]="current.kpis.saldoPendiente > 0"
-            [class.kpi-card-success]="current.kpis.saldoPendiente === 0">
-            <span class="kpi-label">Saldo pendiente</span>
-            <strong class="kpi-value">{{ current.kpis.saldoPendiente | currency:'ARS':'symbol':'1.0-0' }}</strong>
-            <small class="kpi-helper">Caja vinculada al paciente</small>
-          </article>
+          @for (card of kpiCards(); track card.key) {
+            <button
+              type="button"
+              class="kpi-card"
+              [class.kpi-card-clickable]="card.clickable"
+              [class.kpi-card-neutral]="card.tone === 'neutral'"
+              [class.kpi-card-success]="card.tone === 'success'"
+              [class.kpi-card-warning]="card.tone === 'warning'"
+              [class.kpi-card-danger]="card.tone === 'danger'"
+              [disabled]="!card.clickable"
+              [attr.aria-label]="card.label + ': ' + card.value + '. ' + card.cta"
+              (click)="onKpiClick(card)"
+            >
+              <span class="kpi-label">{{ card.label }}</span>
+              <strong class="kpi-value">{{ card.value }}</strong>
+              <span class="kpi-helper">{{ card.helper }}</span>
+              <span class="kpi-cta">{{ card.cta }}</span>
+            </button>
+          }
         </div>
 
         <div class="panels-grid">
@@ -96,7 +79,7 @@ import { Paciente360Service } from '../../services/paciente-360.service';
 
           <article class="panel">
             <header class="panel-head">
-              <h3>Próximas acciones</h3>
+              <h3>Proximas acciones</h3>
               <a [routerLink]="['../turnos']">Gestionar</a>
             </header>
             @if (current.proximasAcciones.length === 0) {
@@ -127,6 +110,8 @@ import { Paciente360Service } from '../../services/paciente-360.service';
 })
 export class ResumenPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   private readonly consultorioCtx = inject(ConsultorioContextService);
   private readonly svc = inject(Paciente360Service);
   private readonly toast = inject(ToastService);
@@ -135,9 +120,94 @@ export class ResumenPage {
   readonly summary = signal<Patient360Summary | null>(null);
   readonly loading = signal(true);
 
-  readonly activityRoute = computed(() =>
-    this.summary()?.actividadReciente[0]?.route ?? '../turnos',
-  );
+  readonly activityRoute = computed(() => this.summary()?.actividadReciente[0]?.route ?? '../turnos');
+
+  readonly kpiCards = computed<ResumenKpiCard[]>(() => {
+    const current = this.summary();
+    if (!current) {
+      return [];
+    }
+
+    const kpis = current.kpis;
+    const canAccessPagos = this.auth.hasAnyRole('ADMIN');
+
+    return [
+      {
+        key: 'proximo-turno',
+        label: 'Proximo turno',
+        value: kpis.proximoTurnoFecha ? this.formatDateTime(kpis.proximoTurnoFecha) : 'Sin turno',
+        helper: kpis.proximoTurnoProfesional || 'Sin agenda asignada',
+        tone: this.getProximoTurnoTone(kpis),
+        clickable: true,
+        route: '../turnos',
+        queryParams: {
+          scope: 'PROXIMOS',
+          origen: 'kpi-proximo-turno',
+          cta: kpis.proximoTurnoFecha ? 'ver-turnos' : 'programar-turno',
+        },
+        cta: kpis.proximoTurnoFecha ? 'Ver turnos' : 'Programar turno',
+      },
+      {
+        key: 'ultima-atencion',
+        label: 'Ultima atencion',
+        value: kpis.ultimaAtencionFecha ? this.formatDateTime(kpis.ultimaAtencionFecha) : 'Sin registros',
+        helper: kpis.ultimaAtencionProfesional || 'Sin profesional registrado',
+        tone: this.getUltimaAtencionTone(kpis),
+        clickable: true,
+        route: '../atenciones',
+        queryParams: {
+          origen: 'kpi-ultima-atencion',
+          cta: kpis.ultimaAtencionFecha ? 'ver-detalle' : 'ver-atenciones',
+        },
+        cta: kpis.ultimaAtencionFecha ? 'Ver detalle' : 'Ir a atenciones',
+      },
+      {
+        key: 'diagnosticos-activos',
+        label: 'Diagnosticos activos',
+        value: String(kpis.diagnosticosActivos),
+        helper: kpis.diagnosticosActivos > 0 ? 'Con seguimiento en curso' : 'Sin diagnosticos activos',
+        tone: kpis.diagnosticosActivos > 0 ? 'warning' : 'neutral',
+        clickable: true,
+        route: '../diagnosticos',
+        queryParams: {
+          estado: 'ACTIVO',
+          origen: 'kpi-diagnosticos-activos',
+          cta: kpis.diagnosticosActivos > 0 ? 'ver-activos' : 'crear-diagnostico',
+        },
+        cta: kpis.diagnosticosActivos > 0 ? 'Ver activos' : 'Crear diagnostico',
+      },
+      {
+        key: 'sesiones-mes',
+        label: 'Sesiones del mes',
+        value: String(kpis.sesionesMes),
+        helper: 'Atenciones del mes actual',
+        tone: kpis.sesionesMes === 0 ? 'warning' : 'neutral',
+        clickable: true,
+        route: '../atenciones',
+        queryParams: {
+          periodo: 'mes-actual',
+          origen: 'kpi-sesiones-mes',
+          cta: 'ver-sesiones-mes',
+        },
+        cta: 'Ver sesiones',
+      },
+      {
+        key: 'saldo-pendiente',
+        label: 'Saldo pendiente',
+        value: this.formatCurrency(kpis.saldoPendiente),
+        helper: kpis.saldoPendiente > 0 ? 'Cuenta corriente con deuda' : 'Cuenta al dia',
+        tone: kpis.saldoPendiente === 0 ? 'success' : 'warning',
+        clickable: canAccessPagos,
+        route: '../pagos',
+        queryParams: {
+          estado: kpis.saldoPendiente > 0 ? 'PENDIENTE' : 'AL_DIA',
+          origen: 'kpi-saldo-pendiente',
+          cta: kpis.saldoPendiente > 0 ? 'regularizar' : 'ver-cuenta',
+        },
+        cta: canAccessPagos ? 'Ver cobranzas' : 'Sin permisos de cobranza',
+      },
+    ];
+  });
 
   constructor() {
     const consultorioId = this.consultorioCtx.selectedConsultorioId();
@@ -156,5 +226,65 @@ export class ResumenPage {
         this.toast.error(this.errMap.toMessage(err));
       },
     });
+  }
+
+  onKpiClick(card: ResumenKpiCard): void {
+    if (!card.clickable) {
+      return;
+    }
+    void this.router.navigate([card.route], {
+      relativeTo: this.route,
+      queryParams: card.queryParams,
+    });
+  }
+
+  private formatDateTime(value: string): string {
+    return new Intl.DateTimeFormat('es-AR', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(value));
+  }
+
+  private formatCurrency(value: number): string {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      maximumFractionDigits: 0,
+    }).format(value ?? 0);
+  }
+
+  private getProximoTurnoTone(kpis: Patient360SummaryKpis): KpiTone {
+    if (!kpis.proximoTurnoFecha) {
+      return 'warning';
+    }
+    const estado = (kpis.proximoTurnoEstado ?? '').toUpperCase();
+    if (estado.includes('CANCEL') || estado.includes('AUSEN')) {
+      return 'danger';
+    }
+    if (estado.includes('CONFIRM') || estado.includes('PROGRAM')) {
+      return 'success';
+    }
+    return 'neutral';
+  }
+
+  private getUltimaAtencionTone(kpis: Patient360SummaryKpis): KpiTone {
+    if (!kpis.ultimaAtencionFecha) {
+      return 'warning';
+    }
+    const dias = this.getDaysSince(kpis.ultimaAtencionFecha);
+    if (dias > 120) {
+      return 'danger';
+    }
+    if (dias > 45) {
+      return 'warning';
+    }
+    return 'neutral';
+  }
+
+  private getDaysSince(value: string): number {
+    const diffMs = Date.now() - new Date(value).getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
   }
 }

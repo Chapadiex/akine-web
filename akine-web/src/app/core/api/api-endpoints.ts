@@ -189,6 +189,7 @@ export const API = {
     byFecha:    (cid: string, fecha: string) => `/api/v1/consultorios/${cid}/caja?fecha=${fecha}`,
     cerrar:     (cid: string, id: string) => `/api/v1/consultorios/${cid}/caja/${id}/cerrar`,
     movimientos:(cid: string, id: string) => `/api/v1/consultorios/${cid}/caja/${id}/movimientos`,
+    egreso:     (cid: string, id: string) => `/api/v1/consultorios/${cid}/caja/${id}/egresos`,
   },
   cobros: {
     cobrar:         (cid: string) => `/api/v1/consultorios/${cid}/cobros`,
@@ -198,6 +199,7 @@ export const API = {
     anular:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/cobros/${id}/anular`,
   },
   liquidaciones: {
+    list:               (cid: string) => `/api/v1/consultorios/${cid}/liquidaciones`,
     byId:               (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}`,
     bySesion:           (cid: string, sesionId: string) => `/api/v1/consultorios/${cid}/liquidaciones/sesion/${sesionId}`,
     reliquidar:         (cid: string, id: string) => `/api/v1/consultorios/${cid}/liquidaciones/${id}/reliquidar`,
@@ -223,6 +225,34 @@ export const API = {
     byLote:     (cid: string, loteId: string) => `/api/v1/consultorios/${cid}/pagos-os/lote/${loteId}`,
     registrar:  (cid: string) => `/api/v1/consultorios/${cid}/pagos-os`,
     imputar:    (cid: string, id: string) => `/api/v1/consultorios/${cid}/pagos-os/${id}/imputar`,
+  },
+  configuracionConsultorio: {
+    get:    (cid: string) => `/api/v1/configuracion/consultorio/${cid}`,
+    upsert: (cid: string) => `/api/v1/configuracion/consultorio/${cid}`,
+  },
+  prestaciones: {
+    list:   '/api/v1/facturacion/prestaciones',
+    create: '/api/v1/facturacion/prestaciones',
+    byId:   (id: string) => `/api/v1/facturacion/prestaciones/${id}`,
+  },
+  nomenclador: {
+    list: '/api/v1/facturacion/nomenclador',
+  },
+  convenios: {
+    byConsultorio:       (cid: string) => `/api/v1/facturacion/convenios/consultorio/${cid}`,
+    byId:                (id: string) => `/api/v1/facturacion/convenios/${id}`,
+    create:              (consultorioId: string) => `/api/v1/facturacion/convenios?consultorioId=${consultorioId}`,
+    update:              (id: string) => `/api/v1/facturacion/convenios/${id}`,
+    cambiarEstado:       (id: string) => `/api/v1/facturacion/convenios/${id}/estado`,
+    renovar:             (id: string) => `/api/v1/facturacion/convenios/${id}/renovar`,
+    agregarArancel:      (id: string) => `/api/v1/facturacion/convenios/${id}/aranceles`,
+    bulkUpdateAranceles: (id: string) => `/api/v1/facturacion/convenios/${id}/aranceles/bulk-update`,
+    versiones:           (id: string) => `/api/v1/facturacion/convenios/${id}/versiones`,
+    delete:              (id: string) => `/api/v1/facturacion/convenios/${id}`,
+  },
+  financiadores: {
+    byConsultorio:       (cid: string) => `/api/v1/cobertura/financiadores?consultorioId=${cid}`,
+    planesByFinanciador: (fid: string) => `/api/v1/cobertura/planes/financiador/${fid}`,
   },
   obrasSociales: {
     list: (cid: string, params?: { q?: string; estado?: string; conPlanes?: boolean; page?: number; size?: number }) => {

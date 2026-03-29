@@ -1,0 +1,131 @@
+﻿<div class="operativo-page">
+  @if (pageState() === 'loading') {
+    <div class="skeleton-block"></div>
+  }
+
+  @if (pageState() === 'error') {
+    <p class="text-danger">No se pudo cargar la configuración.</p>
+  }
+
+  @if (pageState() === 'loaded') {
+    <form [formGroup]="form" (ngSubmit)="guardar()" class="operativo-form">
+      <header class="operativo-head">
+        <h2>Operativo</h2>
+        <p>Configuraciones que impactan en cobro, caja, recibos y alertas del consultorio.</p>
+      </header>
+
+      <section class="operativo-section">
+        <h3>Cobro</h3>
+
+        <article class="config-row">
+          <div class="config-row__label">Arancel particular por sesión</div>
+          <div class="config-row__hint">Precio base para pacientes sin cobertura o fuera de convenio.</div>
+          <div class="config-row__control">
+            <div class="money-input">
+              <span>$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                formControlName="arancelParticularPorSesion"
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+        </article>
+
+        <article class="config-row">
+          <div class="config-row__label">Política de no-show</div>
+          <div class="config-row__hint">Define qué se cobra cuando el paciente no asiste.</div>
+          <div class="config-row__control">
+            <select formControlName="politicaNoShow">
+              @for (p of politicasNoShow; track p.value) {
+                <option [value]="p.value">{{ p.label }}</option>
+              }
+            </select>
+          </div>
+        </article>
+
+        <article class="config-row">
+          <div class="config-row__label">Horas de aviso para cancelar sin costo</div>
+          <div class="config-row__hint">Si se deja vacío, no se aplica ventana de gracia.</div>
+          <div class="config-row__control config-row__control--with-unit">
+            <input type="number" min="0" formControlName="noShowHorasAviso" placeholder="24" />
+            <small>horas</small>
+          </div>
+        </article>
+      </section>
+
+      <section class="operativo-section">
+        <h3>Caja</h3>
+
+        <article class="config-row">
+          <div class="config-row__label">Múltiples cajas por día</div>
+          <div class="config-row__hint">Permite separar aperturas/cierres por turnos operativos.</div>
+          <div class="config-row__control">
+            <label class="switch">
+              <input type="checkbox" formControlName="habilitarMultiplesCajas" />
+              <span class="switch__track"></span>
+              <span class="switch__text">{{ form.controls.habilitarMultiplesCajas.value ? 'Sí' : 'No' }}</span>
+            </label>
+          </div>
+        </article>
+
+        <article class="config-row">
+          <div class="config-row__label">Moneda</div>
+          <div class="config-row__hint">Moneda por defecto para cobros de caja y recibos.</div>
+          <div class="config-row__control">
+            <select formControlName="monedaDefault">
+              <option value="ARS">ARS — Peso argentino</option>
+              <option value="USD">USD — Dólar</option>
+            </select>
+          </div>
+        </article>
+
+        <article class="config-row">
+          <div class="config-row__label">Formato de numeración de recibos</div>
+          <div class="config-row__hint">Plantilla del identificador de recibos emitidos.</div>
+          <div class="config-row__control">
+            <input type="text" formControlName="formatoNumeracionRecibo" placeholder="REC-{year}-{seq:06}" />
+          </div>
+        </article>
+      </section>
+
+      <section class="operativo-section">
+        <h3>Alertas</h3>
+
+        <article class="config-row">
+          <div class="config-row__label">Alerta sesión sin cierre clínico</div>
+          <div class="config-row__hint">Notifica cuando una sesión permanece abierta más de N horas.</div>
+          <div class="config-row__control config-row__control--with-unit">
+            <input type="number" min="1" formControlName="alertaSesionSinCierreHoras" />
+            <small>horas</small>
+          </div>
+        </article>
+      </section>
+
+      <section class="operativo-summary">
+        <h3>Resumen operativo</h3>
+        <div class="operativo-summary__grid">
+          @for (item of summaryItems(); track item.label) {
+            <article class="summary-item">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.value }}</span>
+            </article>
+          }
+        </div>
+      </section>
+
+      <footer class="operativo-footer">
+        <div class="operativo-footer__left">
+          <button type="button" class="btn btn--ghost btn--sm" (click)="cancelar()">Cancelar</button>
+          <button type="button" class="btn btn--secondary btn--sm" (click)="restaurarValores()">Restaurar valores</button>
+        </div>
+        <button type="submit" class="btn btn--primary btn--sm" [disabled]="form.invalid || submitting()">
+          {{ submitting() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </footer>
+    </form>
+  }
+</div>
+

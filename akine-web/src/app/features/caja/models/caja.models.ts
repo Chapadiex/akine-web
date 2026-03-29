@@ -36,7 +36,12 @@ export type OrigenMovimiento =
   | 'AJUSTE_MANUAL'
   | 'ANULACION';
 
-export type EstadoCobroPaciente = 'COBRADO' | 'ANULADO';
+export type EstadoCobroPaciente =
+  | 'PENDIENTE'
+  | 'PARCIAL'
+  | 'COBRADO_TOTAL'
+  | 'ANULADO'
+  | 'COBRADO';
 
 export interface CajaDiaria {
   id: string;
@@ -103,7 +108,36 @@ export interface CobroPaciente {
   version: number;
 }
 
+export type TipoEgreso =
+  | 'INSUMOS'
+  | 'SERVICIOS'
+  | 'PROVEEDOR'
+  | 'RETIRO'
+  | 'OTRO';
+
+export const TIPO_EGRESO_LABELS: Record<TipoEgreso, string> = {
+  INSUMOS: 'Insumos y materiales',
+  SERVICIOS: 'Servicios',
+  PROVEEDOR: 'Pago a proveedor',
+  RETIRO: 'Retiro de caja',
+  OTRO: 'Otro',
+};
+
 // ── Requests ──────────────────────────────────────────────────────────────────
+
+export interface EgresoDetalleRequest {
+  medioPago: MedioPago;
+  importe: number;
+  referenciaOperacion: string | null;
+}
+
+export interface EgresoManualRequest {
+  tipoEgreso: TipoEgreso;
+  concepto: string | null;
+  importeTotal: number;
+  detalles: EgresoDetalleRequest[];
+  observaciones: string | null;
+}
 
 export interface AperturaCajaRequest {
   fechaOperativa: string;

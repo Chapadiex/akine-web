@@ -28,7 +28,7 @@ import { Paciente360Service } from '../../services/paciente-360.service';
             [queryParams]="workspaceQueryParams()"
             aria-label="Abrir workspace global de historia clinica"
           >
-            Global
+            Historia clínica
           </a>
           <button
             type="button"
@@ -86,11 +86,16 @@ import { Paciente360Service } from '../../services/paciente-360.service';
         <div class="content-grid">
           <div class="timeline">
             @for (item of data()!.items; track item.id) {
-              <button class="timeline-item" type="button" (click)="selected.set(item)">
-                <span class="timeline-date">{{ item.fecha | date:'dd MMM yyyy · HH:mm' }}</span>
+              <button
+                class="timeline-item"
+                [class.timeline-item--active]="selected()?.id === item.id"
+                type="button"
+                (click)="selected.set(item)"
+              >
+                <span class="timeline-date">{{ item.fecha | date:'dd/MM/yyyy · HH:mm' }}</span>
                 <div class="timeline-copy">
                   <strong>{{ item.resumen }}</strong>
-                  <p>{{ item.profesionalNombre || 'Profesional sin identificar' }} · {{ item.tipo }}</p>
+                  <span class="timeline-meta">{{ item.profesionalNombre || 'Sin profesional' }} · {{ item.tipo }}</span>
                 </div>
               </button>
             }

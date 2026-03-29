@@ -678,3 +678,66 @@ th {
 .app-data-table td.col-status > * {
   margin-inline: auto;
 }
+
+/* Material Symbols — ligature icon helper */
+.icon {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: inherit;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
+}
+
+/* ─── Token aliases — nuevos componentes (Fase 0-5) ───────────────────────── */
+/* Mapea el naming system --color-* / --space-* al sistema existente           */
+:root {
+  /* Primary */
+  --color-primary:      var(--primary);
+  --color-primary-dark: var(--primary-hover);
+
+  /* White */
+  --color-white: var(--white);
+
+  /* Neutral scale (Tailwind-like) */
+  --color-neutral-50:  #F8FAFC;
+  --color-neutral-100: #F1F5F9;
+  --color-neutral-200: #E2E8F0;
+  --color-neutral-300: #CBD5E1;
+  --color-neutral-400: #94A3B8;
+  --color-neutral-500: #64748B;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1E293B;
+  --color-neutral-900: #0F172A;
+
+  /* Spacing scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+
+  /* Semantic colors — success */
+  --color-success:      #16A34A;
+  --color-success-light: #F0FDF4;
+  --color-success-text: #15803D;
+
+  /* Semantic colors — error */
+  --color-error:       #DC2626;
+  --color-error-light: #FEF2F2;
+  --color-error-text:  #B91C1C;
+
+  /* Mono font */
+  --font-mono: 'Courier New', Courier, monospace;
+}

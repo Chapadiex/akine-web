@@ -1,14 +1,26 @@
-export enum ModalidadPago {
-  PRESTACION = 'PRESTACION',
-  MODULO = 'MODULO',
-  CAPITA = 'CAPITA'
+// Financiadores y planes (catálogo de obras sociales)
+export interface FinanciadorSalud {
+  id: string;
+  nombre: string;
+  nombreCorto?: string;
+  codigoExterno?: string;
+  activo?: boolean;
 }
 
-export enum UnidadFacturacion {
-  SESION = 'SESION',
-  PRACTICA = 'PRACTICA',
-  MODULO = 'MODULO'
+export interface PlanFinanciador {
+  id: string;
+  financiadorId: string;
+  nombrePlan: string;
+  activo?: boolean;
 }
+
+export type EstadoConvenio = 'vigente' | 'por-vencer' | 'vencido' | 'sin-fechas';
+
+export type ModalidadPago = 'PRESTACION' | 'MODULO' | 'CAPITA';
+
+export type ModoFacturacion = 'INDIVIDUAL' | 'AGRUPADO';
+
+export type UnidadFacturacion = 'SESION' | 'PRACTICA' | 'MODULO';
 
 export enum EstadoFacturacion {
   PENDIENTE = 'PENDIENTE',
@@ -36,11 +48,33 @@ export enum EstadoConciliacion {
 export interface ConvenioFinanciador {
   id?: string;
   financiadorId: string;
+  consultorioId?: string;
+  planId?: string;
   nombre: string;
   modalidadPago: ModalidadPago;
+  modoFacturacion?: ModoFacturacion;
   vigenciaDesde: string;
   vigenciaHasta?: string;
   diaCierre?: number;
+  requiereAutorizacion?: boolean;
+  requiereOrden?: boolean;
+  cantidadSesionesAutorizadas?: number;
+  activo?: boolean;
+}
+
+export interface ConvenioFinanciadorRequest {
+  financiadorId: string;
+  consultorioId: string;
+  planId?: string;
+  nombre: string;
+  modalidadPago: ModalidadPago;
+  modoFacturacion?: ModoFacturacion;
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
+  diaCierre?: number;
+  requiereAutorizacion?: boolean;
+  requiereOrden?: boolean;
+  cantidadSesionesAutorizadas?: number;
   activo?: boolean;
 }
 
@@ -60,7 +94,24 @@ export interface ConvenioPrestacionValor {
   vigenciaDesde: string;
   vigenciaHasta?: string;
   importeBase: number;
-  importeCopago: number;
+  importeCopago?: number;
+  copajoPorcentaje?: number;
+  coseguroImporte?: number;
+  topeCobertura?: number;
+  activo?: boolean;
+}
+
+export interface ConvenioPrestacionValorRequest {
+  convenioId: string;
+  planId?: string;
+  prestacionId: string;
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
+  importeBase: number;
+  importeCopago?: number;
+  copajoPorcentaje?: number;
+  coseguroImporte?: number;
+  topeCobertura?: number;
   activo?: boolean;
 }
 
@@ -173,4 +224,122 @@ export interface RegistrarPagoOsRequest {
 
 export interface ImputarPagoOsRequest {
   cajaDiariaId: string;
+}
+
+// ─── Módulo Convenios (plan definitivo) ──────────────────────────────────────
+
+export type ModalidadConvenio = 'POR_PRESTACION' | 'POR_SESION' | 'CAPITA';
+export type ConvenioVersionEstado = 'VIGENTE' | 'CERRADA' | 'INACTIVA';
+export type CoseguroTipo = 'NINGUNO' | 'FIJO' | 'PORCENTAJE';
+export type ModalidadPrestacion = 'CONSULTORIO' | 'DOMICILIO' | 'COMBINADO';
+
+export interface Prestacion {
+  id: string;
+  codigoNomenclador: string;
+  nombre: string;
+  modalidad: ModalidadPrestacion;
+  esModulo: boolean;
+  codigosIncluidos?: string;
+  requiereAutBase: boolean;
+  activa: boolean;
+}
+
+export interface ArancelResumen {
+  codigoNomenclador: string;
+  nombrePrestacion: string;
+  importeTotal: number;
+}
+
+export interface Arancel {
+  id: string;
+  convenioVersionId: string;
+  prestacionId: string;
+  prestacionCodigo: string;
+  prestacionNombre: string;
+  importeOs: number;
+  coseguroTipo: CoseguroTipo;
+  coseguroValor?: number;
+  importeTotal: number;
+  sesionesMesMax?: number;
+  sesionesAnioMax?: number;
+  requiereAutOverride?: boolean;
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
+  activo: boolean;
+}
+
+export interface ConvenioVersion {
+  id: string;
+  convenioId: string;
+  versionNum: number;
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
+  estado: ConvenioVersionEstado;
+  motivoCierre?: string;
+  creadoAt: string;
+  cantidadLotes: number;
+  aranceles?: Arancel[];
+}
+
+export interface Convenio {
+  id: string;
+  consultorioId: string;
+  financiadorId: string;
+  financiadorNombre: string;
+  financiadorSigla?: string;
+  plan?: string;
+  siglaDisplay: string;
+  modalidad: ModalidadConvenio;
+  diaCierre?: number;
+  requiereAut: boolean;
+  requiereOrden: boolean;
+  versionActual?: ConvenioVersion;
+  arancelesResumen?: ArancelResumen[];
+}
+
+export interface NuevoArancelRequest {
+  prestacionId: string;
+  importeOs: number;
+  coseguroTipo: CoseguroTipo;
+  coseguroValor?: number;
+  sesionesMesMax?: number;
+  sesionesAnioMax?: number;
+  requiereAutOverride?: boolean;
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
+}
+
+export interface NuevoConvenioRequest {
+  financiadorId: string;
+  plan?: string;
+  modalidad: ModalidadConvenio;
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
+  diaCierre?: number;
+  requiereAut: boolean;
+  requiereOrden: boolean;
+  aranceles?: NuevoArancelRequest[];
+}
+
+export interface ActualizarConvenioRequest {
+  modalidad?: ModalidadConvenio;
+  diaCierre?: number;
+  requiereAut?: boolean;
+  requiereOrden?: boolean;
+  vigenciaHasta?: string;
+}
+
+export interface RenovarConvenioRequest {
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
+  motivoCierre?: string;
+  aranceles?: NuevoArancelRequest[];
+}
+
+export interface ActualizarArancelesRequest {
+  prestacionIds?: string[];
+  metodo: 'porcentaje' | 'importe_directo';
+  valor: number;
+  vigenciaDesde: string;
+  vigenciaHasta?: string;
 }

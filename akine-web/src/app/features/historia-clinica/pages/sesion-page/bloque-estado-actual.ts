@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/historia-clinica.models';
@@ -25,11 +25,17 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
                 type="range" min="0" max="10" step="1"
                 formControlName="dolorIntensidad"
                 class="dolor-slider"
+                [style.accentColor]="dolorColor()"
                 (input)="changed.emit()"
               />
               <span class="dolor-max">10</span>
-              <span class="dolor-badge" [attr.data-nivel]="nivelDolor()">
-                {{ form().get('dolorIntensidad')?.value ?? 0 }}/10
+              <span
+                class="dolor-badge"
+                [style.color]="dolorColor()"
+                [style.borderColor]="dolorColor()"
+                [style.backgroundColor]="dolorBgColor()"
+              >
+                {{ form().get('dolorIntensidad')?.value ?? 5 }}/10
               </span>
             </div>
             <div class="dolor-labels-row">
@@ -138,13 +144,13 @@ import { EvolucionDesdeAnterior, SesionEvaluacionDTO } from '../../models/histor
       text-align: center;
       padding: 3px 10px;
       border-radius: 999px;
-      background: var(--white, #fff);
+      background: #fff;
       border: 1px solid var(--border, #e2e8f0);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 90ms linear, border-color 90ms linear, background-color 90ms linear;
     }
-    .dolor-badge[data-nivel='none'] { color: #64748b; }
-    .dolor-badge[data-nivel='low'] { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
-    .dolor-badge[data-nivel='mid'] { color: #d97706; border-color: #fde68a; background: #fffbeb; }
-    .dolor-badge[data-nivel='high'] { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
 
     .dolor-labels-row {
       display: flex;
@@ -221,13 +227,40 @@ export class BloqueEstadoActualComponent {
     { value: 'PEOR',  label: 'Peor',  icon: '↓' },
   ];
 
-  readonly nivelDolor = computed(() => {
-    const v = this.form().get('dolorIntensidad')?.value ?? 0;
-    if (v === 0) return 'none';
-    if (v <= 3) return 'low';
-    if (v <= 6) return 'mid';
-    return 'high';
-  });
+  readonly dolorColor = () => {
+    const raw = this.form().get('dolorIntensidad')?.value ?? 5;
+    const value = Number.isNaN(Number(raw)) ? 5 : Math.min(10, Math.max(0, Number(raw)));
+    return this.dolorScaleColor(value);
+  };
+
+  readonly dolorBgColor = () => {
+    const raw = this.form().get('dolorIntensidad')?.value ?? 5;
+    const value = Number.isNaN(Number(raw)) ? 5 : Math.min(10, Math.max(0, Number(raw)));
+    return this.dolorScaleColor(value, true);
+  };
+
+  private dolorScaleColor(value: number, soft = false): string {
+    const green: [number, number, number] = [22, 163, 74];  // 0
+    const amber: [number, number, number] = [217, 119, 6];  // 5
+    const red: [number, number, number] = [220, 38, 38];    // 10
+    const p = Math.min(10, Math.max(0, value));
+
+    const from = p <= 5 ? green : amber;
+    const to = p <= 5 ? amber : red;
+    const t = p <= 5 ? p / 5 : (p - 5) / 5;
+
+    const r = Math.round(from[0] + (to[0] - from[0]) * t);
+    const g = Math.round(from[1] + (to[1] - from[1]) * t);
+    const b = Math.round(from[2] + (to[2] - from[2]) * t);
+
+    if (!soft) return `rgb(${r}, ${g}, ${b})`;
+
+    const mix = 0.9;
+    const sr = Math.round(r + (255 - r) * mix);
+    const sg = Math.round(g + (255 - g) * mix);
+    const sb = Math.round(b + (255 - b) * mix);
+    return `rgb(${sr}, ${sg}, ${sb})`;
+  }
 
   setField(controlName: string, value: string): void {
     const ctrl = this.form().get(controlName);

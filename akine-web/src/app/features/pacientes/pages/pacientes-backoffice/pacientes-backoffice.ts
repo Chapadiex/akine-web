@@ -19,9 +19,6 @@ import { PacienteService } from '../../services/paciente.service';
       <div class="header">
         <div class="header-copy">
           <h2>Pacientes</h2>
-          <span class="current-consultorio">
-            Consultorio activo: {{ selectedConsultorioName() || 'Sin consultorio seleccionado' }}
-          </span>
         </div>
         <button class="btn-primary" (click)="openNuevoPaciente()">Nuevo paciente</button>
       </div>

@@ -1,0 +1,522 @@
+// Inline form
+.inline-form {
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+
+  &__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-neutral-900);
+    margin: 0 0 var(--space-4);
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+
+  &--sm {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+
+  &--full { grid-column: 1 / -1; }
+
+  &--check {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-neutral-600);
+  }
+
+  &__input {
+    height: 34px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--color-neutral-900);
+    background: var(--color-white);
+    outline: none;
+    transition: border-color 0.15s;
+    &:focus { border-color: var(--color-primary); }
+  }
+
+  &__select { cursor: pointer; }
+}
+
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--color-neutral-700);
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+// Summary bar
+.summary-bar {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 6px;
+  margin-bottom: var(--space-4);
+  font-size: 13px;
+  color: var(--color-neutral-600);
+  strong { color: var(--color-neutral-900); font-weight: 600; }
+}
+
+// Convenios list
+.convenios-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.convenio-card {
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+
+  &--expanded { border-color: var(--color-primary); }
+}
+
+.convenio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  background: var(--color-white);
+  &:hover { background: var(--color-neutral-50); }
+}
+
+.convenio-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.convenio-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.convenio-meta {
+  font-size: 12px;
+}
+
+.convenio-financiador {
+  font-size: 11px;
+  color: var(--color-neutral-400);
+}
+
+.convenio-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.expand-icon {
+  font-size: 20px;
+  color: var(--color-neutral-500);
+}
+
+// Aranceles panel
+.aranceles-panel {
+  background: var(--color-neutral-50);
+  border-top: 1px solid var(--color-neutral-200);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.aranceles-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  &__actions {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
+}
+
+.aranceles-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-neutral-700);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.arancel-form {
+  background: var(--color-white);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 6px;
+  padding: var(--space-3);
+}
+
+// Buttons
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  transition: background 0.15s;
+  .icon { font-size: 16px; }
+  &:hover:not(:disabled) { background: var(--color-primary-dark, #1a56db); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+  &.btn-sm { height: 30px; font-size: 12px; padding: 0 var(--space-3); }
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 36px;
+  padding: 0 var(--space-4);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+  transition: background 0.15s;
+  .icon { font-size: 16px; }
+  &:hover { background: var(--color-neutral-200); }
+  &.btn-sm { height: 30px; font-size: 12px; padding: 0 var(--space-3); }
+}
+
+// Table
+.akine-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--color-white);
+  border-radius: 6px;
+  overflow: hidden;
+
+  &--nested { font-size: 12px; }
+
+  th {
+    padding: var(--space-2) var(--space-3);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-neutral-600);
+    background: var(--color-neutral-50);
+    border-bottom: 1px solid var(--color-neutral-200);
+    white-space: nowrap;
+  }
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-neutral-200);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+}
+
+.col-text    { text-align: left; }
+.col-numeric { text-align: right; }
+.text-medium    { font-weight: 500; }
+.text-secondary { color: var(--color-neutral-600); }
+.text-small     { font-size: 12px; }
+.text-mono      { font-family: var(--font-mono); }
+
+// Badges
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+}
+.badge-liquidado { background: var(--color-success-light); color: var(--color-success-text); .dot { background: var(--color-success); } }
+.badge-anulado   { background: var(--color-error-light);   color: var(--color-error-text);   .dot { background: var(--color-error); } }
+
+// Skeleton
+.skeleton-table { display: flex; flex-direction: column; gap: var(--space-2); }
+.skeleton-row {
+  height: 52px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--color-neutral-200) 25%, var(--color-neutral-100) 50%, var(--color-neutral-200) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+// Empty state
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-4);
+  color: var(--color-neutral-400);
+  text-align: center;
+  .icon { font-size: 36px; }
+  p { font-size: 13px; margin: 0; }
+}
+
+.text-danger { color: var(--color-error); font-size: 13px; }
+
+// ─── Tabla principal ──────────────────────────────────────────────────────────
+
+.col-expand  { width: 36px; text-align: center; padding: 0 !important; }
+.col-status  { width: 120px; white-space: nowrap; }
+.col-actions { width: 72px; text-align: right; white-space: nowrap; }
+
+.convenio-row {
+  cursor: default;
+  transition: background 0.1s;
+
+  &--active td { background: var(--color-neutral-50) !important; }
+  &:hover td   { background: var(--color-neutral-50); }
+
+  td { vertical-align: middle; }
+}
+
+.detail-row td { background: var(--color-neutral-50); }
+.detail-cell   { padding: 0 !important; }
+
+.inline-form--nested {
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid var(--color-neutral-200);
+  margin-bottom: 0;
+}
+
+.inline-form__header { margin-bottom: var(--space-4); }
+
+.inline-form__note {
+  font-size: 12px;
+  color: #92400E;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  background: #FEF3C7;
+  border-radius: 4px;
+}
+
+// ─── Botón icono ──────────────────────────────────────────────────────────────
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--color-neutral-500);
+  transition: background 0.15s, color 0.15s;
+  .icon { font-size: 18px; }
+  &:hover:not(:disabled) { background: var(--color-neutral-100); color: var(--color-neutral-900); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+// ─── Badges adicionales ───────────────────────────────────────────────────────
+
+.badge-por-vencer {
+  background: #FEF3C7;
+  color: #92400E;
+  .dot { background: #D97706; }
+}
+
+.badge-sin-fechas {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-600);
+  .dot { background: var(--color-neutral-400); }
+}
+
+// ─── Filtros ──────────────────────────────────────────────────────────────────
+
+.filter-bar {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 6px;
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+
+  &__input  { flex: 1; min-width: 160px; }
+  &__select { min-width: 160px; }
+}
+
+.filter-dot { color: var(--color-primary); font-weight: 700; }
+
+// ─── Summary bar variantes ────────────────────────────────────────────────────
+
+.summary-bar {
+  &__warning strong { color: #D97706; }
+  &__danger  strong { color: var(--color-error, #dc2626); }
+}
+
+// ─── Actualizar precios ───────────────────────────────────────────────────────
+
+.actualizar-precios__desc {
+  font-size: 12px;
+  color: var(--color-neutral-600);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: #EFF6FF;
+  border-radius: 4px;
+}
+
+.input-with-suffix {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-white);
+  &:focus-within { border-color: var(--color-primary); }
+
+  .field__input {
+    border: none;
+    border-radius: 0;
+    flex: 1;
+    &:focus { border-color: transparent; }
+  }
+}
+
+.input-suffix {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-neutral-500);
+  padding: 0 var(--space-2);
+  background: var(--color-neutral-50);
+  border-left: 1px solid var(--color-neutral-200);
+  height: 34px;
+  display: flex;
+  align-items: center;
+}
+
+// ─── Historial panel ──────────────────────────────────────────────────────────
+
+.historial-panel {
+  border-top: 1px solid var(--color-neutral-200);
+  padding-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.historial-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-neutral-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.col-textShort { text-align: left; width: 60px; white-space: nowrap; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.badge-presentado {
+  background: #EDE9FE;
+  color: #5B21B6;
+}
+
+// ─── Btn link ─────────────────────────────────────────────────────────────────
+
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-primary);
+  padding: 0 var(--space-1);
+  border-radius: 4px;
+  transition: color 0.15s;
+  .icon { font-size: 14px; }
+  &:hover { color: var(--color-primary-dark, #1a56db); }
+  &.btn-sm { font-size: 12px; }
+}
+
+// ─── Convenio inline data ─────────────────────────────────────────────────────
+
+.fw-medium { font-weight: 500; }
+
+.convenio-financiador {
+  display: block;
+  font-size: 11px;
+  color: var(--color-neutral-400);
+  margin-top: 1px;
+}
+
+.convenio-tags {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-600);
+}

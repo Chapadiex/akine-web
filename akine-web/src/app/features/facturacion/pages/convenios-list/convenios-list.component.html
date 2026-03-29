@@ -1,0 +1,533 @@
+<div class="page-container">
+
+  <header class="page-header compact">
+    <div class="header-content">
+      <h1>Convenios</h1>
+      <p class="subtitle">Acuerdos con obras sociales. Aquí configurás los importes que se usan al liquidar sesiones.</p>
+    </div>
+    <div class="header-actions">
+      @if (!showForm() && !editandoId()) {
+        <button class="btn-secondary" (click)="toggleFilters()">
+          <span class="icon">tune</span>
+          Filtros@if (hayFiltrosActivos()) {<span class="filter-dot"> ·</span>}
+        </button>
+        <button class="btn-primary" (click)="toggleForm()">
+          <span class="icon">add</span> Nuevo convenio
+        </button>
+      }
+    </div>
+  </header>
+
+  <main class="page-content">
+
+    <!-- ── Formulario nuevo convenio ──────────────────────────────────── -->
+    @if (showForm()) {
+      <div class="inline-form">
+        <h3 class="inline-form__title">Nuevo convenio</h3>
+        <form [formGroup]="convenioForm" (ngSubmit)="guardarConvenio()">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label">Obra social / Financiador</label>
+              <select formControlName="financiadorId" class="field__input field__select"
+                      (change)="onFinanciadorChange(convenioForm.get('financiadorId')?.value ?? '')">
+                <option value="">Seleccioná una obra social</option>
+                @for (f of financiadores(); track f.id) {
+                  <option [value]="f.id">{{ f.nombre }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">Plan (opcional)</label>
+              <select formControlName="plan" class="field__input field__select">
+                <option value="">Sin plan específico</option>
+                @for (p of planes(); track p.id) {
+                  <option [value]="p.id">{{ p.nombrePlan }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">Modalidad</label>
+              <select formControlName="modalidad" class="field__input field__select">
+                @for (m of modalidades; track m.value) {
+                  <option [value]="m.value">{{ m.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label class="field__label">Vigencia desde</label>
+              <input type="date" formControlName="vigenciaDesde" class="field__input" />
+            </div>
+            <div class="field">
+              <label class="field__label">Vigencia hasta (opcional)</label>
+              <input type="date" formControlName="vigenciaHasta" class="field__input" />
+            </div>
+            <div class="field">
+              <label class="field__label">Día de cierre</label>
+              <input type="number" formControlName="diaCierre" class="field__input" placeholder="Ej: 25" min="1" max="31" />
+            </div>
+            <div class="field field--check">
+              <label class="check-label">
+                <input type="checkbox" formControlName="requiereAut" />
+                Requiere autorización previa
+              </label>
+              <label class="check-label">
+                <input type="checkbox" formControlName="requiereOrden" />
+                Requiere orden médica
+              </label>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" [disabled]="convenioForm.invalid || submitting()">
+              {{ submitting() ? 'Guardando…' : 'Guardar convenio' }}
+            </button>
+            <button type="button" class="btn-secondary" (click)="toggleForm()">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- ── Summary bar ────────────────────────────────────────────────── -->
+    @if (pageState() === 'loaded' && convenios().length > 0) {
+      <div class="summary-bar">
+        <span><strong>{{ metricas().total }}</strong> total</span>
+        <span><strong>{{ metricas().vigentes }}</strong> vigente/s</span>
+        @if (metricas().porVencer > 0) {
+          <span class="summary-bar__warning"><strong>{{ metricas().porVencer }}</strong> por vencer</span>
+        }
+        @if (metricas().vencidos > 0) {
+          <span class="summary-bar__danger"><strong>{{ metricas().vencidos }}</strong> vencido/s</span>
+        }
+      </div>
+    }
+
+    <!-- ── Filtros ─────────────────────────────────────────────────────── -->
+    @if (showFilters()) {
+      <div class="filter-bar">
+        <input class="field__input filter-bar__input"
+               placeholder="Buscar obra social o plan…"
+               [value]="filtroTexto()"
+               (input)="filtroTexto.set($any($event.target).value)" />
+        <select class="field__input field__select filter-bar__select"
+                [value]="filtroFinanciadorId()"
+                (change)="filtroFinanciadorId.set($any($event.target).value)">
+          <option value="">Todos los financiadores</option>
+          @for (f of financiadores(); track f.id) {
+            <option [value]="f.id">{{ f.nombre }}</option>
+          }
+        </select>
+        <select class="field__input field__select filter-bar__select"
+                [value]="filtroEstado()"
+                (change)="filtroEstado.set($any($event.target).value)">
+          <option value="">Todos los estados</option>
+          @for (e of estadoOpciones; track e.value) {
+            <option [value]="e.value">{{ e.label }}</option>
+          }
+        </select>
+        @if (hayFiltrosActivos()) {
+          <button class="btn-secondary btn-sm" (click)="limpiarFiltros()">Limpiar</button>
+        }
+      </div>
+    }
+
+    <!-- ── Estados ────────────────────────────────────────────────────── -->
+    @if (pageState() === 'loading') {
+      <div class="skeleton-table">
+        @for (_ of [1,2,3]; track $index) { <div class="skeleton-row"></div> }
+      </div>
+    }
+    @if (pageState() === 'error') {
+      <p class="text-danger">Error al cargar los convenios.</p>
+    }
+
+    <!-- ── Tabla ───────────────────────────────────────────────────────── -->
+    @if (pageState() === 'loaded') {
+      @if (convenios().length === 0 && !showForm()) {
+        <div class="empty-state">
+          <span class="icon">handshake</span>
+          <p>No hay convenios configurados. Creá el primero para vincular aranceles con obras sociales.</p>
+        </div>
+      } @else if (conveniosFiltrados().length === 0 && hayFiltrosActivos()) {
+        <p class="text-secondary text-small">No hay convenios que coincidan con los filtros aplicados.</p>
+      } @else {
+        <table class="akine-table">
+          <thead>
+            <tr>
+              <th class="col-expand"></th>
+              <th class="col-text">Convenio</th>
+              <th class="col-text">Modalidad</th>
+              <th class="col-text">Vigencia</th>
+              <th class="col-status">Estado</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of conveniosFiltrados(); track c.id) {
+
+              <!-- Fila principal -->
+              <tr class="convenio-row"
+                  [class.convenio-row--active]="expandedId() === c.id || editandoId() === c.id">
+                <td class="col-expand">
+                  <button class="btn-icon" (click)="toggleExpand(c.id)" title="Ver aranceles">
+                    <span class="icon">{{ expandedId() === c.id ? 'expand_less' : 'expand_more' }}</span>
+                  </button>
+                </td>
+                <td class="col-text">
+                  <span class="fw-medium">{{ c.siglaDisplay }}</span>
+                  <span class="text-secondary text-small convenio-financiador">{{ c.financiadorNombre }}</span>
+                  @if (c.requiereAut || c.requiereOrden) {
+                    <span class="convenio-tags">
+                      @if (c.requiereAut) { <span class="tag">Aut.</span> }
+                      @if (c.requiereOrden) { <span class="tag">Orden</span> }
+                    </span>
+                  }
+                </td>
+                <td class="col-text text-secondary text-small">{{ modalidadLabel(c.modalidad) }}</td>
+                <td class="col-text text-secondary text-small">
+                  @if (c.versionActual) {
+                    {{ c.versionActual.vigenciaDesde | date:'dd/MM/yyyy' }}
+                    @if (c.versionActual.vigenciaHasta) {
+                      → {{ c.versionActual.vigenciaHasta | date:'dd/MM/yyyy' }}
+                    } @else {
+                      → actual
+                    }
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="col-status">
+                  <span class="badge-estado"
+                        [class.badge-liquidado]="estadoConvenio(c) === 'vigente'"
+                        [class.badge-por-vencer]="estadoConvenio(c) === 'por-vencer'"
+                        [class.badge-anulado]="estadoConvenio(c) === 'vencido'"
+                        [class.badge-sin-fechas]="estadoConvenio(c) === 'sin-fechas'">
+                    <span class="dot"></span>{{ estadoLabel(c) }}
+                  </span>
+                </td>
+                <td class="col-actions">
+                  @if (editandoId() !== c.id && renovandoId() !== c.id) {
+                    <button class="btn-icon"
+                            (click)="editarConvenio(c); $event.stopPropagation()"
+                            title="Editar convenio">
+                      <span class="icon">edit</span>
+                    </button>
+                    <button class="btn-icon"
+                            (click)="abrirRenovar(c); $event.stopPropagation()"
+                            title="Renovar — crear nueva versión">
+                      <span class="icon">autorenew</span>
+                    </button>
+                    <button class="btn-icon"
+                            (click)="toggleActivo(c); $event.stopPropagation()"
+                            [disabled]="submittingEstado() === c.id"
+                            [title]="esActivo(c) ? 'Desactivar convenio' : 'Activar convenio'">
+                      <span class="icon">{{ esActivo(c) ? 'toggle_on' : 'toggle_off' }}</span>
+                    </button>
+                  } @else {
+                    <button class="btn-icon text-secondary"
+                            (click)="cancelarEdicion(); cancelarRenovar(); $event.stopPropagation()"
+                            title="Cancelar">
+                      <span class="icon">close</span>
+                    </button>
+                  }
+                </td>
+              </tr>
+
+              <!-- Fila de edición -->
+              @if (editandoId() === c.id) {
+                <tr class="detail-row">
+                  <td colspan="6" class="detail-cell" (click)="$event.stopPropagation()">
+                    <form [formGroup]="editForm" (ngSubmit)="guardarEdicion()" class="inline-form inline-form--nested">
+                      <div class="inline-form__header">
+                        <h3 class="inline-form__title">Editar convenio — {{ c.siglaDisplay }}</h3>
+                        @if ((c.versionActual?.cantidadLotes ?? 0) > 0) {
+                          <p class="inline-form__note">Modalidad y autorización no pueden modificarse porque existen lotes facturados. Usá "Renovar" para crear una nueva versión.</p>
+                        }
+                      </div>
+                      <div class="form-grid">
+                        <div class="field">
+                          <label class="field__label">Modalidad</label>
+                          <select formControlName="modalidad" class="field__input field__select">
+                            @for (m of modalidades; track m.value) {
+                              <option [value]="m.value">{{ m.label }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div class="field">
+                          <label class="field__label">Vigencia hasta (opcional)</label>
+                          <input type="date" formControlName="vigenciaHasta" class="field__input" />
+                        </div>
+                        <div class="field">
+                          <label class="field__label">Día de cierre</label>
+                          <input type="number" formControlName="diaCierre" class="field__input" placeholder="Ej: 25" min="1" max="31" />
+                        </div>
+                        <div class="field field--check">
+                          <label class="check-label">
+                            <input type="checkbox" formControlName="requiereAut" />
+                            Requiere autorización previa
+                          </label>
+                          <label class="check-label">
+                            <input type="checkbox" formControlName="requiereOrden" />
+                            Requiere orden médica
+                          </label>
+                        </div>
+                      </div>
+                      <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-sm"
+                                [disabled]="editForm.invalid || submittingEdit()">
+                          {{ submittingEdit() ? 'Guardando…' : 'Guardar cambios' }}
+                        </button>
+                        <button type="button" class="btn-secondary btn-sm" (click)="cancelarEdicion()">Cancelar</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+              }
+
+              <!-- Fila de renovar -->
+              @if (renovandoId() === c.id) {
+                <tr class="detail-row">
+                  <td colspan="6" class="detail-cell" (click)="$event.stopPropagation()">
+                    <form [formGroup]="renovarForm" (ngSubmit)="guardarRenovacion(c)" class="inline-form inline-form--nested">
+                      <div class="inline-form__header">
+                        <h3 class="inline-form__title">Renovar convenio — {{ c.siglaDisplay }}</h3>
+                        <p class="inline-form__note">Se cerrará la versión actual y se creará una nueva. Los aranceles vigentes pueden copiarse automáticamente.</p>
+                      </div>
+                      <div class="form-grid">
+                        <div class="field">
+                          <label class="field__label">Nueva vigencia desde</label>
+                          <input type="date" formControlName="vigenciaDesde" class="field__input" />
+                        </div>
+                        <div class="field">
+                          <label class="field__label">Nueva vigencia hasta (opcional)</label>
+                          <input type="date" formControlName="vigenciaHasta" class="field__input" />
+                        </div>
+                        <div class="field">
+                          <label class="field__label">Motivo de cierre</label>
+                          <input formControlName="motivoCierre" class="field__input" placeholder="Ej: Renovación anual" />
+                        </div>
+                        <div class="field field--check">
+                          <label class="check-label">
+                            <input type="checkbox" formControlName="copiarAranceles" />
+                            Copiar aranceles de la versión actual ({{ arancelesDeConvenio(c).length }} aranceles)
+                          </label>
+                        </div>
+                      </div>
+                      <div class="form-actions">
+                        <button type="submit" class="btn-primary btn-sm"
+                                [disabled]="renovarForm.invalid || submittingRenovar()">
+                          {{ submittingRenovar() ? 'Renovando…' : 'Confirmar renovación' }}
+                        </button>
+                        <button type="button" class="btn-secondary btn-sm" (click)="cancelarRenovar()">Cancelar</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+              }
+
+              <!-- Fila de aranceles -->
+              @if (expandedId() === c.id) {
+                <tr class="detail-row">
+                  <td colspan="6" class="detail-cell">
+                    <div class="aranceles-panel">
+                      <div class="aranceles-header">
+                        <span class="aranceles-title">Aranceles — {{ c.siglaDisplay }}</span>
+                        <div class="aranceles-header__actions">
+                          <button class="btn-link btn-sm" (click)="toggleHistorial(c.id); $event.stopPropagation()">
+                            <span class="icon">history</span>
+                            {{ historialId() === c.id ? 'Ocultar historial' : 'Ver historial' }}
+                          </button>
+                          @if (showArancel() !== c.id && actualizandoPreciosId() !== c.id && arancelesDeConvenio(c).length > 0) {
+                            <button class="btn-secondary btn-sm" (click)="abrirActualizarPrecios(c.id); $event.stopPropagation()">
+                              <span class="icon">trending_up</span> Actualizar precios
+                            </button>
+                          }
+                          @if (showArancel() !== c.id && actualizandoPreciosId() !== c.id) {
+                            <button class="btn-secondary btn-sm" (click)="abrirArancel(c.id); $event.stopPropagation()">
+                              <span class="icon">add</span> Agregar arancel
+                            </button>
+                          }
+                        </div>
+                      </div>
+
+                      @if (actualizandoPreciosId() === c.id) {
+                        <form [formGroup]="actualizarPreciosForm" (ngSubmit)="guardarActualizarPrecios()" class="arancel-form" (click)="$event.stopPropagation()">
+                          <p class="actualizar-precios__desc">
+                            Cierra los aranceles vigentes y crea nuevos con los valores actualizados. El historial queda preservado.
+                          </p>
+                          <div class="form-grid form-grid--sm">
+                            <div class="field">
+                              <label class="field__label">Método</label>
+                              <select formControlName="metodo" class="field__input field__select">
+                                <option value="porcentaje">Incremento porcentual (%)</option>
+                                <option value="importe_directo">Importe directo ($)</option>
+                              </select>
+                            </div>
+                            <div class="field">
+                              <label class="field__label">
+                                {{ actualizarPreciosForm.get('metodo')?.value === 'porcentaje' ? 'Porcentaje de incremento' : 'Nuevo importe OS' }}
+                              </label>
+                              <div class="input-with-suffix">
+                                <input type="number" formControlName="valor" class="field__input"
+                                       [placeholder]="actualizarPreciosForm.get('metodo')?.value === 'porcentaje' ? 'Ej: 29.73' : 'Ej: 15000'"
+                                       min="0" step="0.01" />
+                                <span class="input-suffix">{{ metodoLabel() }}</span>
+                              </div>
+                            </div>
+                            <div class="field">
+                              <label class="field__label">Vigencia desde</label>
+                              <input type="date" formControlName="vigenciaDesde" class="field__input" />
+                            </div>
+                          </div>
+                          <div class="form-actions">
+                            <button type="submit" class="btn-primary btn-sm" [disabled]="actualizarPreciosForm.invalid || submittingPrecios()">
+                              {{ submittingPrecios() ? 'Actualizando…' : 'Confirmar actualización' }}
+                            </button>
+                            <button type="button" class="btn-secondary btn-sm" (click)="cancelarActualizarPrecios(); $event.stopPropagation()">Cancelar</button>
+                          </div>
+                        </form>
+                      }
+
+                      @if (showArancel() === c.id) {
+                        <form [formGroup]="arancelForm" (ngSubmit)="guardarArancel()" class="arancel-form" (click)="$event.stopPropagation()">
+                          <div class="form-grid form-grid--sm">
+                            <div class="field">
+                              <label class="field__label">Prestación</label>
+                              <select formControlName="prestacionId" class="field__input field__select">
+                                <option value="">Seleccioná una prestación</option>
+                                @for (p of prestaciones(); track p.id) {
+                                  <option [value]="p.id">{{ p.codigoNomenclador }} — {{ p.nombre }}</option>
+                                }
+                              </select>
+                            </div>
+                            <div class="field">
+                              <label class="field__label">Importe OS ($)</label>
+                              <input type="number" formControlName="importeOs" class="field__input" placeholder="0.00" min="0" step="0.01" />
+                            </div>
+                            <div class="field">
+                              <label class="field__label">Coseguro</label>
+                              <select formControlName="coseguroTipo" class="field__input field__select">
+                                @for (co of coseguroOpciones; track co.value) {
+                                  <option [value]="co.value">{{ co.label }}</option>
+                                }
+                              </select>
+                            </div>
+                            @if (coseguroRequiereValor()) {
+                              <div class="field">
+                                <label class="field__label">
+                                  {{ arancelForm.get('coseguroTipo')?.value === 'FIJO' ? 'Valor coseguro ($)' : 'Porcentaje (%)' }}
+                                </label>
+                                <input type="number" formControlName="coseguroValor" class="field__input" placeholder="0" min="0" step="0.01" />
+                              </div>
+                            }
+                            <div class="field">
+                              <label class="field__label">Tope mensual (ses.)</label>
+                              <input type="number" formControlName="sesionesMesMax" class="field__input" placeholder="Sin límite" min="1" />
+                            </div>
+                            <div class="field">
+                              <label class="field__label">Vigencia desde</label>
+                              <input type="date" formControlName="vigenciaDesde" class="field__input" />
+                            </div>
+                            <div class="field">
+                              <label class="field__label">Vigencia hasta</label>
+                              <input type="date" formControlName="vigenciaHasta" class="field__input" />
+                            </div>
+                          </div>
+                          <div class="form-actions">
+                            <button type="submit" class="btn-primary btn-sm" [disabled]="arancelForm.invalid || submittingArancel()">
+                              {{ submittingArancel() ? 'Guardando…' : 'Guardar arancel' }}
+                            </button>
+                            <button type="button" class="btn-secondary btn-sm" (click)="cancelarArancel(); $event.stopPropagation()">Cancelar</button>
+                          </div>
+                        </form>
+                      }
+
+                      @if (arancelesDeConvenio(c).length === 0 && showArancel() !== c.id) {
+                        <p class="text-secondary text-small">Sin aranceles configurados. Agregá uno para que la liquidación pueda calcular importes.</p>
+                      } @else if (arancelesDeConvenio(c).length > 0) {
+                        <table class="akine-table akine-table--nested">
+                          <thead>
+                            <tr>
+                              <th class="col-text">Código</th>
+                              <th class="col-text">Prestación</th>
+                              <th class="col-numeric">Importe OS</th>
+                              <th class="col-numeric">Coseguro</th>
+                              <th class="col-numeric">Total</th>
+                              <th class="col-text">Tope/mes</th>
+                              <th class="col-text">Vigencia</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            @for (a of arancelesDeConvenio(c); track a.id) {
+                              <tr>
+                                <td class="col-text text-mono text-small">{{ a.prestacionCodigo }}</td>
+                                <td class="col-text">{{ a.prestacionNombre }}</td>
+                                <td class="col-numeric text-medium">$ {{ a.importeOs | number:'1.2-2' }}</td>
+                                <td class="col-numeric text-secondary">{{ coseguroLabel(a) }}</td>
+                                <td class="col-numeric text-medium">$ {{ a.importeTotal | number:'1.2-2' }}</td>
+                                <td class="col-text text-secondary text-small">
+                                  {{ a.sesionesMesMax ?? '—' }}
+                                </td>
+                                <td class="col-text text-secondary text-small">
+                                  {{ a.vigenciaDesde | date:'dd/MM/yy' }}
+                                  @if (a.vigenciaHasta) { → {{ a.vigenciaHasta | date:'dd/MM/yy' }} }
+                                  @else { → actual }
+                                </td>
+                              </tr>
+                            }
+                          </tbody>
+                        </table>
+                      }
+
+                      @if (historialId() === c.id) {
+                        <div class="historial-panel">
+                          <span class="historial-title">Historial de versiones</span>
+                          @if (loadingHistorial()) {
+                            <p class="text-secondary text-small">Cargando…</p>
+                          } @else if (historialVersiones().length === 0) {
+                            <p class="text-secondary text-small">Sin versiones registradas.</p>
+                          } @else {
+                            <table class="akine-table akine-table--nested">
+                              <thead>
+                                <tr>
+                                  <th class="col-textShort">Versión</th>
+                                  <th class="col-text">Vigencia</th>
+                                  <th class="col-status">Estado</th>
+                                  <th class="col-numeric">Lotes</th>
+                                  <th class="col-text">Motivo cierre</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                @for (v of historialVersiones(); track v.id) {
+                                  <tr>
+                                    <td class="col-textShort text-secondary text-small">v{{ v.versionNum }}</td>
+                                    <td class="col-text text-small">
+                                      {{ v.vigenciaDesde | date:'dd/MM/yy' }}
+                                      @if (v.vigenciaHasta) { → {{ v.vigenciaHasta | date:'dd/MM/yy' }} }
+                                      @else { → actual }
+                                    </td>
+                                    <td class="col-status">
+                                      <span class="badge" [class]="versionEstadoClass(v.estado)">
+                                        <strong>{{ versionEstadoLabel(v.estado) }}</strong>
+                                      </span>
+                                    </td>
+                                    <td class="col-numeric text-secondary text-small">{{ v.cantidadLotes }}</td>
+                                    <td class="col-text text-secondary text-small">{{ v.motivoCierre ?? '—' }}</td>
+                                  </tr>
+                                }
+                              </tbody>
+                            </table>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+
+            }
+          </tbody>
+        </table>
+      }
+    }
+
+  </main>
+</div>

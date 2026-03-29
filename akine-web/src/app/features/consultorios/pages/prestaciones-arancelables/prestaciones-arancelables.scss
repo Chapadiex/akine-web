@@ -1,0 +1,182 @@
+.prest-page { padding: var(--space-4) 0; }
+
+.prest-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.prest-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+  margin: 0 0 var(--space-1);
+}
+
+.prest-subtitle {
+  font-size: 12px;
+  color: var(--color-neutral-500);
+  margin: 0;
+  max-width: 480px;
+}
+
+// Inline form
+.inline-form {
+  background: var(--color-neutral-50);
+  border: 1px solid var(--color-neutral-200);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+
+  &__fields {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+  }
+
+  &__actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 140px;
+
+  &--wide { flex: 2; }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-neutral-600);
+  }
+
+  &__input {
+    height: 34px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-neutral-200);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--color-neutral-900);
+    background: var(--color-white);
+    outline: none;
+    transition: border-color 0.15s;
+    &:focus { border-color: var(--color-primary); }
+  }
+
+  &__select { cursor: pointer; }
+}
+
+// Buttons
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 34px;
+  padding: 0 var(--space-4);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  transition: background 0.15s;
+  .icon { font-size: 16px; }
+  &:hover:not(:disabled) { background: var(--color-primary-dark, #1a56db); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 var(--space-4);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-900);
+  transition: background 0.15s;
+  &:hover { background: var(--color-neutral-200); }
+}
+
+// Table — reuse global akine-table tokens
+.akine-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  th {
+    padding: var(--space-2) var(--space-3);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-neutral-600);
+    background: var(--color-neutral-50);
+    border-bottom: 1px solid var(--color-neutral-200);
+    white-space: nowrap;
+  }
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-neutral-200);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--color-neutral-50); }
+}
+
+.col-text   { text-align: left; }
+.col-status { text-align: left; width: 110px; }
+.text-medium   { font-weight: 500; }
+.text-secondary{ color: var(--color-neutral-600); }
+.text-small    { font-size: 12px; }
+.text-mono     { font-family: var(--font-mono); }
+
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+}
+.badge-liquidado { background: var(--color-success-light); color: var(--color-success-text); .dot { background: var(--color-success); } }
+.badge-anulado   { background: var(--color-error-light);   color: var(--color-error-text);   .dot { background: var(--color-error); } }
+
+// Skeleton
+.skeleton-rows { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-4); }
+.skeleton-row {
+  height: 38px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--color-neutral-200) 25%, var(--color-neutral-100) 50%, var(--color-neutral-200) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-4);
+  color: var(--color-neutral-400);
+  text-align: center;
+  .icon { font-size: 36px; }
+  p { font-size: 13px; margin: 0; }
+}
+
+.text-danger { color: var(--color-error); font-size: 13px; }

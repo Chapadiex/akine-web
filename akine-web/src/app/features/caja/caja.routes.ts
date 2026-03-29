@@ -18,6 +18,13 @@ export const CAJA_ROUTES: Routes = [
       import('./pages/cobro-paciente-page/cobro-paciente-page').then((m) => m.CobroPacientePage),
   },
   {
+    path: 'egreso',
+    canActivate: [roleGuard],
+    data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },
+    loadComponent: () =>
+      import('./pages/egreso-caja-page/egreso-caja-page').then((m) => m.EgresoCajaPage),
+  },
+  {
     path: 'liquidacion/:liquidacionId',
     canActivate: [roleGuard],
     data: { roles: ['ADMIN', 'PROFESIONAL_ADMIN', 'ADMINISTRATIVO'] },

@@ -118,6 +118,20 @@ export const CONSULTORIO_ROUTES: Routes = [
                 (m) => m.TratamientosCatalogoPage,
               ),
           },
+          {
+            path: 'operativo',
+            loadComponent: () =>
+              import('./pages/configuracion-operativa/configuracion-operativa').then(
+                (m) => m.ConfiguracionOperativaPage,
+              ),
+          },
+          {
+            path: 'prestaciones',
+            loadComponent: () =>
+              import('./pages/prestaciones-arancelables/prestaciones-arancelables').then(
+                (m) => m.PrestacionesArancelablesPage,
+              ),
+          },
         ],
       },
       { path: 'horarios', redirectTo: 'agenda/horarios-atencion', pathMatch: 'full' },

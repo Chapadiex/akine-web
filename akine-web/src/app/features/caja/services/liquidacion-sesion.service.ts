@@ -12,6 +12,10 @@ import {
 export class LiquidacionSesionService {
   private api = inject(ApiClient);
 
+  list(consultorioId: string): Observable<LiquidacionSesion[]> {
+    return this.api.get<LiquidacionSesion[]>(API.liquidaciones.list(consultorioId));
+  }
+
   byId(consultorioId: string, liquidacionId: string): Observable<LiquidacionSesion> {
     return this.api.get<LiquidacionSesion>(API.liquidaciones.byId(consultorioId, liquidacionId));
   }

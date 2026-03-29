@@ -230,8 +230,9 @@ describe('HistoriaClinicaPacientePage', () => {
     expect(historiaSvc.listDiagnosticos).toHaveBeenCalled();
     expect(historiaSvc.listSesiones).toHaveBeenCalled();
     expect(historiaSvc.getAntecedentes).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Plan terap');
-    expect(fixture.nativeElement.textContent).toContain('Sesiones recientes');
+    expect(fixture.nativeElement.textContent).toContain('Nueva sesión');
+    expect(fixture.nativeElement.textContent).toContain('Progreso del tratamiento');
+    expect(fixture.nativeElement.textContent).toContain('Último registro clínico');
   });
 
   it('loads cases and sessions lazily when entering the cases tab', () => {
@@ -328,6 +329,46 @@ describe('HistoriaClinicaPacientePage', () => {
     expect(fixture.componentInstance.showAntecedentesDrawer()).toBeTrue();
     expect(fixture.nativeElement.textContent).toContain('Antecedentes del paciente');
   });
+
+  it('renders cobertura chip in warning tone when patient has no coverage', () => {
+    historiaSvc.getOverview.and.returnValue(
+      of(
+        patientOverview({
+          paciente: {
+            ...patientOverview().paciente,
+            obraSocialNombre: null,
+            obraSocialPlan: null,
+          },
+        }),
+      ),
+    );
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+
+    const coverageChip = fixture.nativeElement.querySelector('[data-role="coverage"]') as HTMLElement | null;
+    expect(coverageChip).toBeTruthy();
+    expect(coverageChip?.getAttribute('data-tone')).toBe('warning');
+    expect(coverageChip?.textContent).toContain('Sin cobertura');
+  });
+
+  it('focuses search input when antecedentes modal opens', fakeAsync(() => {
+    historiaSvc.getOverview.and.returnValue(of(patientOverview()));
+    queryParams$.next(convertToParamMap({ pacienteId: 'paciente-1' }));
+
+    createComponent();
+    fixture.componentInstance.openAntecedentesDrawer();
+    fixture.detectChanges();
+    tick();
+    fixture.detectChanges();
+
+    const searchInput = fixture.nativeElement.querySelector(
+      '.modal-panel--antecedentes .selector-input',
+    ) as HTMLInputElement | null;
+
+    expect(searchInput).toBeTruthy();
+    expect(document.activeElement).toBe(searchInput);
+  }));
 
   it('keeps legajo wizard defaults when opened explicitly', () => {
     historiaSvc.getOverview.and.returnValue(

@@ -23,7 +23,9 @@ import { ConsultorioContextService } from '../../../../core/consultorio/consulto
 import { ErrorMapperService } from '../../../../core/error/error-mapper.service';
 import { ToastService } from '../../../../shared/ui/toast/toast.service';
 import {
+  CasoAtencionEstado,
   CasoAtencionSummary,
+  CambiarEstadoCasoAtencionRequest,
   CierreClinicoRequest,
   HistoriaClinicaOverview,
   HistoriaClinicaTipoAtencion,
@@ -94,6 +96,8 @@ export class SesionPage implements OnInit {
   readonly showCloseSesionConfirm = signal(false);
   readonly showDeleteSesionConfirm = signal(false);
   readonly showCierreClinicoPanel = signal(false);
+  readonly showTreatmentCloseModal = signal(false);
+  readonly isClosingTreatment = signal(false);
   readonly showExamenFisico = signal(false);
   readonly activeStep = signal<SesionStep>('evaluacion');
   readonly selectedMode = signal<'quick' | 'full'>('quick');
@@ -115,21 +119,33 @@ export class SesionPage implements OnInit {
   readonly casoActivo = computed<CasoAtencionSummary | { descripcion: string } | null>(() => {
     const casoAtencionId = this.sesion()?.casoAtencionId;
     if (casoAtencionId) {
+      // 1. loaded casos (from getCasosActivosPorPaciente — excludes BORRADOR)
       const found = this.casosClinicos().find((c) => c.id === casoAtencionId);
       if (found) return found;
+      // 2. overview.casosAtencionActivos (includes BORRADOR state cases)
+      const fromOverview = this.overview()?.casosAtencionActivos?.find((c) => c.id === casoAtencionId);
+      if (fromOverview) return fromOverview;
     }
     const primerCaso = this.casosClinicos()[0];
     if (primerCaso) return primerCaso;
+    // 3. overview.casosAtencionActivos first (has cantidadSesiones as planned count)
+    const fromOverviewActivos = this.overview()?.casosAtencionActivos?.[0];
+    if (fromOverviewActivos) return fromOverviewActivos;
+    // 4. legacy casosActivos (HistoriaClinicaActiveCaseSummary)
     return this.overview()?.casosActivos?.[0] ?? null;
   });
   readonly isEditable = computed(() => this.sesion()?.estado === 'BORRADOR');
   readonly canDeleteSesion = computed(() => this.sesion()?.estado === 'BORRADOR');
   readonly plannedSessions = computed(() => {
     const caso = this.casoActivo();
-    if (caso && 'cantidadSesiones' in caso) {
-      return caso.cantidadSesiones ?? 0;
+    if (caso && 'cantidadSesiones' in caso && (caso.cantidadSesiones ?? 0) > 0) {
+      return caso.cantidadSesiones;
     }
-    return this.overview()?.casosActivos?.[0]?.cantidadSesiones ?? 0;
+    // Fallback 1: overview legacy active cases
+    const fromCasosActivos = this.overview()?.casosActivos?.[0]?.cantidadSesiones ?? 0;
+    if (fromCasosActivos > 0) return fromCasosActivos;
+    // Fallback 2: plan terapéutico activo (mismo origen que historia-clinica-paciente)
+    return this.overview()?.planTerapeuticoActivo?.tratamientos?.[0]?.cantidadSesiones ?? 0;
   });
   readonly caseSessions = computed(() => {
     const current = this.sesion();
@@ -191,9 +207,34 @@ export class SesionPage implements OnInit {
     return (o.casosActivos?.[0]?.cantidadSesiones ?? 0) + 1;
   });
 
+  // ── Treatment close form ──
+  readonly treatmentCloseForm = new FormGroup({
+    conductaCierre: new FormControl('CERRADO_ALTA', { nonNullable: true, validators: [Validators.required] }),
+    observaciones: new FormControl('', { nonNullable: true }),
+  });
+
+  // Opciones del modal de cierre — mapean a CasoAtencionEstado en confirmarCierreTratamiento()
+  readonly conductaCierreOpciones: { value: string; label: string; desc: string }[] = [
+    { value: 'CERRADO_ALTA',                    label: 'Alta',                              desc: 'El paciente finalizó el tratamiento con éxito' },
+    { value: 'CERRADO_ALTA_MANTENIMIENTO',       label: 'Alta con plan de mantenimiento',    desc: 'Finalizado; se recomienda seguimiento o ejercicio domiciliario' },
+    { value: 'CERRADO_DERIVACION_PROFESIONAL',   label: 'Derivación a otro profesional',     desc: 'Se requiere continuidad con otro kinesiólogo o especialista' },
+    { value: 'CERRADO_DERIVACION_ESPECIALIDAD',  label: 'Derivación a especialidad médica',  desc: 'Requiere evaluación médica previa a continuar el tratamiento' },
+    { value: 'CERRADO_ABANDONO_CLINICO',         label: 'Suspensión por indicación clínica', desc: 'Se interrumpe por decisión clínica o médica' },
+    { value: 'CERRADO_ABANDONO_PACIENTE',        label: 'Abandono voluntario del paciente',  desc: 'El paciente decide interrumpir el tratamiento' },
+  ];
+
+  private readonly conductaCierreEstadoMap: Record<string, CasoAtencionEstado> = {
+    'CERRADO_ALTA':                   'CERRADO_ALTA',
+    'CERRADO_ALTA_MANTENIMIENTO':      'CERRADO_ALTA',
+    'CERRADO_DERIVACION_PROFESIONAL':  'CERRADO_DERIVACION',
+    'CERRADO_DERIVACION_ESPECIALIDAD': 'CERRADO_DERIVACION',
+    'CERRADO_ABANDONO_CLINICO':        'CERRADO_ABANDONO',
+    'CERRADO_ABANDONO_PACIENTE':       'CERRADO_ABANDONO',
+  };
+
   // ── Evaluacion form (Block B + E) ──
   readonly evaluacionForm = new FormGroup({
-    dolorIntensidad: new FormControl<number | null>(null),
+    dolorIntensidad: new FormControl<number | null>(5),
     dolorZona: new FormControl(''),
     dolorLateralidad: new FormControl(''),
     dolorTipo: new FormControl(''),
@@ -325,7 +366,7 @@ export class SesionPage implements OnInit {
     // Block B+E
     if (s.evaluacionEstructurada) {
       this.evaluacionForm.patchValue({
-        dolorIntensidad: s.evaluacionEstructurada.dolorIntensidad ?? null,
+        dolorIntensidad: s.evaluacionEstructurada.dolorIntensidad ?? 5,
         dolorZona: s.evaluacionEstructurada.dolorZona ?? '',
         dolorLateralidad: s.evaluacionEstructurada.dolorLateralidad ?? '',
         dolorTipo: s.evaluacionEstructurada.dolorTipo ?? '',
@@ -565,6 +606,10 @@ export class SesionPage implements OnInit {
       return;
     }
 
+    // Snapshot BEFORE the HTTP call to avoid signal-in-subscribe timing issues
+    const plannedSnapshot = this.plannedSessions();
+    const completedSnapshot = this.completedSessions();
+
     this.isSaving.set(true);
     // First save, then close
     this.save(false);
@@ -582,11 +627,64 @@ export class SesionPage implements OnInit {
         this.isSaving.set(false);
         if (result) {
           this.sesion.set(result);
+          this.allSessions.update((sessions) =>
+            sessions.map((s) => (s.id === result.id ? result : s)),
+          );
           this.toast.success('Sesión cerrada');
           this.baseForm.disable();
           this.evaluacionForm.disable();
           this.examenFisicoForm.disable();
           this.intervencionesForm.disable();
+
+          // completedSnapshot = sessions CERRADA before this one
+          // this session is now CERRADA → completedSnapshot + 1
+          const completedNow = completedSnapshot + 1;
+          if (plannedSnapshot > 0 && completedNow >= plannedSnapshot) {
+            this.treatmentCloseForm.reset({ conductaCierre: 'CERRADO_ALTA', observaciones: '' });
+            this.showTreatmentCloseModal.set(true);
+          }
+        }
+      });
+  }
+
+  cancelTreatmentCloseModal(): void {
+    this.showTreatmentCloseModal.set(false);
+  }
+
+  confirmarCierreTratamiento(): void {
+    if (this.treatmentCloseForm.invalid || this.isClosingTreatment()) return;
+    const cid = this.consultorioId();
+    if (!cid) return;
+    const caso = this.casoActivo();
+    const casoId = caso && 'id' in caso ? caso.id : null;
+    if (!casoId) {
+      this.toast.warning('No se encontró el caso activo para cerrar.');
+      this.showTreatmentCloseModal.set(false);
+      return;
+    }
+    const { conductaCierre } = this.treatmentCloseForm.getRawValue();
+    const nuevoEstado: CasoAtencionEstado = this.conductaCierreEstadoMap[conductaCierre] ?? 'CERRADO_ALTA';
+    const body: CambiarEstadoCasoAtencionRequest = { nuevoEstado };
+    this.isClosingTreatment.set(true);
+    this.hcService
+      .cambiarEstadoCaso(cid, casoId, body)
+      .pipe(
+        catchError((err) => {
+          this.isClosingTreatment.set(false);
+          this.showTreatmentCloseModal.set(false);
+          this.toast.error(this.errorMapper.toMessage(err));
+          return of(null);
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((res) => {
+        this.isClosingTreatment.set(false);
+        if (res) {
+          this.showTreatmentCloseModal.set(false);
+          this.toast.success('Tratamiento cerrado. El caso quedó registrado como resuelto.');
+          this.router.navigate(['/app/historia-clinica'], {
+            queryParams: { pacienteId: this.pacienteId },
+          });
         }
       });
   }

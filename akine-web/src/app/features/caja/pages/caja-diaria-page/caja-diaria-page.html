@@ -1,44 +1,55 @@
 <div class="page-container">
-
-  <!-- Header -->
   <header class="page-header">
     <div class="header-left">
-      <h1 class="page-title">Caja Diaria</h1>
+      <h1 class="page-title">Caja diaria</h1>
       <div class="date-nav">
-        <button class="btn-icon" (click)="prevDay()" title="Día anterior">&#8249;</button>
+        <button class="btn-icon" (click)="prevDay()" title="Dia anterior" aria-label="Dia anterior">
+          <span class="icon">chevron_left</span>
+        </button>
         <span class="date-label" [class.today]="isToday()">{{ formattedDate() }}</span>
-        <button class="btn-icon" (click)="nextDay()" title="Día siguiente">&#8250;</button>
-        @if (!isToday()) {
-          <button class="btn-link" (click)="goToday()">Hoy</button>
-        }
+        <button class="btn-icon" (click)="nextDay()" title="Dia siguiente" aria-label="Dia siguiente">
+          <span class="icon">chevron_right</span>
+        </button>
       </div>
     </div>
-    @if (pageState() === 'con_caja' && caja()?.estado === 'ABIERTA') {
+
+    @if (pageState() === 'con_caja' && caja(); as c) {
       <div class="header-actions">
-        <button class="btn-secondary" (click)="iniciarCierre()">Cerrar caja</button>
-        <button class="btn-primary" (click)="irACobrar()">+ Cobrar</button>
+        <button
+          class="btn-tertiary"
+          (click)="iniciarCierre()"
+          [disabled]="c.estado !== 'ABIERTA'"
+        >
+          Cerrar caja
+        </button>
+        <button
+          class="btn-secondary"
+          (click)="irAEgreso()"
+          [disabled]="c.estado !== 'ABIERTA'"
+        >
+          Registrar egreso
+        </button>
+        <button class="btn-primary" (click)="irACobrar()" [disabled]="c.estado !== 'ABIERTA'">
+          Registrar cobro
+        </button>
       </div>
     }
   </header>
 
   <main class="page-content">
-
-    <!-- Loading -->
     @if (pageState() === 'loading') {
       <div class="state-placeholder">Cargando...</div>
     }
 
-    <!-- Error -->
     @if (pageState() === 'error') {
       <div class="state-placeholder error">No se pudo cargar la caja. Intente nuevamente.</div>
     }
 
-    <!-- Sin caja: formulario de apertura -->
     @if (pageState() === 'sin_caja') {
       <div class="apertura-wrapper">
         <div class="card apertura-card">
           <h2 class="card-title">Abrir caja</h2>
-          <p class="card-subtitle">No hay caja registrada para este día.</p>
+          <p class="card-subtitle">No hay caja registrada para este dia.</p>
           <form [formGroup]="aperturaForm" (ngSubmit)="abrirCaja()" class="form-grid">
             <div class="form-field">
               <label class="form-label" for="turnoCaja">Turno</label>
@@ -61,11 +72,7 @@
               />
             </div>
             <div class="form-actions">
-              <button
-                type="submit"
-                class="btn-primary"
-                [disabled]="aperturaForm.invalid || submitting()"
-              >
+              <button type="submit" class="btn-primary" [disabled]="aperturaForm.invalid || submitting()">
                 {{ submitting() ? 'Abriendo...' : 'Abrir caja' }}
               </button>
             </div>
@@ -74,50 +81,54 @@
       </div>
     }
 
-    <!-- Con caja -->
     @if (pageState() === 'con_caja' && caja(); as c) {
-
-      <!-- KPI strip -->
-      <div class="kpi-strip">
-        <div class="kpi-card">
-          <span class="kpi-label">Estado</span>
+      <section class="summary-band">
+        <span class="summary-item summary-item--estado">
           <span class="badge" [class]="estadoClass(c.estado)">
             <span class="badge-dot"></span>
-            <strong>{{ estadoLabel(c.estado) }}</strong>
-            @if (c.turnoCaja) { · {{ turnoCajaLabel(c.turnoCaja) }} }
+            {{ estadoLabel(c.estado) }}
           </span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Saldo inicial</span>
-          <span class="kpi-value">$ {{ c.saldoInicial | number:'1.2-2' }}</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Ingresos</span>
-          <span class="kpi-value kpi-success">+ $ {{ c.totalIngresos | number:'1.2-2' }}</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Egresos</span>
-          <span class="kpi-value kpi-error">- $ {{ c.totalEgresos | number:'1.2-2' }}</span>
-        </div>
-        <div class="kpi-card kpi-card--highlight">
-          <span class="kpi-label">Saldo teórico</span>
-          <span class="kpi-value kpi-bold">$ {{ saldoTeorico() | number:'1.2-2' }}</span>
-        </div>
-        @if (c.saldoReal !== null) {
-          <div class="kpi-card">
-            <span class="kpi-label">Saldo real</span>
-            <span class="kpi-value">$ {{ c.saldoReal | number:'1.2-2' }}</span>
-          </div>
-          <div class="kpi-card" [class.kpi-card--warning]="(diferencia() ?? 0) !== 0">
-            <span class="kpi-label">Diferencia</span>
-            <span class="kpi-value" [class.kpi-error]="(diferencia() ?? 0) < 0" [class.kpi-success]="(diferencia() ?? 0) > 0">
+        </span>
+        <span class="summary-divider"></span>
+        <span class="summary-item">
+          <small class="summary-label">Inicial</small>
+          <strong class="summary-amount">$ {{ c.saldoInicial | number:'1.2-2' }}</strong>
+        </span>
+        <span class="summary-item summary-item--positive">
+          <small class="summary-label">Ingresos</small>
+          <strong class="summary-amount">$ {{ c.totalIngresos | number:'1.2-2' }}</strong>
+        </span>
+        <span class="summary-item summary-item--negative">
+          <small class="summary-label">Egresos</small>
+          <strong class="summary-amount">$ {{ c.totalEgresos | number:'1.2-2' }}</strong>
+        </span>
+        <span class="summary-divider"></span>
+        <span class="summary-item">
+          <small class="summary-label">Teórico</small>
+          <strong class="summary-amount">$ {{ saldoTeorico() | number:'1.2-2' }}</strong>
+        </span>
+        <span class="summary-item">
+          <small class="summary-label">Real</small>
+          <strong class="summary-amount">
+            @if (c.saldoReal !== null) {
+              $ {{ c.saldoReal | number:'1.2-2' }}
+            } @else {
+              —
+            }
+          </strong>
+        </span>
+        <span class="summary-item" [class.summary-item--warn]="(diferencia() ?? 0) !== 0">
+          <small class="summary-label">Diferencia</small>
+          <strong class="summary-amount" [class.text-success]="(diferencia() ?? 0) > 0" [class.text-error]="(diferencia() ?? 0) < 0">
+            @if (diferencia() !== null) {
               $ {{ diferencia() | number:'1.2-2' }}
-            </span>
-          </div>
-        }
-      </div>
+            } @else {
+              —
+            }
+          </strong>
+        </span>
+      </section>
 
-      <!-- Formulario de cierre -->
       @if (showCierreForm()) {
         <div class="card cierre-card">
           <h2 class="card-title">Cerrar caja</h2>
@@ -133,7 +144,7 @@
                 formControlName="saldoReal"
                 placeholder="0.00"
               />
-              <span class="form-hint">Saldo teórico: $ {{ saldoTeorico() | number:'1.2-2' }}</span>
+              <span class="form-hint">Saldo teorico: $ {{ saldoTeorico() | number:'1.2-2' }}</span>
             </div>
             <div class="form-field form-field--full">
               <label class="form-label" for="observaciones">Observaciones</label>
@@ -155,54 +166,177 @@
         </div>
       }
 
-      <!-- Cobros de la caja -->
-      <section class="section">
-        <h3 class="section-title">Cobros ({{ cobros().length }})</h3>
-        @if (cobros().length === 0) {
-          <p class="empty-inline">Sin cobros registrados en esta caja.</p>
+      <div class="tabs-bar" role="tablist" aria-label="Vistas caja diaria">
+        <button
+          class="tab-btn"
+          [class.tab-btn--active]="activeTab() === 'cobros'"
+          (click)="seleccionarTab('cobros')"
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'cobros'"
+        >
+          Cobros
+          <span class="tab-badge">{{ cobros().length }}</span>
+        </button>
+        <button
+          class="tab-btn"
+          [class.tab-btn--active]="activeTab() === 'movimientos'"
+          (click)="seleccionarTab('movimientos')"
+          type="button"
+          role="tab"
+          [attr.aria-selected]="activeTab() === 'movimientos'"
+        >
+          Movimientos
+          <span class="tab-badge">{{ movimientos().length }}</span>
+        </button>
+      </div>
+
+      @if (activeTab() === 'cobros') {
+        <div class="filter-bar">
+          <input
+            class="filter-input"
+            type="text"
+            placeholder="Buscar comprobante, DNI o paciente"
+            [value]="searchTerm()"
+            (input)="onSearchTermChange($any($event.target).value)"
+          />
+
+          <div class="filter-field">
+            <label class="filter-label" for="filtroEstado">Estado</label>
+            <select
+              id="filtroEstado"
+              class="filter-select"
+              [value]="estadoFilter()"
+              (change)="onEstadoFilterChange($any($event.target).value)"
+            >
+              @for (option of estadoCobroOpciones; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label class="filter-label" for="filtroMedio">Medio de pago</label>
+            <select
+              id="filtroMedio"
+              class="filter-select"
+              [value]="medioFilter()"
+              (change)="onMedioFilterChange($any($event.target).value)"
+            >
+              @for (option of medioCobroOpciones; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+
+          @if (tieneFiltrosActivos()) {
+            <button class="btn-secondary btn-sm" type="button" (click)="limpiarFiltrosCobros()">Limpiar filtros</button>
+          }
+        </div>
+
+        @if (totalCobrosFiltrados() === 0) {
+          <p class="empty-inline">Sin cobros para los filtros aplicados.</p>
         } @else {
           <div class="table-wrap">
-            <table class="akine-table">
+            <table class="akine-table app-data-table">
               <thead>
                 <tr>
+                  <th class="col-text-short">Hora</th>
                   <th class="col-text">Comprobante</th>
-                  <th class="col-date">Fecha</th>
+                  <th class="col-text-short">DNI</th>
+                  <th class="col-text">Paciente</th>
                   <th class="col-numeric">Importe</th>
                   <th class="col-status">Estado</th>
                 </tr>
               </thead>
               <tbody>
-                @for (cobro of cobros(); track cobro.id) {
+                @for (cobro of cobrosPaginados(); track cobro.id) {
                   <tr [class.row-anulado]="cobro.estado === 'ANULADO'">
-                    <td class="col-text">{{ cobro.comprobanteNumero ?? '—' }}</td>
-                    <td class="col-date">{{ cobro.fechaCobro }}</td>
+                    <td class="col-text-short">{{ formatHora(cobro.fechaCobro) }}</td>
+                    <td class="col-text">
+                      <div class="comprobante-cell">
+                        <button
+                          type="button"
+                          class="comprobante-link"
+                          (click)="abrirDetalleCobro(cobro)"
+                        >
+                          {{ comprobanteLabel(cobro) }}
+                        </button>
+                        <div class="row-menu">
+                          <button
+                            type="button"
+                            class="row-menu__trigger"
+                            (click)="toggleMenuCobro(cobro.id)"
+                            aria-label="Acciones de fila"
+                          >
+                            <span class="icon">more_horiz</span>
+                          </button>
+                          @if (menuCobroAbierto(cobro.id)) {
+                            <div class="row-menu__dropdown">
+                              <button type="button" (click)="abrirDetalleCobro(cobro)">Ver detalle</button>
+                              <button type="button" (click)="imprimirCobro(cobro)">Imprimir comprobante</button>
+                              @if (cobro.estado !== 'ANULADO') {
+                                <button type="button" class="danger" (click)="anularCobro(cobro)">Anular</button>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    </td>
+                    <td class="col-text-short">{{ cobroPacienteDni(cobro) }}</td>
+                    <td class="col-text">{{ cobroPacienteNombre(cobro) }}</td>
                     <td class="col-numeric">$ {{ cobro.importeTotal | number:'1.2-2' }}</td>
                     <td class="col-status">
-                      @if (cobro.estado === 'COBRADO') {
-                        <span class="badge badge-success"><span class="badge-dot"></span><strong>Cobrado</strong></span>
-                      } @else {
-                        <span class="badge badge-error"><span class="badge-dot"></span><strong>Anulado</strong></span>
-                      }
+                      <span class="badge" [class]="cobroEstadoClass(cobro.estado)">
+                        <span class="badge-dot"></span>
+                        <strong>{{ cobroEstadoLabel(cobro.estado) }}</strong>
+                      </span>
                     </td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
-        }
-      </section>
 
-      <!-- Movimientos de caja -->
-      <section class="section">
-        <h3 class="section-title">Movimientos ({{ movimientos().length }})</h3>
+          <footer class="table-pagination">
+            <span>Mostrando {{ cobrosDesde() }}-{{ cobrosHasta() }} de {{ totalCobrosFiltrados() }} cobros</span>
+            <div class="pager-actions">
+              <button type="button" class="btn-icon" [disabled]="paginaCobrosActual() <= 1" (click)="irPaginaCobros(paginaCobrosActual() - 1)">
+                <span class="icon">chevron_left</span>
+              </button>
+              @for (page of paginasCobros(); track page) {
+                <button
+                  type="button"
+                  class="pager-page"
+                  [class.pager-page--active]="page === paginaCobrosActual()"
+                  (click)="irPaginaCobros(page)"
+                >
+                  {{ page }}
+                </button>
+              }
+              <button
+                type="button"
+                class="btn-icon"
+                [disabled]="paginaCobrosActual() >= totalPaginasCobros()"
+                (click)="irPaginaCobros(paginaCobrosActual() + 1)"
+              >
+                <span class="icon">chevron_right</span>
+              </button>
+            </div>
+          </footer>
+        }
+      }
+
+      @if (activeTab() === 'movimientos') {
         @if (movimientos().length === 0) {
           <p class="empty-inline">Sin movimientos registrados.</p>
         } @else {
           <div class="table-wrap">
-            <table class="akine-table">
+            <table class="akine-table app-data-table">
               <thead>
                 <tr>
-                  <th class="col-text">Descripción</th>
+                  <th class="col-text-short">Hora</th>
+                  <th class="col-text">Descripcion</th>
                   <th class="col-text-short">Origen</th>
                   <th class="col-text-short">Tipo</th>
                   <th class="col-numeric">Importe</th>
@@ -211,7 +345,8 @@
               <tbody>
                 @for (mov of movimientos(); track mov.id) {
                   <tr [class.row-anulado]="mov.anulado">
-                    <td class="col-text">{{ mov.descripcion }}</td>
+                    <td class="col-text-short">{{ formatHora(mov.creadoEn) }}</td>
+                    <td class="col-text">{{ movimientoDescripcion(mov) }}</td>
                     <td class="col-text-short">{{ mov.origen }}</td>
                     <td class="col-text-short">
                       <strong [class.text-success]="mov.tipoMovimiento === 'INGRESO'" [class.text-error]="mov.tipoMovimiento === 'EGRESO'">
@@ -227,9 +362,28 @@
             </table>
           </div>
         }
-      </section>
+      }
 
+      @if (selectedCobro(); as detalle) {
+        <div class="overlay" (click)="cerrarDetalleCobro()">
+          <div class="detail-modal" (click)="$event.stopPropagation()">
+            <header class="detail-modal__header">
+              <h3>Comprobante {{ comprobanteLabel(detalle) }}</h3>
+              <button type="button" class="btn-icon" (click)="cerrarDetalleCobro()" aria-label="Cerrar detalle">
+                <span class="icon">close</span>
+              </button>
+            </header>
+            <div class="detail-grid">
+              <div><small>Hora</small><strong>{{ formatHora(detalle.fechaCobro) }}</strong></div>
+              <div><small>Paciente</small><strong>{{ cobroPacienteNombre(detalle) }}</strong></div>
+              <div><small>DNI</small><strong>{{ cobroPacienteDni(detalle) }}</strong></div>
+              <div><small>Medio</small><strong>{{ cobroMedioLabel(detalle) }}</strong></div>
+              <div><small>Importe</small><strong>$ {{ detalle.importeTotal | number:'1.2-2' }}</strong></div>
+              <div><small>Estado</small><strong>{{ cobroEstadoLabel(detalle.estado) }}</strong></div>
+            </div>
+          </div>
+        </div>
+      }
     }
-
   </main>
 </div>

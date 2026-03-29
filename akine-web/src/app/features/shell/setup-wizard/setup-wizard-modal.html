@@ -1,18 +1,8 @@
 <div class="sw-overlay" role="dialog" aria-modal="true" aria-labelledby="sw-title">
   <div class="sw-modal">
 
-    <div class="sw-header">
-      <div class="sw-header__icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 21V7l8-4 8 4v14"/>
-          <path d="M9 14h6"/>
-          <path d="M12 11v6"/>
-        </svg>
-      </div>
-      <div class="sw-header__text">
-        <h2 class="sw-header__title" id="sw-title">Configuración inicial del consultorio</h2>
-        <p class="sw-header__subtitle">Completá los datos mínimos para comenzar a operar.</p>
-      </div>
+    <!-- Close button — siempre visible -->
+    <div class="sw-topbar">
       <button
         type="button"
         class="sw-close"
@@ -26,133 +16,424 @@
       </button>
     </div>
 
-    <form [formGroup]="form" (ngSubmit)="confirm()" class="sw-form" novalidate autocomplete="off">
+    <!-- ── Pantalla de bienvenida ─────────────────────────────────────────── -->
+    @if (currentView() === 'welcome') {
 
-      <!-- Nombre del consultorio -->
-      <div class="sw-field" [class.sw-field--error]="isInvalid('consultorioNombre')">
-        <label class="sw-label" for="consultorioNombre">
-          Nombre del consultorio <span class="sw-required" aria-hidden="true">*</span>
-        </label>
-        <input
-          id="consultorioNombre"
-          type="text"
-          class="sw-input"
-          formControlName="consultorioNombre"
-          placeholder="Ej: Centro de Kinesiología San Martín"
-          [attr.aria-invalid]="isInvalid('consultorioNombre')"
-          aria-describedby="err-nombre"
-          maxlength="100"
-        />
-        @if (isInvalid('consultorioNombre')) {
-          <span id="err-nombre" class="sw-error-msg" role="alert">Ingresá el nombre del consultorio.</span>
-        }
-      </div>
+      <div class="sw-welcome">
+        <span class="sw-welcome__badge">Kinesiología · Fisioterapia</span>
 
-      <!-- Box de atención inicial -->
-      <div class="sw-field" [class.sw-field--error]="isInvalid('boxNombre')">
-        <label class="sw-label" for="boxNombre">
-          Box de atención inicial <span class="sw-required" aria-hidden="true">*</span>
-        </label>
-        <input
-          id="boxNombre"
-          type="text"
-          class="sw-input"
-          formControlName="boxNombre"
-          placeholder="Ej: Box 1"
-          [attr.aria-invalid]="isInvalid('boxNombre')"
-          aria-describedby="err-box"
-          maxlength="50"
-        />
-        @if (isInvalid('boxNombre')) {
-          <span id="err-box" class="sw-error-msg" role="alert">Ingresá el nombre del box.</span>
-        }
-      </div>
+        <h2 class="sw-welcome__title" id="sw-title">
+          La era digital de tu consultorio empieza hoy
+        </h2>
 
-      <!-- Horario base -->
-      <fieldset class="sw-fieldset">
-        <legend class="sw-fieldset__legend">Horario base de atención</legend>
+        <p class="sw-welcome__subtitle">
+          Gracias por elegir AKINE. Gestioná turnos, pacientes y cobros desde un solo lugar.
+          Tu consultorio merece trabajar de forma inteligente.
+        </p>
 
-        <!-- Selector de días -->
-        <div class="sw-dias" formGroupName="dias" role="group" aria-label="Días de atención">
-          @for (dia of DIAS; track dia.key) {
-            <label
-              class="sw-dia-chip"
-              [class.sw-dia-chip--active]="isDiaChecked(dia.key)"
-              [title]="dia.label"
-            >
-              <input
-                type="checkbox"
-                [formControlName]="dia.key"
-                class="sw-dia-chip__input"
-                [attr.aria-label]="dia.label"
-              />
-              {{ dia.short }}
-            </label>
-          }
-        </div>
-        @if (diasInvalid) {
-          <span class="sw-error-msg" role="alert">Seleccioná al menos un día.</span>
-        }
+        <div class="sw-features-grid">
 
-        <!-- Horarios -->
-        <div class="sw-row">
-          <div class="sw-field sw-field--half" [class.sw-field--error]="isInvalid('horaApertura')">
-            <label class="sw-label" for="horaApertura">Desde</label>
-            <input
-              id="horaApertura"
-              type="time"
-              class="sw-input"
-              formControlName="horaApertura"
-              [attr.aria-invalid]="isInvalid('horaApertura')"
-            />
+          <div class="sw-feature-card">
+            <div class="sw-feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+              </svg>
+            </div>
+            <span class="sw-feature-card__title">Agenda inteligente</span>
+            <span class="sw-feature-card__desc">Turnos, boxes y horarios desde un panel. Sin papel ni planillas.</span>
           </div>
-          <div class="sw-field sw-field--half" [class.sw-field--error]="isInvalid('horaCierre')">
-            <label class="sw-label" for="horaCierre">Hasta</label>
-            <input
-              id="horaCierre"
-              type="time"
-              class="sw-input"
-              formControlName="horaCierre"
-              [attr.aria-invalid]="isInvalid('horaCierre')"
-            />
-          </div>
-        </div>
-      </fieldset>
 
-      <!-- Intervalo de turnos -->
-      <div class="sw-field" [class.sw-field--error]="isInvalid('intervalMinutos')">
-        <label class="sw-label" for="intervalMinutos">
-          Intervalo de turnos <span class="sw-required" aria-hidden="true">*</span>
-        </label>
-        <select
-          id="intervalMinutos"
-          class="sw-select"
-          formControlName="intervalMinutos"
-          [attr.aria-invalid]="isInvalid('intervalMinutos')"
-        >
-          @for (opt of INTERVAL_OPTIONS; track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-        <p class="sw-hint">Duración predeterminada de cada turno en la agenda.</p>
+          <div class="sw-feature-card">
+            <div class="sw-feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                <rect x="9" y="3" width="6" height="4" rx="1"/>
+                <path d="M9 12h6M9 16h4"/>
+              </svg>
+            </div>
+            <span class="sw-feature-card__title">Historial de pacientes</span>
+            <span class="sw-feature-card__desc">Obra social, tratamientos y evolución clínica en un lugar.</span>
+          </div>
+
+          <div class="sw-feature-card">
+            <div class="sw-feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M2 10h20"/>
+              </svg>
+            </div>
+            <span class="sw-feature-card__title">Cobros y obras sociales</span>
+            <span class="sw-feature-card__desc">Coseguros automáticos. Múltiples medios de pago por sesión.</span>
+          </div>
+
+          <div class="sw-feature-card">
+            <div class="sw-feature-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+            </div>
+            <span class="sw-feature-card__title">Todo configurable después</span>
+            <span class="sw-feature-card__desc">Convenios, usuarios y más. Ajustalo cuando quieras.</span>
+          </div>
+
+        </div>
       </div>
 
-      <div class="sw-footer">
-        <button
-          type="submit"
-          class="sw-btn-primary"
-          [disabled]="saving()"
-          [class.sw-btn-primary--loading]="saving()"
-        >
-          @if (saving()) {
-            <span class="sw-spinner" aria-hidden="true"></span>
-            Configurando...
-          } @else {
-            Comenzar a operar
-          }
+      <div class="sw-welcome-cta">
+        <button type="button" class="sw-btn-primary sw-btn-primary--wide" (click)="startWizard()">
+          ¡Comencemos!
         </button>
       </div>
 
-    </form>
+    }
+
+    <!-- ── Pasos ──────────────────────────────────────────────────────────── -->
+    @if (currentView() !== 'welcome') {
+
+      <!-- Barra de progreso -->
+      <div class="sw-progress" aria-hidden="true">
+        @for (n of STEPS; track n) {
+          <div class="sw-progress__seg" [class.sw-progress__seg--done]="currentStep() >= n"></div>
+        }
+      </div>
+
+      <!-- Encabezado del paso -->
+      <div class="sw-step-header">
+        <span class="sw-step-header__num">Paso {{ currentStep() }} de 4</span>
+        <h2 class="sw-step-header__title" id="sw-title">{{ stepTitle }}</h2>
+      </div>
+
+      <!-- Formulario -->
+      <form [formGroup]="form" (ngSubmit)="confirm()" class="sw-form" novalidate autocomplete="off">
+
+        <!-- ── Paso 1: Información general ─────────────────────────────── -->
+        @if (currentView() === 1) {
+
+          <!-- Nombre del consultorio -->
+          <div class="sw-field" [class.sw-field--error]="isInvalid('consultorioNombre')">
+            <label class="sw-label" for="consultorioNombre">
+              Nombre del consultorio <span class="sw-required" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="consultorioNombre"
+              type="text"
+              class="sw-input"
+              formControlName="consultorioNombre"
+              placeholder="Ej: Centro de Kinesiología / Fisioterapia"
+              [attr.aria-invalid]="isInvalid('consultorioNombre')"
+              aria-describedby="err-nombre"
+              maxlength="100"
+            />
+            @if (isInvalid('consultorioNombre')) {
+              <span id="err-nombre" class="sw-error-msg" role="alert">Ingresá el nombre del consultorio.</span>
+            }
+          </div>
+
+          <!-- Especialidad -->
+          <div class="sw-field" [class.sw-field--error]="isInvalid('especialidad')">
+            <label class="sw-label" for="especialidad">
+              Especialidad <span class="sw-required" aria-hidden="true">*</span>
+            </label>
+            <select
+              id="especialidad"
+              class="sw-select"
+              formControlName="especialidad"
+              [attr.aria-invalid]="isInvalid('especialidad')"
+            >
+              @for (opt of ESPECIALIDADES; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Nombre de la sala -->
+          <div class="sw-field" [class.sw-field--error]="isInvalid('salaNombre')">
+            <label class="sw-label" for="salaNombre">
+              Nombre de la sala <span class="sw-required" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="salaNombre"
+              type="text"
+              class="sw-input"
+              formControlName="salaNombre"
+              placeholder="Gimnasio principal"
+              [attr.aria-invalid]="isInvalid('salaNombre')"
+              aria-describedby="hint-sala err-sala"
+              maxlength="50"
+              (keydown.enter)="next()"
+            />
+            @if (isInvalid('salaNombre')) {
+              <span id="err-sala" class="sw-error-msg" role="alert">Ingresá el nombre de la sala.</span>
+            } @else {
+              <p id="hint-sala" class="sw-hint">Podés agregar más salas desde Configuración → Salas.</p>
+            }
+          </div>
+
+          <!-- Tipo de sala -->
+          <div class="sw-field">
+            <label class="sw-label" for="salaTipo">Tipo de sala</label>
+            <select id="salaTipo" class="sw-select" formControlName="salaTipo">
+              @for (opt of TIPOS_SALA; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+          </div>
+
+        }
+
+        <!-- ── Paso 2: Turnos y horarios ────────────────────────────────── -->
+        @if (currentView() === 2) {
+
+          <fieldset class="sw-fieldset">
+            <legend class="sw-fieldset__legend">Horario base de atención</legend>
+
+            <!-- Días -->
+            <div class="sw-dias" formGroupName="dias" role="group" aria-label="Días de atención">
+              @for (dia of DIAS; track dia.key) {
+                <label
+                  class="sw-dia-chip"
+                  [class.sw-dia-chip--active]="isDiaChecked(dia.key)"
+                  [title]="dia.label"
+                >
+                  <input
+                    type="checkbox"
+                    [formControlName]="dia.key"
+                    class="sw-dia-chip__input"
+                    [attr.aria-label]="dia.label"
+                  />
+                  {{ dia.short }}
+                </label>
+              }
+            </div>
+            @if (diasInvalid) {
+              <span class="sw-error-msg" role="alert">Seleccioná al menos un día.</span>
+            }
+
+            <!-- Horario desde / hasta -->
+            <div class="sw-row">
+              <div class="sw-field sw-field--half" [class.sw-field--error]="isInvalid('horaApertura')">
+                <label class="sw-label" for="horaApertura">Desde</label>
+                <input
+                  id="horaApertura"
+                  type="time"
+                  class="sw-input"
+                  formControlName="horaApertura"
+                  [attr.aria-invalid]="isInvalid('horaApertura')"
+                />
+              </div>
+              <div class="sw-field sw-field--half" [class.sw-field--error]="isInvalid('horaCierre')">
+                <label class="sw-label" for="horaCierre">Hasta</label>
+                <input
+                  id="horaCierre"
+                  type="time"
+                  class="sw-input"
+                  formControlName="horaCierre"
+                  [attr.aria-invalid]="isInvalid('horaCierre')"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Intervalo -->
+          <div class="sw-field" [class.sw-field--error]="isInvalid('intervalMinutos')">
+            <label class="sw-label" for="intervalMinutos">
+              Intervalo de turnos <span class="sw-required" aria-hidden="true">*</span>
+            </label>
+            <select
+              id="intervalMinutos"
+              class="sw-select"
+              formControlName="intervalMinutos"
+              [attr.aria-invalid]="isInvalid('intervalMinutos')"
+            >
+              @for (opt of INTERVAL_OPTIONS; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+            <p class="sw-hint">Duración predeterminada de cada turno en la agenda.</p>
+          </div>
+
+        }
+
+        <!-- ── Paso 3: Precio y obras sociales ─────────────────────────── -->
+        @if (currentView() === 3) {
+
+          <p class="sw-step-desc">Definí el precio base de la sesión. Los aranceles de cada obra social se calcularán automáticamente sobre este valor.</p>
+
+          <div class="sw-field" [class.sw-field--error]="isInvalid('arancelParticular')">
+            <label class="sw-label" for="arancelParticular">
+              Precio de sesión particular ($) <span class="sw-required" aria-hidden="true">*</span>
+            </label>
+            <input
+              id="arancelParticular"
+              type="number"
+              class="sw-input"
+              formControlName="arancelParticular"
+              placeholder="Ej: 10000"
+              min="1"
+              max="9999999"
+              step="1"
+              [attr.aria-invalid]="isInvalid('arancelParticular')"
+              aria-describedby="err-arancel hint-arancel"
+            />
+            @if (isInvalid('arancelParticular')) {
+              <span id="err-arancel" class="sw-error-msg" role="alert">Ingresá un precio mayor a 0.</span>
+            } @else {
+              <p id="hint-arancel" class="sw-hint">Precio base para pacientes sin cobertura. Podés modificarlo después.</p>
+            }
+          </div>
+
+          <!-- Toggle financiadores -->
+          <label class="sw-toggle-row">
+            <div class="sw-toggle-row__text">
+              <span class="sw-toggle-row__label">Crear convenios y aranceles de obras sociales</span>
+              <span class="sw-toggle-row__desc">
+                @if (form.get('precargarFinanciadores')?.value) {
+                  Se crean 63 convenios con sus aranceles calculados sobre tu precio de sesión. Editables después.
+                } @else {
+                  Los cargarás manualmente desde Configuración → Convenios.
+                }
+              </span>
+            </div>
+            <div class="sw-toggle" [class.sw-toggle--on]="form.get('precargarFinanciadores')?.value">
+              <input type="checkbox" formControlName="precargarFinanciadores" class="sw-toggle__input" />
+              <span class="sw-toggle__track" aria-hidden="true">
+                <span class="sw-toggle__thumb"></span>
+              </span>
+            </div>
+          </label>
+
+          <!-- Preview de aranceles -->
+          @if (showArancelPreview) {
+            <div class="sw-arancel-preview">
+              <table class="sw-preview-table" aria-label="Vista previa de aranceles">
+                <thead>
+                  <tr>
+                    <th class="sw-preview-table__col-os">Obra social</th>
+                    <th class="sw-preview-table__col-num">OS paga</th>
+                    <th class="sw-preview-table__col-num">Coseguro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of ARANCEL_PREVIEW_ROWS; track row.nombre) {
+                    <tr>
+                      <td class="sw-preview-table__os">{{ row.nombre }}</td>
+                      @if (row.pct === 0) {
+                        <td class="sw-preview-table__num sw-preview-table__num--muted">—</td>
+                        <td class="sw-preview-table__num sw-preview-table__num--coseguro">{{ previewCoseguro(row.pct) | currency:'ARS':'symbol':'1.0-0':'es-AR' }}</td>
+                      } @else if (row.pct === 100) {
+                        <td class="sw-preview-table__num">{{ previewOsPaga(row.pct) | currency:'ARS':'symbol':'1.0-0':'es-AR' }}</td>
+                        <td class="sw-preview-table__num sw-preview-table__num--zero">$0</td>
+                      } @else {
+                        <td class="sw-preview-table__num">{{ previewOsPaga(row.pct) | currency:'ARS':'symbol':'1.0-0':'es-AR' }}</td>
+                        <td class="sw-preview-table__num sw-preview-table__num--coseguro">{{ previewCoseguro(row.pct) | currency:'ARS':'symbol':'1.0-0':'es-AR' }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="3" class="sw-preview-table__more">+ 57 convenios más se crearán automáticamente</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          }
+
+        }
+
+        <!-- ── Paso 4: Resumen ──────────────────────────────────────────── -->
+        @if (currentView() === 4) {
+
+          <div class="sw-summary-check" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="20" fill="var(--color-primary-light, #e6f4f2)"/>
+              <path d="M15 24l6 6 12-12" stroke="var(--color-primary, #1a6b5e)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+
+          <div class="sw-summary">
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Consultorio</span>
+              <span class="sw-summary-row__value">{{ form.get('consultorioNombre')?.value }}</span>
+            </div>
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Especialidad</span>
+              <span class="sw-summary-row__value">{{ summaryEspecialidad }}</span>
+            </div>
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Sala inicial</span>
+              <span class="sw-summary-row__value">{{ form.get('salaNombre')?.value }} · {{ summaryTipoSala }}</span>
+            </div>
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Horario</span>
+              <span class="sw-summary-row__value">{{ summaryHorario }}</span>
+            </div>
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Intervalo</span>
+              <span class="sw-summary-row__value">{{ summaryIntervalo }}</span>
+            </div>
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Precio sesión</span>
+              <span class="sw-summary-row__value">{{ summaryPrecio }}</span>
+            </div>
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Financiadores</span>
+              <span class="sw-summary-row__value">{{ summaryFinanciadores }}</span>
+            </div>
+            <div class="sw-summary-row">
+              <span class="sw-summary-row__label">Usuario admin</span>
+              <span class="sw-summary-row__value">Creado</span>
+            </div>
+          </div>
+
+          <p class="sw-summary-note">Todo puede modificarse desde Configuración en cualquier momento.</p>
+
+        }
+
+        <!-- ── Footer de navegación ─────────────────────────────────────── -->
+        <div class="sw-nav">
+          @if (currentStep() > 1) {
+            <button
+              type="button"
+              class="sw-btn-secondary"
+              (click)="back()"
+              [disabled]="saving()"
+            >
+              Atrás
+            </button>
+          }
+
+          @if (currentView() !== 4) {
+            <button
+              type="button"
+              class="sw-btn-primary"
+              (click)="next()"
+              [disabled]="saving()"
+            >
+              Continuar
+            </button>
+          }
+
+          @if (currentView() === 4) {
+            <button
+              type="submit"
+              class="sw-btn-primary"
+              [disabled]="saving()"
+              [class.sw-btn-primary--loading]="saving()"
+            >
+              @if (saving()) {
+                <span class="sw-spinner" aria-hidden="true"></span>
+                Configurando...
+              } @else {
+                Comenzar a operar
+              }
+            </button>
+          }
+        </div>
+
+      </form>
+    }
+
   </div>
 </div>

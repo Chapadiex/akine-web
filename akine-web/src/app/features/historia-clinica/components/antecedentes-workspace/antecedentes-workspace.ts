@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   ElementRef,
   HostListener,
+  ViewChild,
   computed,
   effect,
   inject,
@@ -83,14 +85,16 @@ const CRITICAL_ITEM_CODES = new Set([
   styleUrl: './antecedentes-workspace.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AntecedenteSelectorComponent {
+export class AntecedenteSelectorComponent implements AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  @ViewChild('searchInput') private searchInput?: ElementRef<HTMLInputElement>;
 
   readonly context = input<WorkspaceContext>('edit');
   readonly categories = input<AntecedenteCatalogCategory[]>([]);
   readonly formArray = input.required<FormArray<FormGroup>>();
   readonly emptySelectionMessage = input('No hay antecedentes cargados todavía.');
+  readonly autoFocusSearch = input(false);
 
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly activeSelectedIndex = signal<number | null>(null);
@@ -200,6 +204,13 @@ export class AntecedenteSelectorComponent {
       onCleanup(() => subscription.unsubscribe());
     });
 
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.autoFocusSearch()) {
+      return;
+    }
+    setTimeout(() => this.searchInput?.nativeElement.focus());
   }
 
   onCatalogItemClick(category: AntecedenteCatalogCategory, item: AntecedenteCatalogItem): void {
